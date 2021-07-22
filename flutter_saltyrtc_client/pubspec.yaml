@@ -1,6 +1,7 @@
 name: flutter_saltyrtc_client
 description: The dart_saltyrtc_client integration in flutter, with support for iOS, Android and Web.
 version: 0.0.1
+publish_to: none
 homepage:
 
 environment:
@@ -12,6 +13,8 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
+  dart_saltyrtc_client:
+    path: ../dart_saltyrtc_client
 
 dev_dependencies:
   flutter_test:
