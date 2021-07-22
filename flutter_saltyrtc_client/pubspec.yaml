@@ -15,11 +15,13 @@ dependencies:
     sdk: flutter
   dart_saltyrtc_client:
     path: ../dart_saltyrtc_client
+  flutter_sodium: 0.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^1.0.0
+  libsodium: 0.2.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

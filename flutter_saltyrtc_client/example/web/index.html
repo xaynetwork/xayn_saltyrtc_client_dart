@@ -28,6 +28,17 @@
 
   <title>flutter_saltyrtc_client_example</title>
   <link rel="manifest" href="manifest.json">
+  <!--    This Loads the sodium dependencies for crypto.dart-->
+  <!--    Technically it could be also done with require.js or via script tag in dart -->
+  <script type="application/javascript">
+    window.sodium = {
+        onload: function (sodium) {
+            window.sodiumJS = sodium;
+            console.log('LOADED SODIUM!');
+        }
+    };
+    </script>
+  <script src="js/sodium.js" ></script>
 </head>
 <body>
   <!-- This script installs service_worker.js to provide PWA functionality to
