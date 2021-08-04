@@ -13,6 +13,11 @@ abstract class SharedKeyStore {
 }
 
 abstract class Crypto {
+  // specified by NaCl.
+  static const publicKeyBytes = 32;
+  static const boxOverhead = 16;
+  static const symmKeyBytes = 32;
+
   Uint8List encrypt({
     required Uint8List message,
     required Uint8List nonce,

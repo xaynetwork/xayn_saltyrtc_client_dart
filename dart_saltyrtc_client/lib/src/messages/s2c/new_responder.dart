@@ -1,0 +1,39 @@
+import 'package:messagepack/messagepack.dart' show Packer;
+import 'package:meta/meta.dart' show immutable;
+
+import 'package:dart_saltyrtc_client/src/messages/message.dart'
+    show Message, MessageType, MessageFields;
+import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+    show validateType, validateId, validateIntegerType;
+
+const _type = MessageType.newResponder;
+
+@immutable
+class NewResponder extends Message {
+  final int id;
+
+  NewResponder(this.id) {
+    validateId(id);
+  }
+
+  factory NewResponder.fromMap(Map<String, dynamic> map) {
+    validateType(map[MessageFields.type], _type);
+
+    final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
+
+    return NewResponder(id);
+  }
+
+  @override
+  String getType() => _type;
+
+  @override
+  void write(Packer msgPacker) {
+    msgPacker
+      ..packMapLength(2)
+      ..packString(MessageFields.type)
+      ..packString(_type)
+      ..packString(MessageFields.id)
+      ..packInt(id);
+  }
+}
