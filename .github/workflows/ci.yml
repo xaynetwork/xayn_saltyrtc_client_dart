@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '2.4.0-4.2.pre'
+  FLUTTER_CHANNEL: 'beta'
+  JAVA_VERSION: '12.x'
+  UBUNTU_FLUTTER_PATH: '/opt/hostedtoolcache/flutter'
+
+jobs:
+  flutter-cache:
+    name: flutter-cache
+    runs-on: ubuntu-20.04
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+
+      - name: Generate cache key
+        id: cache-key
+        shell: bash
+        run: echo "::set-output name=key::$(echo ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }})"
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.UBUNTU_FLUTTER_PATH }}
+          key: ${{ steps.cache-key.outputs.key }} 
+
+      - name: Install flutter
+        uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Install dependencies
+        uses: ./.ci/install_deps
+
+  flutter-format:
+    name: flutter-format
+    needs: flutter-cache
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.UBUNTU_FLUTTER_PATH }}
+          key: ${{ needs.flutter-cache.outputs.cache-key }}
+
+      - name: Install flutter
+        uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Check dart bindings code formatting
+        run: flutter format --set-exit-if-changed .
+
+  flutter-analyze:
+    name: flutter-analyze
+    needs: flutter-cache
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [dart_saltyrtc_client, flutter_saltyrtc_client]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.UBUNTU_FLUTTER_PATH }}
+          key: ${{ needs.flutter-cache.outputs.cache-key }}
+
+      - name: Install flutter
+        uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Install dependencies
+        uses: ./.ci/install_deps
+
+      - name: Analyze ${{ matrix.project }} code
+        working-directory: ${{ matrix.project }}
+        run: flutter analyze
+
+  flutter-test:
+    name: flutter-test
+    needs: [flutter-cache, flutter-analyze]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [dart_saltyrtc_client, flutter_saltyrtc_client]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.UBUNTU_FLUTTER_PATH }}
+          key: ${{ needs.flutter-cache.outputs.cache-key }}
+
+      - name: Install flutter
+        uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Install Sodium
+        run: |
+          sudo apt-get install -y libsodium-dev
+          sudo ln -s /usr/lib/x86_64-linux-gnu/libsodium.so /usr/local/lib/libsodium.so
+
+      - name: Install dependencies
+        uses: ./.ci/install_deps
+
+      - name: Test ${{ matrix.project }} code
+        working-directory: ${{ matrix.project }}
+        run: flutter test
+
+  flutter-build-example:
+    name: flutter-build-example
+    needs: [flutter-cache, flutter-test]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [android, web]
+        include:
+          - target: android
+            cmd: flutter build apk --debug --split-per-abi
+          - target: web
+            cmd: flutter build web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.UBUNTU_FLUTTER_PATH }}
+          key: ${{ needs.flutter-cache.outputs.cache-key }}
+
+      - name: Install flutter
+        uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+
+      - name: Build flutter example for ${{ matrix.target }}
+        working-directory: flutter_saltyrtc_client/example
+        run: ${{ matrix.cmd }}

@@ -1,4 +1,19 @@
-include: package:flutter_lints/flutter.yaml
+include: package:pedantic/analysis_options.1.11.0.yaml
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+analyzer:
+  strong-mode:
+    implicit-casts: false
+    implicit-dynamic: false
+
+linter:
+  rules:
+    - camel_case_types
+    - camel_case_extensions
+    - library_names
+    - file_names
+    - library_prefixes
+    - non_constant_identifier_names
+    - constant_identifier_names
+    - directives_ordering
+    - curly_braces_in_flow_control_structures
+    - prefer_single_quotes

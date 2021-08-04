@@ -37,7 +37,7 @@ Future<LibSodiumJS> _load() async {
   document.body!.append(script);
 
   // await the completer
-  final LibSodiumJS _sodium = await completer.future;
+  final _sodium = await completer.future as LibSodiumJS;
   return _sodium;
 }
 

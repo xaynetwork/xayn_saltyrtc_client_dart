@@ -34,42 +34,46 @@ abstract class JsonMessage extends Equatable {
   @override
   List<Object?> get props => [type, data];
 
-  String get toJson => json.encode(
-      {_Fields.type: type, _Fields.data: data, _Fields.version: version});
+  String get toJson => json.encode(<String, dynamic>{
+        _Fields.type: type,
+        _Fields.data: data,
+        _Fields.version: version
+      });
 
   @override
   String toString() => toJson;
 
   factory JsonMessage.plainData(String data) => PlainDataMessage(data);
 
-  factory JsonMessage.encrypted(Map<String, dynamic> data) => EncryptedMessage(
-      cipher: base64.decode(data[_EncryptedFields.message]),
-      nonce: base64.decode(data[_EncryptedFields.nonce]));
+  factory JsonMessage.encrypted(Map<String, String> data) => EncryptedMessage(
+      cipher: base64.decode(data[_EncryptedFields.message]!),
+      nonce: base64.decode(data[_EncryptedFields.nonce]!));
 
-  factory JsonMessage.keyExchange(Map<String, dynamic> data) =>
+  factory JsonMessage.keyExchange(Map<String, String> data) =>
       KeyExchangeMessage(
-          cipher: base64.decode(data[_EncryptedFields.message]),
-          nonce: base64.decode(data[_EncryptedFields.nonce]),
-          pk: base64.decode(data[_EncryptedFields.pk]));
+          cipher: base64.decode(data[_EncryptedFields.message]!),
+          nonce: base64.decode(data[_EncryptedFields.nonce]!),
+          pk: base64.decode(data[_EncryptedFields.pk]!));
 
   factory JsonMessage.decode(dynamic message) {
     if (message is! String) {
       throw FormatException('Unsupported type ${message.runtimeType}');
     }
-    final decode = json.decode(message);
+    final dynamic decode = json.decode(message);
     if (decode is! Map || !decode.containsKey(_Fields.type)) {
       throw FormatException(
           'Message is mal formatted, is not json or does not contain a ${_Fields.type} field.',
           message);
     }
-    var type = decode[_Fields.type];
+    final type = decode[_Fields.type] as String;
+    final dynamic data = decode[_Fields.data];
     switch (type) {
       case MessageType.encrypted:
-        return JsonMessage.encrypted(decode[_Fields.data]);
+        return JsonMessage.encrypted(data as Map<String, String>);
       case MessageType.keyExchange:
-        return JsonMessage.keyExchange(decode[_Fields.data]);
+        return JsonMessage.keyExchange(data as Map<String, String>);
       case MessageType.plainData:
-        return JsonMessage.plainData(decode[_Fields.data]);
+        return JsonMessage.plainData(data as String);
     }
     throw FormatException('Unsupported type: $type in message $message');
   }
