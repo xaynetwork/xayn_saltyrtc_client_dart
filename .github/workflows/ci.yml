@@ -69,7 +69,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: ${{ env.FLUTTER_CHANNEL }}
 
-      - name: Check dart bindings code formatting
+      - name: Check dart code formatting
         run: flutter format --set-exit-if-changed .
 
   flutter-analyze:
