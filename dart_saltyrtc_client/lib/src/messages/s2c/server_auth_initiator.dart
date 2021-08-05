@@ -1,8 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:messagepack/messagepack.dart' show Packer;
-import 'package:meta/meta.dart' show immutable;
-
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, cookieLength, signedKeysLength;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -10,9 +7,10 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateType,
         validateByteArrayType,
         validateByteArray,
-        validateList,
         validateListType,
         validateTypeWithNull;
+import 'package:messagepack/messagepack.dart' show Packer;
+import 'package:meta/meta.dart' show immutable;
 
 const _type = MessageType.serverAuth;
 
@@ -24,7 +22,6 @@ class ServerAuthInitiator extends Message {
 
   ServerAuthInitiator(this.yourCookie, this.signedKeys, this.responders) {
     validateByteArray(yourCookie, cookieLength, MessageFields.yourCookie);
-    validateList(responders, MessageFields.responders);
 
     if (signedKeys != null) {
       validateByteArray(

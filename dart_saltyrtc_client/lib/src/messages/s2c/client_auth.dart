@@ -1,8 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:messagepack/messagepack.dart' show Packer;
-import 'package:meta/meta.dart' show immutable;
-
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, cookieLength;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -10,10 +7,11 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateType,
         validateByteArrayType,
         validateByteArray,
-        validateList,
         validateListType,
         validateIntegerType,
         validateInteger;
+import 'package:messagepack/messagepack.dart' show Packer;
+import 'package:meta/meta.dart' show immutable;
 
 const _type = MessageType.clientAuth;
 
@@ -28,7 +26,6 @@ class ClientAuth extends Message {
       this.yourCookie, this.yourKey, this.subprotocols, this.pingInterval) {
     const yourKeyLength = 32;
     validateByteArray(yourCookie, cookieLength, MessageFields.yourCookie);
-    validateList(subprotocols, MessageFields.subprotocols);
     validateInteger(pingInterval, 0, 1 << 31, MessageFields.pingInterval);
 
     if (yourKey != null) {
@@ -45,7 +42,7 @@ class ClientAuth extends Message {
     final pingInterval = validateIntegerType(
         map[MessageFields.pingInterval], MessageFields.pingInterval);
 
-    final yourKeyValue = map[MessageFields.yourKey];
+    final dynamic yourKeyValue = map[MessageFields.yourKey];
     final yourKey = yourKeyValue == null
         ? null
         : validateByteArrayType(yourKeyValue, MessageFields.yourKey);

@@ -1,8 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:messagepack/messagepack.dart' show Packer;
-import 'package:meta/meta.dart' show immutable;
-
+import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
+    show writeStringMapMap;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, cookieLength;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -13,8 +12,8 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateStringMapMap,
         validateTasksData,
         validateListType;
-import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeStringMapMap;
+import 'package:messagepack/messagepack.dart' show Packer;
+import 'package:meta/meta.dart' show immutable;
 
 const _type = MessageType.auth;
 

@@ -1,11 +1,10 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:meta/meta.dart' show immutable;
-
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageFields;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
+import 'package:meta/meta.dart' show immutable;
 
 /// Data to instantiate a message is invalid.
 @immutable
@@ -45,21 +44,6 @@ Uint8List validateByteArrayType(dynamic value, String name) {
   return Uint8List.fromList(value);
 }
 
-/// Check that `value` is a list without null elements.
-void validateList<T>(List<T> value, String name) {
-  if (value is! List) {
-    throw ValidationError('$name must be a list');
-  }
-  for (final e in value) {
-    if (e == null) {
-      throw ValidationError('$name may not contain null values');
-    }
-    if (e is! T) {
-      throw ValidationError('$name must be a ${T.toString()}');
-    }
-  }
-}
-
 /// Check that `value` is a list of `T`.
 List<T> validateListType<T>(dynamic value, String name) {
   // TODO can we just check List<T> ? dart types are reified but this come from unpacking messagepack data
@@ -78,10 +62,10 @@ List<T> validateListType<T>(dynamic value, String name) {
 /// Check that `value` belongs to the interval [min, max].
 void validateInteger(int value, int min, int max, String name) {
   if (value < min) {
-    throw ValidationError('$name must be > $min');
+    throw ValidationError('$name must be >= $min');
   }
   if (value > max) {
-    throw ValidationError('$name must be < $max');
+    throw ValidationError('$name must be <= $max');
   }
 }
 
@@ -98,8 +82,7 @@ void validateIntegerFromList(int value, List<int> valid, String name) {
 }
 
 /// Check that `value` is an integer.
-int validateIntegerType(Map<String, dynamic> map, String name) {
-  final value = map[name];
+int validateIntegerType(dynamic value, String name) {
   if (value is! int) {
     throw ValidationError('$name must be an integer');
   }
@@ -108,12 +91,12 @@ int validateIntegerType(Map<String, dynamic> map, String name) {
 
 /// Validate `value` with `validateType` if `value != null`.
 T? validateTypeWithNull<T>(
-    dynamic value, String name, T Function(T, String) validateType) {
+    dynamic value, String name, T Function(dynamic, String) validateType) {
   if (value != null) {
     return validateType(value!, name);
   }
 
-  return value;
+  return null;
 }
 
 /// Check that `value` is an bool.
@@ -127,13 +110,29 @@ bool validateBoolType(dynamic value, String name) {
 /// Check that `value` is a valid close code.
 /// If `dropResponder` is true only the close codes valid when sending
 /// a drop-responder message are checked.
-void validateCloseCode(int value, bool dropResponder, String name) {
-  final codes = dropResponder
-      ? CloseCode.closeCodesDropResponder
-      : CloseCode.closeCodesAll;
-  if (!codes.contains(value)) {
-    throw ValidationError("$name must be a valid close code");
+///
+CloseCode validateCloseCodeType(
+    dynamic value, bool dropResponder, String name) {
+  if (value is! int) {
+    throw ValidationError('$name must be an integer');
   }
+
+  final code = CloseCodeToFromInt.fromInt(value);
+
+  if (dropResponder) {
+    const closeCodesDropResponder = [
+      CloseCode.protocolError,
+      CloseCode.internalError,
+      CloseCode.droppedByInitiator,
+      CloseCode.initiatorCouldNotDecrypt,
+    ];
+
+    if (!closeCodesDropResponder.contains(code)) {
+      throw ValidationError('$name must be a valid close code');
+    }
+  }
+
+  return code;
 }
 
 /// Check that task names and task data are both set, and they match.
@@ -142,23 +141,23 @@ void validateCloseCode(int value, bool dropResponder, String name) {
 void validateTasksData(
     List<String> tasks, Map<String, Map<String, List<int>>> data) {
   if (tasks.isEmpty) {
-    throw ValidationError("Task names must not be empty");
+    throw ValidationError('Task names must not be empty');
   }
   if (data.isEmpty) {
-    throw ValidationError("Task data must not be empty");
+    throw ValidationError('Task data must not be empty');
   }
   if (data.length != tasks.length) {
-    throw ValidationError("Task data must contain an entry for every task");
+    throw ValidationError('Task data must contain an entry for every task');
   }
   if (!tasks.every(data.containsKey)) {
-    throw ValidationError("Task data must contain an entry for every task");
+    throw ValidationError('Task data must contain an entry for every task');
   }
 }
 
 /// Check that `value` is a string.
 String validateStringType(dynamic value, String name) {
   if (value is! String) {
-    throw ValidationError("$name must be a string");
+    throw ValidationError('$name must be a string');
   }
 
   return value;
@@ -169,23 +168,23 @@ Map<String, Map<String, List<int>>> validateStringMapMap(
     dynamic value, String name) {
   // TODO can we just check Map<...> ? dart types are reified but this come from unpacking messagepack data
   if (value is! Map) {
-    throw ValidationError("$name must be a Map");
+    throw ValidationError('$name must be a Map');
   }
 
-  for (final MapEntry e in value.entries) {
+  for (final e in value.entries) {
     if (e.key is! String) {
-      throw ValidationError("$name must be a map with strings as keys");
+      throw ValidationError('$name must be a map with strings as keys');
     }
     if (e.value != null && e.value is! Map) {
-      throw ValidationError("$name must be a map with maps or null as values");
+      throw ValidationError('$name must be a map with maps or null as values');
     }
     for (final MapEntry e in e.value) {
       if (e.key is! String) {
-        throw ValidationError("$name must contain maps with string as keys");
+        throw ValidationError('$name must contain maps with string as keys');
       }
       if (e.value is! List<int>) {
         throw ValidationError(
-            "$name must contain maps with List<int> as values");
+            '$name must contain maps with List<int> as values');
       }
     }
   }

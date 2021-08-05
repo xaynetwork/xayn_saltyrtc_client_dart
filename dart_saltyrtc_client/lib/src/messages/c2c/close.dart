@@ -1,25 +1,24 @@
-import 'package:messagepack/messagepack.dart' show Packer;
-import 'package:meta/meta.dart' show immutable;
-
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateType, validateCloseCode, validateIntegerType;
+    show validateType, validateCloseCodeType;
+import 'package:messagepack/messagepack.dart' show Packer;
+import 'package:meta/meta.dart' show immutable;
 
 const _type = MessageType.close;
 
 @immutable
 class Close extends Message {
-  final int reason;
+  final CloseCode reason;
 
-  Close(this.reason) {
-    validateCloseCode(reason, false, MessageFields.reason);
-  }
+  Close(this.reason);
 
   factory Close.fromMap(Map<String, dynamic> map) {
     validateType(map[MessageFields.type], _type);
-    final reason =
-        validateIntegerType(map[MessageFields.reason], MessageFields.reason);
+    final reason = validateCloseCodeType(
+        map[MessageFields.reason], false, MessageFields.reason);
 
     return Close(reason);
   }
@@ -34,6 +33,6 @@ class Close extends Message {
       ..packString(MessageFields.type)
       ..packString(_type)
       ..packString(MessageFields.reason)
-      ..packInt(reason);
+      ..packInt(reason.toInt());
   }
 }

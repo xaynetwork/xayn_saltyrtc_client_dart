@@ -9,6 +9,7 @@ environment:
 dependencies:
   messagepack: 0.2.1
   meta: 1.7.0
+  quiver: 3.0.1
 
 dev_dependencies:
   lints: ^1.0.0

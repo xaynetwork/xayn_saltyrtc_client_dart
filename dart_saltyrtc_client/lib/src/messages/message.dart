@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart';
-import 'package:meta/meta.dart' show protected;
 import 'package:messagepack/messagepack.dart' show Packer;
+import 'package:meta/meta.dart' show protected;
 
 /// Different types of messages in the SaltyRTC Singnal protocol.
 /// This is not exaustive since a task can define its own types.

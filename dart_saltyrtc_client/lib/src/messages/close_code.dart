@@ -1,64 +1,83 @@
-// TODO can we remove the class?
-class CloseCode {
-  CloseCode._();
+import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+    show ValidationError;
+import 'package:quiver/collection.dart' show HashBiMap;
 
+enum CloseCode {
   /// Normal closing of websocket.
-  static const closingNormal = 1000;
+  closingNormal,
 
   /// The endpoint si going away.
-  static const goingAway = 1001;
+  goingAway,
 
   /// No shared sub-protocol could be found.
-  static const noSharedSubprotocol = 1002;
+  noSharedSubprotocol,
 
   /// No free responder byte.
-  static const pathFull = 3000;
+  pathFull,
 
   /// Invalid message, invalid path length, ...
-  static const protocolError = 3001;
+  protocolError,
 
   /// Syntax error, ...
-  static const internalError = 3002;
+  internalError,
 
   /// Handover of the signaling channel.
-  static const handover = 3003;
+  handover,
 
   /// Dropped by initator.
   /// For an initiator, that means that another initiator has connected to the path.
   /// For a responder, it means that an initiator requested to drop the responder.
-  static const droppedByInitiator = 3004;
+  droppedByInitiator,
 
   /// Initiator could not dectypt a message.
-  static const initiatorCouldNotDecrypt = 3005;
+  initiatorCouldNotDecrypt,
 
   /// No shared task was found.
-  static const noSharedTask = 3006;
+  noSharedTask,
 
   /// Invalid key.
-  static const invalidKey = 3007;
+  invalidKey,
 
   /// Timeout.
-  static const timeout = 3008;
-
-  static const closeCodesDropResponder = [
-    protocolError,
-    internalError,
-    droppedByInitiator,
-    initiatorCouldNotDecrypt,
-  ];
-
-  static const closeCodesAll = [
-    closingNormal,
-    goingAway,
-    noSharedTask,
-    pathFull,
-    protocolError,
-    internalError,
-    handover,
-    droppedByInitiator,
-    initiatorCouldNotDecrypt,
-    noSharedTask,
-    invalidKey,
-    timeout
-  ];
+  timeout,
 }
+
+HashBiMap<CloseCode, int> _closeCode2IntBiMap() {
+  final map = HashBiMap<CloseCode, int>();
+
+  map.addAll({
+    CloseCode.closingNormal: 1000,
+    CloseCode.goingAway: 1001,
+    CloseCode.noSharedSubprotocol: 1002,
+    CloseCode.pathFull: 3000,
+    CloseCode.protocolError: 3001,
+    CloseCode.internalError: 3002,
+    CloseCode.handover: 3003,
+    CloseCode.droppedByInitiator: 3004,
+    CloseCode.initiatorCouldNotDecrypt: 3005,
+    CloseCode.noSharedTask: 3006,
+    CloseCode.invalidKey: 3007,
+    CloseCode.timeout: 3008,
+  });
+
+  return map;
+}
+
+final _cc2int = _closeCode2IntBiMap();
+
+extension CloseCodeToFromInt on CloseCode {
+  int toInt() {
+    // _cc2int must contains all CloseCode variant
+    return _cc2int[this]!;
+  }
+
+  static CloseCode fromInt(int value) {
+    final cc = _cc2int.inverse[int];
+    if (cc == null) {
+      throw ValidationError('$value is not a valid close code');
+    }
+    return cc;
+  }
+}
+
+const List<CloseCode> closeCodesAll = CloseCode.values;
