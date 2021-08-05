@@ -1,7 +1,8 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields, cookieLength, signedKeysLength;
+    show Message, MessageType, MessageFields, signedKeysLength;
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
@@ -22,7 +23,7 @@ class ServerAuthResponder extends Message {
 
   ServerAuthResponder(
       this.yourCookie, this.signedKeys, this.initiatorConnected) {
-    validateByteArray(yourCookie, cookieLength, MessageFields.yourCookie);
+    validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
 
     if (signedKeys != null) {
       validateByteArray(

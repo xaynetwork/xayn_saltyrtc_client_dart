@@ -65,5 +65,4 @@ class MessageFields {
   static const tasks = 'tasks';
 }
 
-const cookieLength = 16;
 const signedKeysLength = Crypto.publicKeyBytes * 2 + Crypto.boxOverhead;

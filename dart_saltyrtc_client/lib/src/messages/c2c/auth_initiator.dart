@@ -3,7 +3,8 @@ import 'dart:typed_data' show Uint8List;
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
     show writeStringMapMap;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields, cookieLength;
+    show Message, MessageType, MessageFields;
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
@@ -27,7 +28,7 @@ class AuthInitiator extends Message {
   final Map<String, Map<String, List<int>>> data;
 
   AuthInitiator(this.yourCookie, this.task, this.data) {
-    validateByteArray(yourCookie, cookieLength, MessageFields.yourCookie);
+    validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
     validateTasksData([task], data);
   }
 

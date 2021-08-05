@@ -18,6 +18,8 @@ abstract class Crypto {
   static const boxOverhead = 16;
   static const symmKeyBytes = 32;
 
+  Uint8List randomBytes(int size);
+
   Uint8List encrypt({
     required Uint8List message,
     required Uint8List nonce,
