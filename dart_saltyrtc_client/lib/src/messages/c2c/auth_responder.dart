@@ -52,7 +52,12 @@ class AuthResponder extends Message {
       ..packString(_type)
       ..packString(MessageFields.yourCookie)
       ..packBinary(yourCookie)
-      ..packString(MessageFields.task);
+      ..packString(MessageFields.tasks)
+      ..packListLength(tasks.length);
+
+    for (final task in tasks) {
+      msgPacker.packString(task);
+    }
 
     writeStringMapMap(msgPacker, data);
   }

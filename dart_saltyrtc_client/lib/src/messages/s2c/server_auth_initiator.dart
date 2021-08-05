@@ -34,7 +34,7 @@ class ServerAuthInitiator extends Message {
     final yourCookie = validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie);
     final responders = validateListType<int>(
-        map[MessageFields.subprotocols], MessageFields.subprotocols);
+        map[MessageFields.responders], MessageFields.responders);
 
     final signedKeys = validateTypeWithNull(map[MessageFields.signedKeys],
         MessageFields.signedKeys, validateByteArrayType);

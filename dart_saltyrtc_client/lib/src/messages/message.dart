@@ -6,7 +6,7 @@ import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show protected;
 
 /// Different types of messages in the SaltyRTC Singnal protocol.
-/// This is not exaustive since a task can define its own types.
+/// This is not exhaustive since a task can define its own types.
 class MessageType {
   MessageType._();
 

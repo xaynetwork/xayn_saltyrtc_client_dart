@@ -6,7 +6,7 @@ enum CloseCode {
   /// Normal closing of websocket.
   closingNormal,
 
-  /// The endpoint si going away.
+  /// The endpoint is going away.
   goingAway,
 
   /// No shared sub-protocol could be found.
@@ -29,7 +29,7 @@ enum CloseCode {
   /// For a responder, it means that an initiator requested to drop the responder.
   droppedByInitiator,
 
-  /// Initiator could not dectypt a message.
+  /// Initiator could not decrypt a message.
   initiatorCouldNotDecrypt,
 
   /// No shared task was found.
@@ -67,7 +67,7 @@ final _cc2int = _closeCode2IntBiMap();
 
 extension CloseCodeToFromInt on CloseCode {
   int toInt() {
-    // _cc2int must contains all CloseCode variant
+    // _cc2int must contain all CloseCode variants
     return _cc2int[this]!;
   }
 
