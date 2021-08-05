@@ -29,7 +29,7 @@ class MessageType {
 /// All messages in the protocol extend this.
 abstract class Message {
   /// Type of the message
-  String getType();
+  String get type;
 
   /// Encode the message using MessagePack.
   Uint8List toBytes() {

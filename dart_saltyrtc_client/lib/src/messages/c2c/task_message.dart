@@ -7,13 +7,11 @@ import 'package:meta/meta.dart' show immutable;
 
 @immutable
 class TaskMessage extends Message {
+  @override
   final String type;
   final Map<String, Uint8List> data;
 
   TaskMessage(this.type, this.data);
-
-  @override
-  String getType() => type;
 
   @override
   void write(Packer msgPacker) {

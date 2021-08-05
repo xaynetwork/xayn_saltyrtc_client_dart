@@ -51,7 +51,7 @@ class ClientAuth extends Message {
   }
 
   @override
-  String getType() => _type;
+  String get type => _type;
 
   @override
   void write(Packer msgPacker) {
