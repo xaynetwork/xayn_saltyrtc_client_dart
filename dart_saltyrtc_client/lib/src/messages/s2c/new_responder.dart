@@ -1,7 +1,7 @@
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateType, validateId, validateIntegerType;
+    show validateType, validateIdResponder, validateIntegerType;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -12,7 +12,7 @@ class NewResponder extends Message {
   final int id;
 
   NewResponder(this.id) {
-    validateId(id);
+    validateIdResponder(id);
   }
 
   factory NewResponder.fromMap(Map<String, dynamic> map) {

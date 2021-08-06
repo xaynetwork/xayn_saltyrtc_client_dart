@@ -69,9 +69,14 @@ void validateInteger(int value, int min, int max, String name) {
   }
 }
 
-/// Check that `value` is a valid id of a client.
-void validateId(int value) {
+/// Check that `value` is a valid id of a peer.
+void validateIdPeer(int value) {
   validateInteger(value, 1, 255, MessageFields.id);
+}
+
+/// Check that `value` is a valid id of a responder.
+void validateIdResponder(int value, [String name = MessageFields.id]) {
+  validateInteger(value, 2, 255, name);
 }
 
 /// Check that `value` belongs to `valid`.

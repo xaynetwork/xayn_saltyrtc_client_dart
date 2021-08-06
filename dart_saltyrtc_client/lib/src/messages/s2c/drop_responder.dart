@@ -3,7 +3,11 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateType, validateId, validateCloseCodeType, validateIntegerType;
+    show
+        validateType,
+        validateIdResponder,
+        validateCloseCodeType,
+        validateIntegerType;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -15,7 +19,7 @@ class DropResponder extends Message {
   final CloseCode? reason;
 
   DropResponder(this.id, this.reason) {
-    validateId(id);
+    validateIdResponder(id);
   }
 
   factory DropResponder.fromMap(Map<String, dynamic> map) {
