@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show Crypto;
+import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show protected;
 
@@ -26,7 +27,7 @@ class MessageType {
 }
 
 /// All messages in the protocol extend this.
-abstract class Message {
+abstract class Message with EquatableMixin {
   /// Type of the message
   String get type;
 

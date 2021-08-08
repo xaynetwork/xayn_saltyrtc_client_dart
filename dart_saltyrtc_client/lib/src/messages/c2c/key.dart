@@ -15,6 +15,9 @@ const _type = MessageType.key;
 class Key extends Message {
   final Uint8List key;
 
+  @override
+  List<Object> get props => [key];
+
   Key(this.key) {
     validateByteArray(key, Crypto.publicKeyBytes, MessageFields.key);
   }

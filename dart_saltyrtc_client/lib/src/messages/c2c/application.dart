@@ -13,12 +13,15 @@ const _type = MessageType.application;
 class Application extends Message {
   final Uint8List data;
 
+  @override
+  List<Object> get props => [data];
+
   Application(this.data);
 
   factory Application.fromMap(Map<String, dynamic> map) {
     validateType(map[MessageFields.type], _type);
     final data =
-        validateByteArrayType(map[MessageFields.key], MessageFields.key);
+        validateByteArrayType(map[MessageFields.data], MessageFields.data);
 
     return Application(data);
   }

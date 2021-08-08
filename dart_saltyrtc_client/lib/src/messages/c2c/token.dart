@@ -15,6 +15,9 @@ const _type = MessageType.token;
 class Token extends Message {
   final Uint8List key;
 
+  @override
+  List<Object> get props => [key];
+
   Token(this.key) {
     validateByteArray(key, Crypto.symmKeyBytes, MessageFields.key);
   }

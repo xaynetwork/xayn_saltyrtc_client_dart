@@ -23,6 +23,9 @@ class ClientAuth extends Message {
   final List<String> subprotocols;
   final int pingInterval;
 
+  @override
+  List<Object?> get props => [yourCookie, yourKey, subprotocols, pingInterval];
+
   ClientAuth(
       this.yourCookie, this.yourKey, this.subprotocols, this.pingInterval) {
     const yourKeyLength = 32;

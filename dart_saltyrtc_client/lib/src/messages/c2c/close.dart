@@ -13,6 +13,9 @@ const _type = MessageType.close;
 class Close extends Message {
   final CloseCode reason;
 
+  @override
+  List<Object> get props => [reason];
+
   Close(this.reason);
 
   factory Close.fromMap(Map<String, dynamic> map) {

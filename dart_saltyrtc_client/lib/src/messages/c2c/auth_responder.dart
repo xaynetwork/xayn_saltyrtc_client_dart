@@ -25,6 +25,9 @@ class AuthResponder extends Message {
   // See comment on AuthInitiator
   final Map<String, Map<String, List<int>>> data;
 
+  @override
+  List<Object> get props => [yourCookie, tasks, data];
+
   AuthResponder(this.yourCookie, this.tasks, this.data) {
     validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
     validateTasksData(tasks, data);
@@ -35,7 +38,7 @@ class AuthResponder extends Message {
     final yourCookie = validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie);
     final tasks =
-        validateListType<String>(map[MessageFields.task], MessageFields.task);
+        validateListType<String>(map[MessageFields.tasks], MessageFields.tasks);
     final data =
         validateStringMapMap(map[MessageFields.data], MessageFields.data);
 

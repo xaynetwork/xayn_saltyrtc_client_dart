@@ -15,6 +15,9 @@ const _type = MessageType.clientHello;
 class ClientHello extends Message {
   final Uint8List key;
 
+  @override
+  List<Object> get props => [key];
+
   ClientHello(this.key) {
     validateByteArray(key, Crypto.publicKeyBytes, MessageFields.key);
   }

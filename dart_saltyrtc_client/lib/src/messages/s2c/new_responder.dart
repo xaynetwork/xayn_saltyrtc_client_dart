@@ -11,6 +11,9 @@ const _type = MessageType.newResponder;
 class NewResponder extends Message {
   final int id;
 
+  @override
+  List<Object> get props => [id];
+
   NewResponder(this.id) {
     validateIdResponder(id);
   }

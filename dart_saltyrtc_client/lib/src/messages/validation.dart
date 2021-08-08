@@ -28,6 +28,15 @@ void validateType(dynamic value, String type) {
   }
 }
 
+/// Check that `value` represent a string.
+String validateTypeType(dynamic value) {
+  if (value is! String) {
+    throw ValidationError('Type must be a string');
+  }
+
+  return value;
+}
+
 /// Check that `value` is a byte array of the expected length.
 void validateByteArray(Uint8List value, int expectedLength, String name) {
   if (value.length != expectedLength) {
@@ -46,7 +55,6 @@ Uint8List validateByteArrayType(dynamic value, String name) {
 
 /// Check that `value` is a list of `T`.
 List<T> validateListType<T>(dynamic value, String name) {
-  // TODO can we just check List<T> ? dart types are reified but this come from unpacking messagepack data
   if (value is! List) {
     throw ValidationError('$name must be a list');
   }
@@ -56,7 +64,7 @@ List<T> validateListType<T>(dynamic value, String name) {
     }
   }
 
-  return value as List<T>;
+  return value.cast<T>();
 }
 
 /// Check that `value` belongs to the interval [min, max].
@@ -138,7 +146,8 @@ CloseCode validateCloseCodeType(
     ];
 
     if (!closeCodesDropResponder.contains(code)) {
-      throw ValidationError('$name must be a valid close code');
+      throw ValidationError(
+          '$name must be a valid ${dropResponder ? 'drop responder' : ''} close code');
     }
   }
 
@@ -173,10 +182,49 @@ String validateStringType(dynamic value, String name) {
   return value;
 }
 
+/// Check that `value` is a Map<String, dynamic>
+Map<String, dynamic> validateStringMap(dynamic value, String name) {
+  if (value is! Map) {
+    throw ValidationError('$name must be a Map');
+  }
+
+  for (final e in value.entries) {
+    if (e.key is! String) {
+      throw ValidationError('$name must be a map with strings as keys');
+    }
+    if (e.value == null) {
+      throw ValidationError('$name cannot be null');
+    }
+  }
+
+  return value as Map<String, dynamic>;
+}
+
+/// Check that `value` is a Map<String, Uint8List>
+Map<String, Uint8List> validateStringBytesMapType(dynamic value, String name) {
+  if (value is! Map) {
+    throw ValidationError('$name must be a Map');
+  }
+
+  for (final e in value.entries) {
+    if (e.key is! String) {
+      throw ValidationError('$name must be a map with strings as keys');
+    }
+    if (e.value is! Uint8List) {
+      throw ValidationError('$name values must be an array of bytes');
+    }
+  }
+
+  return value as Map<String, Uint8List>;
+}
+
 /// Check that `value` is a Map<String, Map<String, List<int>>
 Map<String, Map<String, List<int>>> validateStringMapMap(
     dynamic value, String name) {
-  // TODO can we just check Map<...> ? dart types are reified but this come from unpacking messagepack data
+  // is not possibile to cast value to the type we want as output without
+  // creating a new map and cast the inner map to Map<String, List<int>>
+  final map = <String, Map<String, List<int>>>{};
+
   if (value is! Map) {
     throw ValidationError('$name must be a Map');
   }
@@ -188,16 +236,22 @@ Map<String, Map<String, List<int>>> validateStringMapMap(
     if (e.value != null && e.value is! Map) {
       throw ValidationError('$name must be a map with maps or null as values');
     }
-    for (final MapEntry e in e.value) {
+
+    final key = e.key as String;
+    final inner = e.value as Map;
+
+    for (final e in inner.entries) {
       if (e.key is! String) {
         throw ValidationError('$name must contain maps with string as keys');
       }
-      if (e.value is! List<int>) {
+      if (e.value != null && e.value is! List<int>) {
         throw ValidationError(
             '$name must contain maps with List<int> as values');
       }
     }
+
+    map[key] = inner.cast<String, List<int>>();
   }
 
-  return value as Map<String, Map<String, List<int>>>;
+  return map;
 }

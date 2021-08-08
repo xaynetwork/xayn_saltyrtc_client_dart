@@ -18,6 +18,9 @@ class DropResponder extends Message {
   final int id;
   final CloseCode? reason;
 
+  @override
+  List<Object?> get props => [id, reason];
+
   DropResponder(this.id, this.reason) {
     validateIdResponder(id);
   }
@@ -39,14 +42,15 @@ class DropResponder extends Message {
 
   @override
   void write(Packer msgPacker) {
+    final hasReason = reason != null;
     msgPacker
-      ..packMapLength(2)
+      ..packMapLength(hasReason ? 3 : 2)
       ..packString(MessageFields.type)
       ..packString(_type)
       ..packString(MessageFields.id)
       ..packInt(id);
 
-    if (reason != null) {
+    if (hasReason) {
       msgPacker
         ..packString(MessageFields.reason)
         ..packInt(reason!.toInt());

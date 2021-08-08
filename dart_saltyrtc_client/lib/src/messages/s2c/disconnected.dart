@@ -11,6 +11,9 @@ const _type = MessageType.disconnected;
 class Disconnected extends Message {
   final int id;
 
+  @override
+  List<Object> get props => [id];
+
   Disconnected(this.id) {
     // An initiator should validate that the id is a responder.
     // A responder should validate the id to be 1.

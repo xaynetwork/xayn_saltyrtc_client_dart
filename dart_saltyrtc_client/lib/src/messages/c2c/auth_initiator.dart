@@ -27,6 +27,9 @@ class AuthInitiator extends Message {
   // we replace List<int> with Uint8List. `unpackBinary` returns List<int>.
   final Map<String, Map<String, List<int>>> data;
 
+  @override
+  List<Object> get props => [yourCookie, task, data];
+
   AuthInitiator(this.yourCookie, this.task, this.data) {
     validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
     validateTasksData([task], data);
@@ -55,7 +58,8 @@ class AuthInitiator extends Message {
       ..packString(_type)
       ..packString(MessageFields.yourCookie)
       ..packBinary(yourCookie)
-      ..packString(MessageFields.task);
+      ..packString(MessageFields.task)
+      ..packString(task);
 
     writeStringMapMap(msgPacker, data);
   }

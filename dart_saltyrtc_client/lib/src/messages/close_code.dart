@@ -72,7 +72,7 @@ extension CloseCodeToFromInt on CloseCode {
   }
 
   static CloseCode fromInt(int value) {
-    final cc = _cc2int.inverse[int];
+    final cc = _cc2int.inverse[value];
     if (cc == null) {
       throw ValidationError('$value is not a valid close code');
     }

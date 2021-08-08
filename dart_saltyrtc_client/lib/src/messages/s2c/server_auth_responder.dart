@@ -21,6 +21,9 @@ class ServerAuthResponder extends Message {
   final Uint8List? signedKeys;
   final bool initiatorConnected;
 
+  @override
+  List<Object?> get props => [yourCookie, signedKeys, initiatorConnected];
+
   ServerAuthResponder(
       this.yourCookie, this.signedKeys, this.initiatorConnected) {
     validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
