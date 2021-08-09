@@ -8,6 +8,8 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateByteArrayType,
         validateByteArray,
         validateListType,
+        validateIdResponder,
+        ValidationError,
         validateTypeWithNull;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
@@ -26,6 +28,13 @@ class ServerAuthInitiator extends Message {
     if (signedKeys != null) {
       validateByteArray(
           signedKeys!, signedKeysLength, MessageFields.signedKeys);
+    }
+    for (final id in responders) {
+      validateIdResponder(id, MessageFields.responders);
+    }
+    if (responders.length != responders.toSet().length) {
+      throw ValidationError(
+          '${MessageFields.responders} must not contain duplicates');
     }
   }
 
