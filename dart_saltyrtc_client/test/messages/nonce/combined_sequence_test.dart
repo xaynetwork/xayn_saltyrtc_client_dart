@@ -5,10 +5,12 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:test/test.dart';
 
-Int64 toInt64(CombinedSequence cs) {
-  final bytes = Uint8List(8);
-  bytes.setAll(2, cs.toBytes());
-  return Int64.fromBytesBigEndian(bytes);
+extension ToInt64 on CombinedSequence {
+  Int64 toInt64() {
+    final bytes = Uint8List(8);
+    bytes.setAll(2, toBytes());
+    return Int64.fromBytesBigEndian(bytes);
+  }
 }
 
 void main() {
@@ -20,7 +22,7 @@ void main() {
     final cs = CombinedSequence.fromRandom(
         (size) => Uint8List.fromList(List.filled(size, 255)));
 
-    expect(toInt64(cs), lessThan(CombinedSequence.combinedSequenceNumberMax));
+    expect(cs.toInt64(), lessThan(CombinedSequence.combinedSequenceNumberMax));
     expect(cs.isOverflowZero, true);
   });
 
@@ -29,7 +31,7 @@ void main() {
     for (final shift in shifts) {
       final source = Int64(255) << shift;
       final cs = CombinedSequence(source);
-      expect(toInt64(cs), source);
+      expect(cs.toInt64(), source);
     }
   });
 

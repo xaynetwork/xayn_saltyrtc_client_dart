@@ -1,10 +1,10 @@
-import 'dart:typed_data' show ByteData, Uint8List;
+import 'dart:typed_data' show Uint8List;
 
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:fixnum/fixnum.dart' show Int64;
 
 /// The CombinedSequence class handles the overflow checking of the 48 bit combined sequence number
-/// (CSN) consisting of the sequence number and the overflow number.
+/// (CSN) consisting of the overflow number and the sequence number.
 class CombinedSequence with EquatableMixin {
   static final Int64 combinedSequenceNumberMax = Int64.ONE << 48;
   // define a mask 0xffff00000000 to select the overflow part
@@ -27,7 +27,7 @@ class CombinedSequence with EquatableMixin {
 
   factory CombinedSequence.fromRandom(Uint8List Function(int) randomBytes) {
     // we only want 32 bits random number, the top 16 must be set to 0.
-    final sequenceNumber = ByteData.sublistView(randomBytes(4)).getUint32(0);
+    final sequenceNumber = randomBytes(4).buffer.asByteData().getUint32(0);
     return CombinedSequence(Int64.fromInts(0, sequenceNumber));
   }
 

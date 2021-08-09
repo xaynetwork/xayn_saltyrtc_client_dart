@@ -15,7 +15,7 @@ import 'package:meta/meta.dart' show immutable;
 /// - D: Destination byte (1 byte)
 /// - O: Overflow number (2 byte)
 /// - Q: Sequence number (4 byte)
-/// we threat overflow and sequence as one 48bit number (combined sequence number)
+/// we treat overflow and sequence as one 48bit number (combined sequence number)
 @immutable
 class Nonce with EquatableMixin {
   static const cookieLength = 16;
@@ -27,9 +27,14 @@ class Nonce with EquatableMixin {
   final CombinedSequence combinedSequence;
 
   @override
-  List<Object> get props => [source, destination, combinedSequence, cookie];
+  List<Object> get props => [cookie, source, destination, combinedSequence];
 
-  Nonce(this.cookie, this.combinedSequence, this.source, this.destination) {
+  Nonce(
+    this.cookie,
+    this.source,
+    this.destination,
+    this.combinedSequence,
+  ) {
     if (cookie.length != cookieLength) {
       throw ValidationError('cookie must be $cookieLength bytes long');
     }
@@ -48,7 +53,7 @@ class Nonce with EquatableMixin {
     final combinedSequence = CombinedSequence.fromBytes(bytes.sublist(
         cookieLength + 2, cookieLength + 2 + CombinedSequence.numBytes));
 
-    return Nonce(cookie, combinedSequence, source, destination);
+    return Nonce(cookie, source, destination, combinedSequence);
   }
 
   Uint8List toBytes() {
