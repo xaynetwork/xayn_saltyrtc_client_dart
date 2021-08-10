@@ -69,6 +69,11 @@ void validateInteger(int value, int min, int max, String name) {
   }
 }
 
+/// Check that `value` is a valid id of a peer or a server.
+void validateId(int value, String name) {
+  validateInteger(value, 0, 255, name);
+}
+
 /// Check that `value` is a valid id of a peer.
 void validateIdPeer(int value) {
   validateInteger(value, 1, 255, MessageFields.id);

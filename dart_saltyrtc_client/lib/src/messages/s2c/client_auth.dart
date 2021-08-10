@@ -1,7 +1,8 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields, cookieLength;
+    show Message, MessageType, MessageFields;
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
@@ -25,7 +26,7 @@ class ClientAuth extends Message {
   ClientAuth(
       this.yourCookie, this.yourKey, this.subprotocols, this.pingInterval) {
     const yourKeyLength = 32;
-    validateByteArray(yourCookie, cookieLength, MessageFields.yourCookie);
+    validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
     validateInteger(pingInterval, 0, 1 << 31, MessageFields.pingInterval);
 
     if (yourKey != null) {

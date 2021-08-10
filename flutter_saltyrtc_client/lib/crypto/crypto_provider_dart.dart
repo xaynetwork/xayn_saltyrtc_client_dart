@@ -90,4 +90,9 @@ class _DartSodiumCrypto extends Crypto {
   }) {
     return DartSodiumKeyStore(publicKey: publicKey, privateKey: privateKey);
   }
+
+  @override
+  Uint8List randomBytes(int size) {
+    return dart.RandomBytes.buffer(size);
+  }
 }

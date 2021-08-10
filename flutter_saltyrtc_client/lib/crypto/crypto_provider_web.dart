@@ -94,4 +94,9 @@ class _JSCrypto extends Crypto {
   }) {
     return JSKeyStore(publicKey: publicKey, privateKey: privateKey);
   }
+
+  @override
+  Uint8List randomBytes(int size) {
+    return _sodium.randombytes_buf(size);
+  }
 }
