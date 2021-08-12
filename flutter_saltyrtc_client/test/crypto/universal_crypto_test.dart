@@ -13,7 +13,7 @@ void main() async {
   test('Test the N key exchange variant with sodium.', () async {
     await CryptoProvider.init();
     var crypto = CryptoProvider.instance;
-    // Server geerates keypair for it self
+    // Server generates keypair for it self
     final serverKeys = crypto.createRandomKeyStore();
 
     final remotePublicKey = serverKeys.publicKey;
@@ -31,10 +31,8 @@ void main() async {
 
     // Note we are sending the public key encrypted with the server pk to the client, so we can verify that the client really used the PK of the server
     final msgToServerKeyExchange = KeyExchangeMessage(
-      cipher: crypto.encrypt(
-          message: clientKeys.publicKey,
-          nonce: nonce,
-          shared: sharedSecretClient),
+      cipher: sharedSecretClient.encrypt(
+          message: clientKeys.publicKey, nonce: nonce),
       nonce: nonce,
       pk: clientKeys.publicKey,
     );
@@ -44,44 +42,42 @@ void main() async {
         ownKeyStore: serverKeys, remotePublicKey: msgToServerKeyExchange.pk);
 
     // Server received the message and will now decrypt it
-    final publicKeyClient = crypto.decrypt(
-        ciphertext: msgToServerKeyExchange.cipher,
-        nonce: msgToServerKeyExchange.nonce,
-        shared: sharedSecretServer);
+    final publicKeyClient = sharedSecretServer.decrypt(
+      ciphertext: msgToServerKeyExchange.cipher,
+      nonce: msgToServerKeyExchange.nonce,
+    );
     expect(publicKeyClient, msgToServerKeyExchange.pk);
 
     // Now the server and client are holding public keys and can now send each other messages
     nonce = crypto.createRandomNonce();
     final msgToClientPing = EncryptedMessage(
-        cipher: crypto.encrypt(
+        cipher: sharedSecretServer.encrypt(
           message: ping,
           nonce: nonce,
-          shared: sharedSecretServer,
         ),
         nonce: nonce);
 
     // The client receives the ping, decrypts it and sends back a pong
-    final pingMessage = crypto.decrypt(
-        ciphertext: msgToClientPing.cipher,
-        nonce: msgToClientPing.nonce,
-        shared: sharedSecretClient);
+    final pingMessage = sharedSecretClient.decrypt(
+      ciphertext: msgToClientPing.cipher,
+      nonce: msgToClientPing.nonce,
+    );
     expect(pingMessage, ping);
 
     // The client sends back a pong message
     nonce = crypto.createRandomNonce();
     final msgToServerPong = EncryptedMessage(
-        cipher: crypto.encrypt(
+        cipher: sharedSecretClient.encrypt(
           message: pong,
           nonce: nonce,
-          shared: sharedSecretClient,
         ),
         nonce: nonce);
 
     // The server receives the pong
-    final pongMessage = crypto.decrypt(
-        ciphertext: msgToServerPong.cipher,
-        nonce: msgToServerPong.nonce,
-        shared: sharedSecretServer);
+    final pongMessage = sharedSecretServer.decrypt(
+      ciphertext: msgToServerPong.cipher,
+      nonce: msgToServerPong.nonce,
+    );
     expect(pongMessage, pong);
   });
 }

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
-import 'package:libsodium/libsodium.dart' as dart;
+import 'package:libsodium/libsodium.dart' as _sodium;
 
 Crypto? _instance;
 
@@ -14,13 +14,29 @@ Crypto get cryptoInstance {
 }
 
 class _DartSodiumSharedKeyStore implements SharedKeyStore {
-  @override
-  final Uint8List sharedKey;
+  final Uint8List _sharedKey;
 
   _DartSodiumSharedKeyStore({
     required Uint8List ownPrivateKey,
     required Uint8List remotePublicKey,
-  }) : sharedKey = dart.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey);
+  }) : _sharedKey =
+            _sodium.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey);
+
+  @override
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  }) {
+    return _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey);
+  }
+
+  @override
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  }) {
+    return _sodium.CryptoBox.encryptAfternm(message, nonce, _sharedKey);
+  }
 }
 
 class _DartSodiumKeyStore extends KeyStore {
@@ -34,36 +50,18 @@ class _DartSodiumKeyStore extends KeyStore {
 
 class _DartSodiumCrypto extends Crypto {
   _DartSodiumCrypto() {
-    dart.Sodium.init();
+    _sodium.Sodium.init();
   }
 
   @override
   KeyStore createRandomKeyStore() {
-    final keyPair = dart.CryptoBox.randomKeys();
+    final keyPair = _sodium.CryptoBox.randomKeys();
     return _DartSodiumKeyStore(publicKey: keyPair.pk, privateKey: keyPair.sk);
   }
 
   @override
   Uint8List createRandomNonce() {
-    return dart.CryptoBox.randomNonce();
-  }
-
-  @override
-  Uint8List decrypt({
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
-  }) {
-    return dart.CryptoBox.decryptAfternm(ciphertext, nonce, shared.sharedKey);
-  }
-
-  @override
-  Uint8List encrypt({
-    required Uint8List message,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
-  }) {
-    return dart.CryptoBox.encryptAfternm(message, nonce, shared.sharedKey);
+    return _sodium.CryptoBox.randomNonce();
   }
 
   @override
@@ -87,6 +85,6 @@ class _DartSodiumCrypto extends Crypto {
 
   @override
   Uint8List randomBytes(int size) {
-    return dart.RandomBytes.buffer(size);
+    return _sodium.RandomBytes.buffer(size);
   }
 }

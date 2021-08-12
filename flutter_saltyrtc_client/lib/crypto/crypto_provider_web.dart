@@ -32,16 +32,30 @@ class _JSKeyStore extends KeyStore {
 
 class _JSSharedKeyStore implements SharedKeyStore {
   final LibSodiumJS _sodium;
-
-  @override
-  final Uint8List sharedKey;
+  final Uint8List _sharedKey;
 
   _JSSharedKeyStore({
     required LibSodiumJS sodium,
     required Uint8List ownPrivateKey,
     required Uint8List remotePublicKey,
   })  : _sodium = sodium,
-        sharedKey = sodium.crypto_box_beforenm(remotePublicKey, ownPrivateKey);
+        _sharedKey = sodium.crypto_box_beforenm(remotePublicKey, ownPrivateKey);
+
+  @override
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  }) {
+    return _sodium.crypto_box_open_easy_afternm(ciphertext, nonce, _sharedKey);
+  }
+
+  @override
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  }) {
+    return _sodium.crypto_box_easy_afternm(message, nonce, _sharedKey);
+  }
 }
 
 class _JSCrypto extends Crypto {
@@ -57,25 +71,6 @@ class _JSCrypto extends Crypto {
   @override
   Uint8List createRandomNonce() {
     return _sodium.randombytes_buf(_sodium.crypto_box_NONCEBYTES);
-  }
-
-  @override
-  Uint8List decrypt({
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
-  }) {
-    return _sodium.crypto_box_open_easy_afternm(
-        ciphertext, nonce, shared.sharedKey);
-  }
-
-  @override
-  Uint8List encrypt({
-    required Uint8List message,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
-  }) {
-    return _sodium.crypto_box_easy_afternm(message, nonce, shared.sharedKey);
   }
 
   @override
