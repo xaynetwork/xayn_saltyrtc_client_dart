@@ -17,26 +17,26 @@ Crypto get cryptoInstance {
   return _instance!;
 }
 
-class JSKeyStore extends KeyStore {
+class _JSKeyStore extends KeyStore {
   @override
   final Uint8List publicKey;
 
   @override
   final Uint8List privateKey;
 
-  JSKeyStore({required this.publicKey, required this.privateKey});
+  _JSKeyStore({required this.publicKey, required this.privateKey});
 
-  factory JSKeyStore.fromKeyPair(KeyPair keyPair) =>
-      JSKeyStore(privateKey: keyPair.privateKey, publicKey: keyPair.publicKey);
+  factory _JSKeyStore.fromKeyPair(KeyPair keyPair) =>
+      _JSKeyStore(privateKey: keyPair.privateKey, publicKey: keyPair.publicKey);
 }
 
-class JSSharedKeyStore implements SharedKeyStore {
+class _JSSharedKeyStore implements SharedKeyStore {
   final LibSodiumJS _sodium;
 
   @override
   final Uint8List sharedKey;
 
-  JSSharedKeyStore({
+  _JSSharedKeyStore({
     required LibSodiumJS sodium,
     required Uint8List ownPrivateKey,
     required Uint8List remotePublicKey,
@@ -51,7 +51,7 @@ class _JSCrypto extends Crypto {
 
   @override
   KeyStore createRandomKeyStore() {
-    return JSKeyStore.fromKeyPair(_sodium.crypto_box_keypair());
+    return _JSKeyStore.fromKeyPair(_sodium.crypto_box_keypair());
   }
 
   @override
@@ -83,9 +83,9 @@ class _JSCrypto extends Crypto {
     required KeyStore ownKeyStore,
     required Uint8List remotePublicKey,
   }) {
-    return JSSharedKeyStore(
+    return _JSSharedKeyStore(
       sodium: _sodium,
-      ownPrivateKey: (ownKeyStore as JSKeyStore).privateKey,
+      ownPrivateKey: (ownKeyStore as _JSKeyStore).privateKey,
       remotePublicKey: remotePublicKey,
     );
   }
@@ -95,7 +95,7 @@ class _JSCrypto extends Crypto {
     required Uint8List publicKey,
     required Uint8List privateKey,
   }) {
-    return JSKeyStore(publicKey: publicKey, privateKey: privateKey);
+    return _JSKeyStore(publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
