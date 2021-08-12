@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
+    show SharedKeyStore, KeyStore, AuthToken, Crypto;
+import 'package:flutter_saltyrtc_client/crypto/checks.dart'
+    show checkNonce, checkPrivateKey, checkPublicKey;
 import 'package:libsodium/libsodium.dart' as _sodium;
 
 Crypto? _instance;
@@ -20,13 +23,17 @@ class _DartSodiumSharedKeyStore implements SharedKeyStore {
     required Uint8List ownPrivateKey,
     required Uint8List remotePublicKey,
   }) : _sharedKey =
-            _sodium.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey);
+            _sodium.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey) {
+    checkPublicKey(remotePublicKey);
+    checkPrivateKey(ownPrivateKey);
+  }
 
   @override
   Uint8List decrypt({
     required Uint8List ciphertext,
     required Uint8List nonce,
   }) {
+    checkNonce(nonce);
     return _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey);
   }
 
@@ -35,6 +42,7 @@ class _DartSodiumSharedKeyStore implements SharedKeyStore {
     required Uint8List message,
     required Uint8List nonce,
   }) {
+    checkNonce(nonce);
     return _sodium.CryptoBox.encryptAfternm(message, nonce, _sharedKey);
   }
 }
@@ -45,7 +53,10 @@ class _DartSodiumKeyStore extends KeyStore {
   @override
   final Uint8List privateKey;
 
-  _DartSodiumKeyStore({required this.publicKey, required this.privateKey});
+  _DartSodiumKeyStore({required this.publicKey, required this.privateKey}) {
+    checkPublicKey(publicKey);
+    checkPrivateKey(privateKey);
+  }
 }
 
 class _DartSodiumCrypto extends Crypto {

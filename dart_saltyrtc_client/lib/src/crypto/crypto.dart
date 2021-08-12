@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+
 abstract class KeyStore {
   abstract final Uint8List publicKey;
   abstract final Uint8List privateKey;
@@ -20,8 +22,10 @@ abstract class SharedKeyStore {
 abstract class Crypto {
   // specified by NaCl.
   static const publicKeyBytes = 32;
+  static const privateKeyBytes = 32;
   static const boxOverhead = 16;
   static const symmKeyBytes = 32;
+  static const nonceBytes = Nonce.totalLength;
 
   Uint8List randomBytes(int size);
 
