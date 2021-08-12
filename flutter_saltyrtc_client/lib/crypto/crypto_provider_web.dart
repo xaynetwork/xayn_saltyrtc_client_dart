@@ -31,16 +31,17 @@ class JSKeyStore extends KeyStore {
 }
 
 class JSSharedKeyStore implements SharedKeyStore {
-  final Uint8List Function() createSharedKey;
-
-  JSSharedKeyStore({
-    required this.createSharedKey,
-  });
-
-  Uint8List? _sharedKey;
+  final LibSodiumJS _sodium;
 
   @override
-  Uint8List get sharedKey => _sharedKey = _sharedKey ?? createSharedKey();
+  final Uint8List sharedKey;
+
+  JSSharedKeyStore({
+    required LibSodiumJS sodium,
+    required Uint8List ownPrivateKey,
+    required Uint8List remotePublicKey,
+  })  : _sodium = sodium,
+        sharedKey = sodium.crypto_box_beforenm(remotePublicKey, ownPrivateKey);
 }
 
 class _JSCrypto extends Crypto {
@@ -83,8 +84,10 @@ class _JSCrypto extends Crypto {
     required Uint8List remotePublicKey,
   }) {
     return JSSharedKeyStore(
-        createSharedKey: () => _sodium.crypto_box_beforenm(
-            remotePublicKey, ownKeyStore.privateKey));
+      sodium: _sodium,
+      ownPrivateKey: (ownKeyStore as JSKeyStore).privateKey,
+      remotePublicKey: remotePublicKey,
+    );
   }
 
   @override

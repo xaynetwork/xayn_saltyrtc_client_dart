@@ -13,24 +13,14 @@ Crypto get cryptoInstance {
   return _instance!;
 }
 
-class DartSodiumSharedKeyStore implements SharedKeyStore {
-  final Uint8List ownPrivateKey, remotePublicKey;
-
-  DartSodiumSharedKeyStore({
-    required this.ownPrivateKey,
-    required this.remotePublicKey,
-  }) {
-    dart.Sodium.init();
-  }
-
-  Uint8List? _sharedKey;
-
+class _DartSodiumSharedKeyStore implements SharedKeyStore {
   @override
-  Uint8List get sharedKey => _sharedKey = _sharedKey ?? _createSharedKey();
+  final Uint8List sharedKey;
 
-  Uint8List _createSharedKey() {
-    return dart.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey);
-  }
+  _DartSodiumSharedKeyStore({
+    required Uint8List ownPrivateKey,
+    required Uint8List remotePublicKey,
+  }) : sharedKey = dart.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey);
 }
 
 class DartSodiumKeyStore extends KeyStore {
@@ -43,6 +33,10 @@ class DartSodiumKeyStore extends KeyStore {
 }
 
 class _DartSodiumCrypto extends Crypto {
+  _DartSodiumCrypto() {
+    dart.Sodium.init();
+  }
+
   @override
   KeyStore createRandomKeyStore() {
     final keyPair = dart.CryptoBox.randomKeys();
@@ -77,7 +71,7 @@ class _DartSodiumCrypto extends Crypto {
     required KeyStore ownKeyStore,
     required Uint8List remotePublicKey,
   }) {
-    return DartSodiumSharedKeyStore(
+    return _DartSodiumSharedKeyStore(
       ownPrivateKey: (ownKeyStore as DartSodiumKeyStore).privateKey,
       remotePublicKey: remotePublicKey,
     );
