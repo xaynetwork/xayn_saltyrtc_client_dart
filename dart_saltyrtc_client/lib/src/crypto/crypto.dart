@@ -26,27 +26,11 @@ abstract class Crypto {
     required SharedKeyStore shared,
   });
 
-  Uint8List encryptString({
-    required String message,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
-  }) =>
-      encrypt(
-          message: utf8.encoder.convert(message), nonce: nonce, shared: shared);
-
   Uint8List decrypt({
     required Uint8List ciphertext,
     required Uint8List nonce,
     required SharedKeyStore shared,
   });
-
-  String decryptString({
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
-  }) =>
-      utf8.decoder.convert(
-          decrypt(ciphertext: ciphertext, nonce: nonce, shared: shared));
 
   KeyStore createRandomKeyStore();
 
