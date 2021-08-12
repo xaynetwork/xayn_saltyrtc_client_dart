@@ -1,9 +1,16 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' show Crypto;
 import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart';
 import 'package:test/test.dart';
 
 import 'protocol.dart';
+
+extension CreateRandomNonce on Crypto {
+  Uint8List createRandomNonce() {
+    return randomBytes(Crypto.nonceBytes);
+  }
+}
 
 // This test can fail on platforms that don't have libsodium installed, install libsodium before running it.
 void main() async {
@@ -14,12 +21,12 @@ void main() async {
     await CryptoProvider.init();
     var crypto = CryptoProvider.instance;
     // Server generates keypair for it self
-    final serverKeys = crypto.createRandomKeyStore();
+    final serverKeys = crypto.createKeyStore();
 
     final remotePublicKey = serverKeys.publicKey;
 
     // Client generates keypair for it self
-    final clientKeys = crypto.createRandomKeyStore();
+    final clientKeys = crypto.createKeyStore();
 
     // Client precomputes shared key for server communication, this helps with performance
     final sharedSecretClient = crypto.createSharedKeyStore(

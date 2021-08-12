@@ -106,13 +106,21 @@ class _JSCrypto extends Crypto {
   _JSCrypto(this._sodium);
 
   @override
-  KeyStore createRandomKeyStore() {
+  Uint8List randomBytes(int size) {
+    return _sodium.randombytes_buf(size);
+  }
+
+  @override
+  KeyStore createKeyStore() {
     return _JSKeyStore.fromKeyPair(_sodium.crypto_box_keypair());
   }
 
   @override
-  Uint8List createRandomNonce() {
-    return _sodium.randombytes_buf(_sodium.crypto_box_NONCEBYTES);
+  KeyStore createKeyStoreFromKeys({
+    required Uint8List publicKey,
+    required Uint8List privateKey,
+  }) {
+    return _JSKeyStore(publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
@@ -125,19 +133,6 @@ class _JSCrypto extends Crypto {
       ownPrivateKey: (ownKeyStore as _JSKeyStore).privateKey,
       remotePublicKey: remotePublicKey,
     );
-  }
-
-  @override
-  KeyStore createKeyStore({
-    required Uint8List publicKey,
-    required Uint8List privateKey,
-  }) {
-    return _JSKeyStore(publicKey: publicKey, privateKey: privateKey);
-  }
-
-  @override
-  Uint8List randomBytes(int size) {
-    return _sodium.randombytes_buf(size);
   }
 
   @override

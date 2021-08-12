@@ -92,14 +92,22 @@ class _DartSodiumCrypto extends Crypto {
   }
 
   @override
-  KeyStore createRandomKeyStore() {
+  Uint8List randomBytes(int size) {
+    return _sodium.RandomBytes.buffer(size);
+  }
+
+  @override
+  KeyStore createKeyStore() {
     final keyPair = _sodium.CryptoBox.randomKeys();
     return _DartSodiumKeyStore(publicKey: keyPair.pk, privateKey: keyPair.sk);
   }
 
   @override
-  Uint8List createRandomNonce() {
-    return _sodium.CryptoBox.randomNonce();
+  KeyStore createKeyStoreFromKeys({
+    required Uint8List publicKey,
+    required Uint8List privateKey,
+  }) {
+    return _DartSodiumKeyStore(publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
@@ -111,19 +119,6 @@ class _DartSodiumCrypto extends Crypto {
       ownPrivateKey: (ownKeyStore as _DartSodiumKeyStore).privateKey,
       remotePublicKey: remotePublicKey,
     );
-  }
-
-  @override
-  KeyStore createKeyStore({
-    required Uint8List publicKey,
-    required Uint8List privateKey,
-  }) {
-    return _DartSodiumKeyStore(publicKey: publicKey, privateKey: privateKey);
-  }
-
-  @override
-  Uint8List randomBytes(int size) {
-    return _sodium.RandomBytes.buffer(size);
   }
 
   @override

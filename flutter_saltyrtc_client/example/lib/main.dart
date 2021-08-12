@@ -31,7 +31,7 @@ class _MyAppState extends State<MyApp> {
 
     setState(() {
       _sodiumTest =
-          'nonce: ${base64Encode(CryptoProvider.instance.createRandomNonce())}';
+          'nonce: ${base64Encode(CryptoProvider.instance.randomBytes(8))}';
     });
   }
 

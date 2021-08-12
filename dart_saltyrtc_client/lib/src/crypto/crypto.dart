@@ -41,12 +41,10 @@ abstract class Crypto {
 
   Uint8List randomBytes(int size);
 
-  KeyStore createRandomKeyStore();
+  KeyStore createKeyStore();
 
-  KeyStore createKeyStore(
+  KeyStore createKeyStoreFromKeys(
       {required Uint8List privateKey, required Uint8List publicKey});
-
-  Uint8List createRandomNonce();
 
   SharedKeyStore createSharedKeyStore(
       {required KeyStore ownKeyStore, required Uint8List remotePublicKey});
