@@ -19,6 +19,18 @@ abstract class SharedKeyStore {
   });
 }
 
+abstract class AuthToken {
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  });
+
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  });
+}
+
 abstract class Crypto {
   // specified by NaCl.
   static const publicKeyBytes = 32;
@@ -38,4 +50,8 @@ abstract class Crypto {
 
   SharedKeyStore createSharedKeyStore(
       {required KeyStore ownKeyStore, required Uint8List remotePublicKey});
+
+  AuthToken createAuthToken();
+
+  AuthToken createAuthTokenFromToken({required Uint8List token});
 }

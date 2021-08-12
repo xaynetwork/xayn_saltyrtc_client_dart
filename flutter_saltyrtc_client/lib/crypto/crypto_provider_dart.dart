@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
     show SharedKeyStore, KeyStore, AuthToken, Crypto;
 import 'package:flutter_saltyrtc_client/crypto/checks.dart'
-    show checkNonce, checkPrivateKey, checkPublicKey;
+    show checkNonce, checkPrivateKey, checkPublicKey, checkSymmetricKey;
 import 'package:libsodium/libsodium.dart' as _sodium;
 
 Crypto? _instance;
@@ -44,6 +44,33 @@ class _DartSodiumSharedKeyStore implements SharedKeyStore {
   }) {
     checkNonce(nonce);
     return _sodium.CryptoBox.encryptAfternm(message, nonce, _sharedKey);
+  }
+}
+
+class _DartSodiumAuthToken implements AuthToken {
+  final Uint8List _authToken;
+
+  _DartSodiumAuthToken(this._authToken) {
+    checkSymmetricKey(_authToken);
+  }
+
+  @override
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  }) {
+    checkNonce(nonce);
+    return _sodium.Sodium.cryptoSecretboxOpenEasy(
+        ciphertext, nonce, _authToken);
+  }
+
+  @override
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  }) {
+    checkNonce(nonce);
+    return _sodium.Sodium.cryptoSecretboxEasy(message, nonce, _authToken);
   }
 }
 
@@ -97,5 +124,15 @@ class _DartSodiumCrypto extends Crypto {
   @override
   Uint8List randomBytes(int size) {
     return _sodium.RandomBytes.buffer(size);
+  }
+
+  @override
+  AuthToken createAuthToken() {
+    return createAuthTokenFromToken(token: randomBytes(Crypto.symmKeyBytes));
+  }
+
+  @override
+  AuthToken createAuthTokenFromToken({required Uint8List token}) {
+    return _DartSodiumAuthToken(token);
   }
 }
