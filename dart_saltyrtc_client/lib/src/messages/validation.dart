@@ -111,7 +111,7 @@ int validateIntegerType(Object? value, String name) {
 T? validateTypeWithNull<T>(
     Object? value, String name, T Function(Object?, String) validateType) {
   if (value != null) {
-    return validateType(value!, name);
+    return validateType(value, name);
   }
 
   return null;
@@ -182,8 +182,8 @@ String validateStringType(Object? value, String name) {
 }
 
 /// Check that `value` is a Map<String, Object?>
-Map<String, Object?> validateStringMap(Object? value, String name) {
-  if (value is! Map) {
+Map<String, Object?> validateStringMapType(Object? value, String name) {
+  if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
   }
 
@@ -199,9 +199,9 @@ Map<String, Object?> validateStringMap(Object? value, String name) {
   return value as Map<String, Object?>;
 }
 
-/// Check that `value` is a Map<String, Uint8List>
-Map<String, Uint8List> validateStringBytesMapType(Object? value, String name) {
-  if (value is! Map) {
+/// Check that `value` is a Map<String, List<int>>
+TaskData validateStringBytesMapType(Object? value, String name) {
+  if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
   }
 
@@ -209,34 +209,40 @@ Map<String, Uint8List> validateStringBytesMapType(Object? value, String name) {
     if (e.key is! String) {
       throw ValidationError('$name must be a map with strings as keys');
     }
-    if (e.value is! Uint8List) {
+    if (e.value != null && e.value is! List<int>) {
       throw ValidationError('$name values must be an array of bytes');
     }
   }
 
-  return value as Map<String, Uint8List>;
+  return value as Map<String, List<int>>;
 }
 
 /// Check that `value` is a Map<String, Map<String, List<int>>
 TasksData validateStringMapMap(Object? value, String name) {
   // is not possible to cast value to the type we want as output without
   // creating a new map and cast the inner map to Map<String, List<int>>
-  final map = <String, TaskData>{};
+  final map = <String, TaskData?>{};
 
-  if (value is! Map) {
+  if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
   }
 
   for (final e in value.entries) {
-    if (e.key is! String) {
+    final key = e.key;
+    if (key is! String) {
       throw ValidationError('$name must be a map with strings as keys');
     }
-    if (e.value != null && e.value is! Map) {
-      throw ValidationError('$name must be a map with maps or null as values');
+
+    final inner = e.value;
+
+    if (inner == null) {
+      map[key] = null;
+      continue;
     }
 
-    final key = e.key as String;
-    final inner = e.value as Map;
+    if (inner is! Map<Object?, Object?>) {
+      throw ValidationError('$name must be a map with maps or null as values');
+    }
 
     for (final e in inner.entries) {
       if (e.key is! String) {
@@ -248,7 +254,7 @@ TasksData validateStringMapMap(Object? value, String name) {
       }
     }
 
-    map[key] = inner.cast<String, List<int>>();
+    map[key] = inner as Map<String, List<int>?>;
   }
 
   return map;

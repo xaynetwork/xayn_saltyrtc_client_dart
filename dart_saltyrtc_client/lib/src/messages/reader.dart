@@ -34,7 +34,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_responder.dart
 import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError, validateTypeType, validateStringMap;
+    show ValidationError, validateTypeType, validateStringMapType;
 import 'package:messagepack/messagepack.dart' show Unpacker;
 
 /// Parse message from bytes. If the type is not one of types defined by the protocol
@@ -42,11 +42,8 @@ import 'package:messagepack/messagepack.dart' show Unpacker;
 /// It will throw an exception otherwise.
 Message readMessage(Uint8List bytes, [List<String> taskTypes = const []]) {
   final msgUnpacker = Unpacker(bytes);
-  final unpackedMap = msgUnpacker.unpackMap().cast<String, Object?>();
-
-  final map = validateStringMap(unpackedMap, 'message');
-
-  final type = validateTypeType(unpackedMap[MessageFields.type]);
+  final map = validateStringMapType(msgUnpacker.unpackMap(), 'message');
+  final type = validateTypeType(map[MessageFields.type]);
 
   switch (type) {
     case MessageType.clientHello:
