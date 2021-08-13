@@ -3,7 +3,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show MessageFields;
+    show MessageFields, TaskData, TasksData;
 import 'package:meta/meta.dart' show immutable;
 
 /// Data to instantiate a message is invalid.
@@ -157,8 +157,7 @@ CloseCode validateCloseCodeType(
 /// Check that task names and task data are both set, and they match.
 /// For every task in `tasks` there must be a value `data[task]` and
 /// all the keys of `data` must be in `tasks`.
-void validateTasksData(
-    List<String> tasks, Map<String, Map<String, List<int>>> data) {
+void validateTasksData(List<String> tasks, TasksData data) {
   if (tasks.isEmpty) {
     throw ValidationError('Task names must not be empty');
   }
@@ -219,11 +218,10 @@ Map<String, Uint8List> validateStringBytesMapType(dynamic value, String name) {
 }
 
 /// Check that `value` is a Map<String, Map<String, List<int>>
-Map<String, Map<String, List<int>>> validateStringMapMap(
-    dynamic value, String name) {
-  // is not possibile to cast value to the type we want as output without
+TasksData validateStringMapMap(dynamic value, String name) {
+  // is not possible to cast value to the type we want as output without
   // creating a new map and cast the inner map to Map<String, List<int>>
-  final map = <String, Map<String, List<int>>>{};
+  final map = <String, TaskData>{};
 
   if (value is! Map) {
     throw ValidationError('$name must be a Map');

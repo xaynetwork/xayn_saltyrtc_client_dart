@@ -3,7 +3,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
     show writeStringMapMap;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields;
+    show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
@@ -22,10 +22,7 @@ const _type = MessageType.auth;
 class AuthInitiator extends Message {
   final Uint8List yourCookie;
   final String task;
-  // For each task name we take a Map<String, List<int> to simplify the encoding.
-  // We use List<int> and not Uint8List so we don't have to create a new map where
-  // we replace List<int> with Uint8List. `unpackBinary` returns List<int>.
-  final Map<String, Map<String, List<int>>> data;
+  final TasksData data;
 
   @override
   List<Object> get props => [yourCookie, task, data];

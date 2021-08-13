@@ -1,7 +1,5 @@
-import 'dart:typed_data' show Uint8List;
-
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageFields;
+    show Message, MessageFields, TaskData;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateTypeType, validateStringBytesMapType;
 import 'package:messagepack/messagepack.dart' show Packer;
@@ -11,7 +9,7 @@ import 'package:meta/meta.dart' show immutable;
 class TaskMessage extends Message {
   @override
   final String type;
-  final Map<String, Uint8List> data;
+  final TaskData data;
 
   @override
   List<Object> get props => [type, data];

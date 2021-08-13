@@ -3,7 +3,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
     show writeStringMapMap;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields;
+    show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
@@ -22,8 +22,7 @@ const _type = MessageType.auth;
 class AuthResponder extends Message {
   final Uint8List yourCookie;
   final List<String> tasks;
-  // See comment on AuthInitiator
-  final Map<String, Map<String, List<int>>> data;
+  final TasksData data;
 
   @override
   List<Object> get props => [yourCookie, tasks, data];
