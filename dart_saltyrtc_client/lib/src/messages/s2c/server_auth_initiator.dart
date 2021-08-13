@@ -42,7 +42,7 @@ class ServerAuthInitiator extends Message {
     }
   }
 
-  factory ServerAuthInitiator.fromMap(Map<String, dynamic> map) {
+  factory ServerAuthInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final yourCookie = validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie);

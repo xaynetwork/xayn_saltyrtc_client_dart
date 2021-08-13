@@ -16,7 +16,7 @@ class TaskMessage extends Message {
 
   TaskMessage(this.type, this.data);
 
-  factory TaskMessage.fromMap(Map<String, dynamic> map) {
+  factory TaskMessage.fromMap(Map<String, Object?> map) {
     final type = validateTypeType(map[MessageFields.type]);
     final data =
         validateStringBytesMapType(map[MessageFields.data], MessageFields.data);

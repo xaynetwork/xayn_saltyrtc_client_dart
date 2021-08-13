@@ -18,7 +18,7 @@ class Application extends Message {
 
   Application(this.data);
 
-  factory Application.fromMap(Map<String, dynamic> map) {
+  factory Application.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final data =
         validateByteArrayType(map[MessageFields.data], MessageFields.data);

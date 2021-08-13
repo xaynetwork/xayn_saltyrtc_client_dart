@@ -37,7 +37,7 @@ class ClientAuth extends Message {
     }
   }
 
-  factory ClientAuth.fromMap(Map<String, dynamic> map) {
+  factory ClientAuth.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final yourCookie = validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie);
@@ -46,7 +46,7 @@ class ClientAuth extends Message {
     final pingInterval = validateIntegerType(
         map[MessageFields.pingInterval], MessageFields.pingInterval);
 
-    final dynamic yourKeyValue = map[MessageFields.yourKey];
+    final yourKeyValue = map[MessageFields.yourKey];
     final yourKey = yourKeyValue == null
         ? null
         : validateByteArrayType(yourKeyValue, MessageFields.yourKey);

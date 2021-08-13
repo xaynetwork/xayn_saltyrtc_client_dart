@@ -18,7 +18,7 @@ class NewResponder extends Message {
     validateIdResponder(id);
   }
 
-  factory NewResponder.fromMap(Map<String, dynamic> map) {
+  factory NewResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
 
     final id = validateIntegerType(map[MessageFields.id], MessageFields.id);

@@ -21,7 +21,7 @@ class Disconnected extends Message {
     validateIdPeer(id);
   }
 
-  factory Disconnected.fromMap(Map<String, dynamic> map) {
+  factory Disconnected.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
 

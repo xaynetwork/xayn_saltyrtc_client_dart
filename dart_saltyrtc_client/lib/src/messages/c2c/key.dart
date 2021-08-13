@@ -22,7 +22,7 @@ class Key extends Message {
     validateByteArray(key, Crypto.publicKeyBytes, MessageFields.key);
   }
 
-  factory Key.fromMap(Map<String, dynamic> map) {
+  factory Key.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final key =
         validateByteArrayType(map[MessageFields.key], MessageFields.key);

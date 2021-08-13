@@ -18,7 +18,7 @@ class Close extends Message {
 
   Close(this.reason);
 
-  factory Close.fromMap(Map<String, dynamic> map) {
+  factory Close.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final reason = validateCloseCodeType(
         map[MessageFields.reason], false, MessageFields.reason);

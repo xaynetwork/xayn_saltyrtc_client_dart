@@ -22,7 +22,7 @@ class Token extends Message {
     validateByteArray(key, Crypto.symmKeyBytes, MessageFields.key);
   }
 
-  factory Token.fromMap(Map<String, dynamic> map) {
+  factory Token.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final key =
         validateByteArrayType(map[MessageFields.key], MessageFields.key);

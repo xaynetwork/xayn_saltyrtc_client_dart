@@ -42,7 +42,7 @@ import 'package:messagepack/messagepack.dart' show Unpacker;
 /// It will throw an exception otherwise.
 Message readMessage(Uint8List bytes, [List<String> taskTypes = const []]) {
   final msgUnpacker = Unpacker(bytes);
-  final unpackedMap = msgUnpacker.unpackMap().cast<String, dynamic>();
+  final unpackedMap = msgUnpacker.unpackMap().cast<String, Object?>();
 
   final map = validateStringMap(unpackedMap, 'message');
 

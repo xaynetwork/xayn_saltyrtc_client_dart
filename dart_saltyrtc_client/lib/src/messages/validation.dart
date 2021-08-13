@@ -19,7 +19,7 @@ class ValidationError implements Exception {
 }
 
 /// Check that `value` represent a `type`.
-void validateType(dynamic value, String type) {
+void validateType(Object? value, String type) {
   if (value is! String) {
     throw ValidationError('Type must be a string');
   }
@@ -29,7 +29,7 @@ void validateType(dynamic value, String type) {
 }
 
 /// Check that `value` represent a string.
-String validateTypeType(dynamic value) {
+String validateTypeType(Object? value) {
   if (value is! String) {
     throw ValidationError('Type must be a string');
   }
@@ -46,7 +46,7 @@ void validateByteArray(Uint8List value, int expectedLength, String name) {
 }
 
 /// Check that `value` is a byte array.
-Uint8List validateByteArrayType(dynamic value, String name) {
+Uint8List validateByteArrayType(Object? value, String name) {
   if (value is! List<int>) {
     throw ValidationError('$name must be a byte array');
   }
@@ -54,7 +54,7 @@ Uint8List validateByteArrayType(dynamic value, String name) {
 }
 
 /// Check that `value` is a list of `T`.
-List<T> validateListType<T>(dynamic value, String name) {
+List<T> validateListType<T>(Object? value, String name) {
   if (value is! List) {
     throw ValidationError('$name must be a list');
   }
@@ -100,7 +100,7 @@ void validateIntegerFromList(int value, List<int> valid, String name) {
 }
 
 /// Check that `value` is an integer.
-int validateIntegerType(dynamic value, String name) {
+int validateIntegerType(Object? value, String name) {
   if (value is! int) {
     throw ValidationError('$name must be an integer');
   }
@@ -109,7 +109,7 @@ int validateIntegerType(dynamic value, String name) {
 
 /// Validate `value` with `validateType` if `value != null`.
 T? validateTypeWithNull<T>(
-    dynamic value, String name, T Function(dynamic, String) validateType) {
+    Object? value, String name, T Function(Object?, String) validateType) {
   if (value != null) {
     return validateType(value!, name);
   }
@@ -118,7 +118,7 @@ T? validateTypeWithNull<T>(
 }
 
 /// Check that `value` is an bool.
-bool validateBoolType(dynamic value, String name) {
+bool validateBoolType(Object? value, String name) {
   if (value is! bool) {
     throw ValidationError('$name must be a bool');
   }
@@ -130,7 +130,7 @@ bool validateBoolType(dynamic value, String name) {
 /// a drop-responder message are checked.
 ///
 CloseCode validateCloseCodeType(
-    dynamic value, bool dropResponder, String name) {
+    Object? value, bool dropResponder, String name) {
   if (value is! int) {
     throw ValidationError('$name must be an integer');
   }
@@ -173,7 +173,7 @@ void validateTasksData(List<String> tasks, TasksData data) {
 }
 
 /// Check that `value` is a string.
-String validateStringType(dynamic value, String name) {
+String validateStringType(Object? value, String name) {
   if (value is! String) {
     throw ValidationError('$name must be a string');
   }
@@ -181,8 +181,8 @@ String validateStringType(dynamic value, String name) {
   return value;
 }
 
-/// Check that `value` is a Map<String, dynamic>
-Map<String, dynamic> validateStringMap(dynamic value, String name) {
+/// Check that `value` is a Map<String, Object?>
+Map<String, Object?> validateStringMap(Object? value, String name) {
   if (value is! Map) {
     throw ValidationError('$name must be a Map');
   }
@@ -196,11 +196,11 @@ Map<String, dynamic> validateStringMap(dynamic value, String name) {
     }
   }
 
-  return value as Map<String, dynamic>;
+  return value as Map<String, Object?>;
 }
 
 /// Check that `value` is a Map<String, Uint8List>
-Map<String, Uint8List> validateStringBytesMapType(dynamic value, String name) {
+Map<String, Uint8List> validateStringBytesMapType(Object? value, String name) {
   if (value is! Map) {
     throw ValidationError('$name must be a Map');
   }
@@ -218,7 +218,7 @@ Map<String, Uint8List> validateStringBytesMapType(dynamic value, String name) {
 }
 
 /// Check that `value` is a Map<String, Map<String, List<int>>
-TasksData validateStringMapMap(dynamic value, String name) {
+TasksData validateStringMapMap(Object? value, String name) {
   // is not possible to cast value to the type we want as output without
   // creating a new map and cast the inner map to Map<String, List<int>>
   final map = <String, TaskData>{};

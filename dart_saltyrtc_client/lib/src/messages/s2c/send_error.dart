@@ -25,7 +25,7 @@ class SendError extends Message with EquatableMixin {
     validateByteArray(id, idLength, MessageFields.id);
   }
 
-  factory SendError.fromMap(Map<String, dynamic> map) {
+  factory SendError.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final id = validateByteArrayType(map[MessageFields.id], MessageFields.id);
 

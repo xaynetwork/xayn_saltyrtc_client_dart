@@ -25,11 +25,11 @@ class DropResponder extends Message {
     validateIdResponder(id);
   }
 
-  factory DropResponder.fromMap(Map<String, dynamic> map) {
+  factory DropResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
 
     final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
-    final dynamic reasonValue = map[MessageFields.reason];
+    final reasonValue = map[MessageFields.reason];
     final reason = reasonValue == null
         ? null
         : validateCloseCodeType(reasonValue, true, MessageFields.reason);

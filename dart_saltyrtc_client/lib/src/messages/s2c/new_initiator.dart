@@ -14,7 +14,7 @@ class NewInitiator extends Message {
   @override
   List<Object> get props => [];
 
-  NewInitiator.fromMap(Map<String, dynamic> map) {
+  NewInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
   }
 
