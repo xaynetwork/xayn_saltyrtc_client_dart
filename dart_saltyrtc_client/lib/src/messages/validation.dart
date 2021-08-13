@@ -64,7 +64,7 @@ List<T> validateListType<T>(Object? value, String name) {
     }
   }
 
-  return value.cast<T>();
+  return value as List<T>;
 }
 
 /// Check that `value` belongs to the interval [min, max].
@@ -200,7 +200,7 @@ Map<String, Object?> validateStringMapType(Object? value, String name) {
 }
 
 /// Check that `value` is a Map<String, List<int>>
-TaskData validateStringBytesMapType(Object? value, String name) {
+TaskData validateTaskDataType(Object? value, String name) {
   if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
   }
@@ -217,12 +217,8 @@ TaskData validateStringBytesMapType(Object? value, String name) {
   return value as Map<String, List<int>>;
 }
 
-/// Check that `value` is a Map<String, Map<String, List<int>>
-TasksData validateStringMapMap(Object? value, String name) {
-  // is not possible to cast value to the type we want as output without
-  // creating a new map and cast the inner map to Map<String, List<int>>
-  final map = <String, TaskData?>{};
-
+/// Check that `value` is a Map<String, Map<String, List<int>?>?>
+TasksData validateTasksDataType(Object? value, String name) {
   if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
   }
@@ -236,7 +232,6 @@ TasksData validateStringMapMap(Object? value, String name) {
     final inner = e.value;
 
     if (inner == null) {
-      map[key] = null;
       continue;
     }
 
@@ -253,9 +248,7 @@ TasksData validateStringMapMap(Object? value, String name) {
             '$name must contain maps with List<int> as values');
       }
     }
-
-    map[key] = inner as Map<String, List<int>?>;
   }
 
-  return map;
+  return value as TasksData;
 }

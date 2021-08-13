@@ -2,7 +2,7 @@ import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageFields, TasksData;
 import 'package:messagepack/messagepack.dart' show Packer;
 
-void writeStringMapMap(Packer msgPacker, TasksData data) {
+void writeTasksData(Packer msgPacker, TasksData data) {
   msgPacker
     ..packString(MessageFields.data)
     ..packMapLength(data.length);

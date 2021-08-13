@@ -1,7 +1,7 @@
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageFields, TaskData;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateTypeType, validateStringBytesMapType;
+    show validateTypeType, validateTaskDataType;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -19,7 +19,7 @@ class TaskMessage extends Message {
   factory TaskMessage.fromMap(Map<String, Object?> map) {
     final type = validateTypeType(map[MessageFields.type]);
     final data =
-        validateStringBytesMapType(map[MessageFields.data], MessageFields.data);
+        validateTaskDataType(map[MessageFields.data], MessageFields.data);
 
     return TaskMessage(type, data);
   }

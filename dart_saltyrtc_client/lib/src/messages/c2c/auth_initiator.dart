@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeStringMapMap;
+    show writeTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -10,7 +10,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateType,
         validateByteArrayType,
         validateByteArray,
-        validateStringMapMap,
+        validateTasksDataType,
         validateTasksData,
         validateStringType;
 import 'package:messagepack/messagepack.dart' show Packer;
@@ -39,7 +39,7 @@ class AuthInitiator extends Message {
     final task =
         validateStringType(map[MessageFields.task], MessageFields.task);
     final data =
-        validateStringMapMap(map[MessageFields.data], MessageFields.data);
+        validateTasksDataType(map[MessageFields.data], MessageFields.data);
 
     return AuthInitiator(yourCookie, task, data);
   }
@@ -58,6 +58,6 @@ class AuthInitiator extends Message {
       ..packString(MessageFields.task)
       ..packString(task);
 
-    writeStringMapMap(msgPacker, data);
+    writeTasksData(msgPacker, data);
   }
 }

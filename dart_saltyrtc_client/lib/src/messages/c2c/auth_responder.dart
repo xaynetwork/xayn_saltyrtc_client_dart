@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeStringMapMap;
+    show writeTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -10,7 +10,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateType,
         validateByteArrayType,
         validateByteArray,
-        validateStringMapMap,
+        validateTasksDataType,
         validateTasksData,
         validateListType;
 import 'package:messagepack/messagepack.dart' show Packer;
@@ -39,7 +39,7 @@ class AuthResponder extends Message {
     final tasks =
         validateListType<String>(map[MessageFields.tasks], MessageFields.tasks);
     final data =
-        validateStringMapMap(map[MessageFields.data], MessageFields.data);
+        validateTasksDataType(map[MessageFields.data], MessageFields.data);
 
     return AuthResponder(yourCookie, tasks, data);
   }
@@ -62,6 +62,6 @@ class AuthResponder extends Message {
       msgPacker.packString(task);
     }
 
-    writeStringMapMap(msgPacker, data);
+    writeTasksData(msgPacker, data);
   }
 }
