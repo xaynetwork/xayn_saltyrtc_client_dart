@@ -214,7 +214,7 @@ TaskData validateTaskDataType(Object? value, String name) {
     }
   }
 
-  return value.cast<String, List<int>>();
+  return value.cast<String, List<int>?>();
 }
 
 /// Check that `value` is a Map<String, Map<String, List<int>?>?>
@@ -238,21 +238,7 @@ TasksData validateTasksDataType(Object? value, String name) {
       continue;
     }
 
-    if (inner is! Map<Object?, Object?>) {
-      throw ValidationError('$name must be a map with maps or null as values');
-    }
-
-    for (final e in inner.entries) {
-      if (e.key is! String) {
-        throw ValidationError('$name must contain maps with string as keys');
-      }
-      if (e.value != null && e.value is! List<int>) {
-        throw ValidationError(
-            '$name must contain maps with List<int> as values');
-      }
-    }
-
-    map[key] = inner.cast<String, List<int>>();
+    map[key] = validateTaskDataType(inner, '$name inner');
   }
 
   return map;
