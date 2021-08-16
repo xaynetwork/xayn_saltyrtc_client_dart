@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show Crypto;
+import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show protected;
 
@@ -26,7 +27,7 @@ class MessageType {
 }
 
 /// All messages in the protocol extend this.
-abstract class Message {
+abstract class Message with EquatableMixin {
   /// Type of the message
   String get type;
 
@@ -64,5 +65,11 @@ class MessageFields {
   static const task = 'task';
   static const tasks = 'tasks';
 }
+
+// For each task name we take a Map<String, List<int>> to simplify the encoding.
+// We use List<int> and not Uint8List so we don't have to create a new map where
+// we replace List<int> with Uint8List. `unpackBinary` returns List<int>.
+typedef TaskData = Map<String, List<int>?>;
+typedef TasksData = Map<String, TaskData?>;
 
 const signedKeysLength = Crypto.publicKeyBytes * 2 + Crypto.boxOverhead;

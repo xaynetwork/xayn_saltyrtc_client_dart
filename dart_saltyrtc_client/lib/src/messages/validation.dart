@@ -3,7 +3,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show MessageFields;
+    show MessageFields, TaskData, TasksData;
 import 'package:meta/meta.dart' show immutable;
 
 /// Data to instantiate a message is invalid.
@@ -19,13 +19,22 @@ class ValidationError implements Exception {
 }
 
 /// Check that `value` represent a `type`.
-void validateType(dynamic value, String type) {
+void validateType(Object? value, String type) {
   if (value is! String) {
     throw ValidationError('Type must be a string');
   }
   if (value != type) {
     throw ValidationError('Type must be $type');
   }
+}
+
+/// Check that `value` represent a string.
+String validateTypeType(Object? value) {
+  if (value is! String) {
+    throw ValidationError('Type must be a string');
+  }
+
+  return value;
 }
 
 /// Check that `value` is a byte array of the expected length.
@@ -37,7 +46,7 @@ void validateByteArray(Uint8List value, int expectedLength, String name) {
 }
 
 /// Check that `value` is a byte array.
-Uint8List validateByteArrayType(dynamic value, String name) {
+Uint8List validateByteArrayType(Object? value, String name) {
   if (value is! List<int>) {
     throw ValidationError('$name must be a byte array');
   }
@@ -45,8 +54,7 @@ Uint8List validateByteArrayType(dynamic value, String name) {
 }
 
 /// Check that `value` is a list of `T`.
-List<T> validateListType<T>(dynamic value, String name) {
-  // TODO can we just check List<T> ? dart types are reified but this come from unpacking messagepack data
+List<T> validateListType<T>(Object? value, String name) {
   if (value is! List) {
     throw ValidationError('$name must be a list');
   }
@@ -56,7 +64,7 @@ List<T> validateListType<T>(dynamic value, String name) {
     }
   }
 
-  return value as List<T>;
+  return value.cast<T>();
 }
 
 /// Check that `value` belongs to the interval [min, max].
@@ -92,7 +100,7 @@ void validateIntegerFromList(int value, List<int> valid, String name) {
 }
 
 /// Check that `value` is an integer.
-int validateIntegerType(dynamic value, String name) {
+int validateIntegerType(Object? value, String name) {
   if (value is! int) {
     throw ValidationError('$name must be an integer');
   }
@@ -101,16 +109,16 @@ int validateIntegerType(dynamic value, String name) {
 
 /// Validate `value` with `validateType` if `value != null`.
 T? validateTypeWithNull<T>(
-    dynamic value, String name, T Function(dynamic, String) validateType) {
+    Object? value, String name, T Function(Object?, String) validateType) {
   if (value != null) {
-    return validateType(value!, name);
+    return validateType(value, name);
   }
 
   return null;
 }
 
 /// Check that `value` is an bool.
-bool validateBoolType(dynamic value, String name) {
+bool validateBoolType(Object? value, String name) {
   if (value is! bool) {
     throw ValidationError('$name must be a bool');
   }
@@ -122,7 +130,7 @@ bool validateBoolType(dynamic value, String name) {
 /// a drop-responder message are checked.
 ///
 CloseCode validateCloseCodeType(
-    dynamic value, bool dropResponder, String name) {
+    Object? value, bool dropResponder, String name) {
   if (value is! int) {
     throw ValidationError('$name must be an integer');
   }
@@ -138,7 +146,8 @@ CloseCode validateCloseCodeType(
     ];
 
     if (!closeCodesDropResponder.contains(code)) {
-      throw ValidationError('$name must be a valid close code');
+      throw ValidationError(
+          '$name must be a valid ${dropResponder ? 'drop responder' : ''} close code');
     }
   }
 
@@ -148,8 +157,7 @@ CloseCode validateCloseCodeType(
 /// Check that task names and task data are both set, and they match.
 /// For every task in `tasks` there must be a value `data[task]` and
 /// all the keys of `data` must be in `tasks`.
-void validateTasksData(
-    List<String> tasks, Map<String, Map<String, List<int>>> data) {
+void validateTasksData(List<String> tasks, TasksData data) {
   if (tasks.isEmpty) {
     throw ValidationError('Task names must not be empty');
   }
@@ -165,7 +173,7 @@ void validateTasksData(
 }
 
 /// Check that `value` is a string.
-String validateStringType(dynamic value, String name) {
+String validateStringType(Object? value, String name) {
   if (value is! String) {
     throw ValidationError('$name must be a string');
   }
@@ -173,11 +181,9 @@ String validateStringType(dynamic value, String name) {
   return value;
 }
 
-/// Check that `value` is a Map<String, Map<String, List<int>>
-Map<String, Map<String, List<int>>> validateStringMapMap(
-    dynamic value, String name) {
-  // TODO can we just check Map<...> ? dart types are reified but this come from unpacking messagepack data
-  if (value is! Map) {
+/// Check that `value` is a Map<String, Object?>
+Map<String, Object?> validateStringMapType(Object? value, String name) {
+  if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
   }
 
@@ -185,19 +191,55 @@ Map<String, Map<String, List<int>>> validateStringMapMap(
     if (e.key is! String) {
       throw ValidationError('$name must be a map with strings as keys');
     }
-    if (e.value != null && e.value is! Map) {
-      throw ValidationError('$name must be a map with maps or null as values');
-    }
-    for (final MapEntry e in e.value) {
-      if (e.key is! String) {
-        throw ValidationError('$name must contain maps with string as keys');
-      }
-      if (e.value is! List<int>) {
-        throw ValidationError(
-            '$name must contain maps with List<int> as values');
-      }
+    if (e.value == null) {
+      throw ValidationError('$name cannot be null');
     }
   }
 
-  return value as Map<String, Map<String, List<int>>>;
+  return value.cast<String, Object?>();
+}
+
+/// Check that `value` is a Map<String, List<int>>
+TaskData validateTaskDataType(Object? value, String name) {
+  if (value is! Map<Object?, Object?>) {
+    throw ValidationError('$name must be a Map');
+  }
+
+  for (final e in value.entries) {
+    if (e.key is! String) {
+      throw ValidationError('$name must be a map with strings as keys');
+    }
+    if (e.value != null && e.value is! List<int>) {
+      throw ValidationError('$name values must be an array of bytes');
+    }
+  }
+
+  return value.cast<String, List<int>?>();
+}
+
+/// Check that `value` is a Map<String, Map<String, List<int>?>?>
+TasksData validateTasksDataType(Object? value, String name) {
+  final map = <String, TaskData?>{};
+
+  if (value is! Map<Object?, Object?>) {
+    throw ValidationError('$name must be a Map');
+  }
+
+  for (final e in value.entries) {
+    final key = e.key;
+    if (key is! String) {
+      throw ValidationError('$name must be a map with strings as keys');
+    }
+
+    final inner = e.value;
+
+    if (inner == null) {
+      map[key] = null;
+      continue;
+    }
+
+    map[key] = validateTaskDataType(inner, '$name inner');
+  }
+
+  return map;
 }

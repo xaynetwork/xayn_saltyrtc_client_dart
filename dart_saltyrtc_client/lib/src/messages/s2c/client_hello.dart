@@ -15,11 +15,14 @@ const _type = MessageType.clientHello;
 class ClientHello extends Message {
   final Uint8List key;
 
+  @override
+  List<Object> get props => [key];
+
   ClientHello(this.key) {
     validateByteArray(key, Crypto.publicKeyBytes, MessageFields.key);
   }
 
-  factory ClientHello.fromMap(Map<String, dynamic> map) {
+  factory ClientHello.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final key =
         validateByteArrayType(map[MessageFields.key], MessageFields.key);

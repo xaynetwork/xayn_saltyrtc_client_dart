@@ -18,15 +18,18 @@ class DropResponder extends Message {
   final int id;
   final CloseCode? reason;
 
+  @override
+  List<Object?> get props => [id, reason];
+
   DropResponder(this.id, this.reason) {
     validateIdResponder(id);
   }
 
-  factory DropResponder.fromMap(Map<String, dynamic> map) {
+  factory DropResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
 
     final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
-    final dynamic reasonValue = map[MessageFields.reason];
+    final reasonValue = map[MessageFields.reason];
     final reason = reasonValue == null
         ? null
         : validateCloseCodeType(reasonValue, true, MessageFields.reason);
@@ -39,14 +42,15 @@ class DropResponder extends Message {
 
   @override
   void write(Packer msgPacker) {
+    final hasReason = reason != null;
     msgPacker
-      ..packMapLength(2)
+      ..packMapLength(hasReason ? 3 : 2)
       ..packString(MessageFields.type)
       ..packString(_type)
       ..packString(MessageFields.id)
       ..packInt(id);
 
-    if (reason != null) {
+    if (hasReason) {
       msgPacker
         ..packString(MessageFields.reason)
         ..packInt(reason!.toInt());

@@ -1,16 +1,16 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeStringMapMap;
+    show writeDataTagWithTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields;
+    show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
         validateByteArrayType,
         validateByteArray,
-        validateStringMapMap,
+        validateTasksDataType,
         validateTasksData,
         validateListType;
 import 'package:messagepack/messagepack.dart' show Packer;
@@ -22,22 +22,24 @@ const _type = MessageType.auth;
 class AuthResponder extends Message {
   final Uint8List yourCookie;
   final List<String> tasks;
-  // See comment on AuthInitiator
-  final Map<String, Map<String, List<int>>> data;
+  final TasksData data;
+
+  @override
+  List<Object> get props => [yourCookie, tasks, data];
 
   AuthResponder(this.yourCookie, this.tasks, this.data) {
     validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
     validateTasksData(tasks, data);
   }
 
-  factory AuthResponder.fromMap(Map<String, dynamic> map) {
+  factory AuthResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final yourCookie = validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie);
     final tasks =
-        validateListType<String>(map[MessageFields.task], MessageFields.task);
+        validateListType<String>(map[MessageFields.tasks], MessageFields.tasks);
     final data =
-        validateStringMapMap(map[MessageFields.data], MessageFields.data);
+        validateTasksDataType(map[MessageFields.data], MessageFields.data);
 
     return AuthResponder(yourCookie, tasks, data);
   }
@@ -60,6 +62,6 @@ class AuthResponder extends Message {
       msgPacker.packString(task);
     }
 
-    writeStringMapMap(msgPacker, data);
+    writeDataTagWithTasksData(msgPacker, data);
   }
 }

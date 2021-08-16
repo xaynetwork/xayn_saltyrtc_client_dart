@@ -11,6 +11,9 @@ const _type = MessageType.disconnected;
 class Disconnected extends Message {
   final int id;
 
+  @override
+  List<Object> get props => [id];
+
   Disconnected(this.id) {
     // An initiator should validate that the id is a responder.
     // A responder should validate the id to be 1.
@@ -18,7 +21,7 @@ class Disconnected extends Message {
     validateIdPeer(id);
   }
 
-  factory Disconnected.fromMap(Map<String, dynamic> map) {
+  factory Disconnected.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
 

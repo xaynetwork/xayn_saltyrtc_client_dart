@@ -11,7 +11,10 @@ const _type = MessageType.newInitiator;
 class NewInitiator extends Message {
   NewInitiator();
 
-  NewInitiator.fromMap(Map<String, dynamic> map) {
+  @override
+  List<Object> get props => [];
+
+  NewInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
   }
 

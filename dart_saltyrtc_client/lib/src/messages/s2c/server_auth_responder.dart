@@ -21,6 +21,9 @@ class ServerAuthResponder extends Message {
   final Uint8List? signedKeys;
   final bool initiatorConnected;
 
+  @override
+  List<Object?> get props => [yourCookie, signedKeys, initiatorConnected];
+
   ServerAuthResponder(
       this.yourCookie, this.signedKeys, this.initiatorConnected) {
     validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
@@ -31,7 +34,7 @@ class ServerAuthResponder extends Message {
     }
   }
 
-  factory ServerAuthResponder.fromMap(Map<String, dynamic> map) {
+  factory ServerAuthResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final yourCookie = validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie);

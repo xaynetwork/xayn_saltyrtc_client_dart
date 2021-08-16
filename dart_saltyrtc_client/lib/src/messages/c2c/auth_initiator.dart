@@ -1,16 +1,16 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeStringMapMap;
+    show writeDataTagWithTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields;
+    show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
         validateByteArrayType,
         validateByteArray,
-        validateStringMapMap,
+        validateTasksDataType,
         validateTasksData,
         validateStringType;
 import 'package:messagepack/messagepack.dart' show Packer;
@@ -22,24 +22,24 @@ const _type = MessageType.auth;
 class AuthInitiator extends Message {
   final Uint8List yourCookie;
   final String task;
-  // For each task name we take a Map<String, List<int> to simplify the encoding.
-  // We use List<int> and not Uint8List so we don't have to create a new map where
-  // we replace List<int> with Uint8List. `unpackBinary` returns List<int>.
-  final Map<String, Map<String, List<int>>> data;
+  final TasksData data;
+
+  @override
+  List<Object> get props => [yourCookie, task, data];
 
   AuthInitiator(this.yourCookie, this.task, this.data) {
     validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
     validateTasksData([task], data);
   }
 
-  factory AuthInitiator.fromMap(Map<String, dynamic> map) {
+  factory AuthInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
     final yourCookie = validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie);
     final task =
         validateStringType(map[MessageFields.task], MessageFields.task);
     final data =
-        validateStringMapMap(map[MessageFields.data], MessageFields.data);
+        validateTasksDataType(map[MessageFields.data], MessageFields.data);
 
     return AuthInitiator(yourCookie, task, data);
   }
@@ -55,8 +55,9 @@ class AuthInitiator extends Message {
       ..packString(_type)
       ..packString(MessageFields.yourCookie)
       ..packBinary(yourCookie)
-      ..packString(MessageFields.task);
+      ..packString(MessageFields.task)
+      ..packString(task);
 
-    writeStringMapMap(msgPacker, data);
+    writeDataTagWithTasksData(msgPacker, data);
   }
 }

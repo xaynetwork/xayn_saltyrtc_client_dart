@@ -11,11 +11,14 @@ const _type = MessageType.newResponder;
 class NewResponder extends Message {
   final int id;
 
+  @override
+  List<Object> get props => [id];
+
   NewResponder(this.id) {
     validateIdResponder(id);
   }
 
-  factory NewResponder.fromMap(Map<String, dynamic> map) {
+  factory NewResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
 
     final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
