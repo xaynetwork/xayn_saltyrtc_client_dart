@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeTasksData;
+    show writeDataTagWithTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -58,6 +58,6 @@ class AuthInitiator extends Message {
       ..packString(MessageFields.task)
       ..packString(task);
 
-    writeTasksData(msgPacker, data);
+    writeDataTagWithTasksData(msgPacker, data);
   }
 }
