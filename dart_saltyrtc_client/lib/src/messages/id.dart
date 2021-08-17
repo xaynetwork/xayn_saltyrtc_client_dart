@@ -1,5 +1,5 @@
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateId, validateIdResponder, validateIdPeer;
+    show validateId, validateIdResponder, validateIdClient;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
@@ -28,13 +28,13 @@ class Id with EquatableMixin {
 // TODO find a way to avoid repeating the checks on every super.
 // @protected on constructors does not give a warning
 
-class IdPeer extends Id {
-  IdPeer(int id) : super(id) {
-    validateIdPeer(id);
+class IdClient extends Id {
+  IdClient(int id) : super(id) {
+    validateIdClient(id);
   }
 }
 
-class IdResponder extends IdPeer {
+class IdResponder extends IdClient {
   IdResponder(int id) : super(id) {
     validateIdResponder(id);
   }

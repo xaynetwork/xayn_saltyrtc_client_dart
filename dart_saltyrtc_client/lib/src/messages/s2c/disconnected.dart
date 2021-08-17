@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdPeer;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdClient;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -10,7 +10,7 @@ const _type = MessageType.disconnected;
 
 @immutable
 class Disconnected extends Message {
-  final IdPeer id;
+  final IdClient id;
 
   @override
   List<Object> get props => [id];
@@ -23,7 +23,7 @@ class Disconnected extends Message {
     // A responder should validate the id to be 1.
     // Here we validate the rage 1 <= id <= 255.
     final id =
-        IdPeer(validateIntegerType(map[MessageFields.id], MessageFields.id));
+        IdClient(validateIntegerType(map[MessageFields.id], MessageFields.id));
 
     return Disconnected(id);
   }
