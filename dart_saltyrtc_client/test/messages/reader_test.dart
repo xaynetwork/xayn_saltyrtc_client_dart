@@ -15,7 +15,8 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show signedKeysLength;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
+    show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart' show readMessage;
 import 'package:dart_saltyrtc_client/src/messages/s2c/client_auth.dart'
     show ClientAuth;
@@ -45,7 +46,7 @@ void checkRead<T extends Message>(T Function() getMsg) {
 void main() {
   final key = Uint8List(Crypto.publicKeyBytes);
   final signedKeys = Uint8List(signedKeysLength);
-  final yourCookie = Uint8List(Nonce.cookieLength);
+  final yourCookie = Cookie(Uint8List(Cookie.cookieLength));
   final taskData = {
     'task': {
       'task_data': [1, 2, 3]

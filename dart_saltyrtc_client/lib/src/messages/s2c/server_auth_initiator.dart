@@ -2,7 +2,8 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, signedKeysLength;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
+    show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
@@ -19,7 +20,7 @@ const _type = MessageType.serverAuth;
 
 @immutable
 class ServerAuthInitiator extends Message {
-  final Uint8List yourCookie;
+  final Cookie yourCookie;
   final Uint8List? signedKeys;
   final List<int> responders;
 
@@ -27,8 +28,6 @@ class ServerAuthInitiator extends Message {
   List<Object?> get props => [yourCookie, signedKeys, responders];
 
   ServerAuthInitiator(this.yourCookie, this.signedKeys, this.responders) {
-    validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
-
     if (signedKeys != null) {
       validateByteArray(
           signedKeys!, signedKeysLength, MessageFields.signedKeys);
@@ -44,8 +43,8 @@ class ServerAuthInitiator extends Message {
 
   factory ServerAuthInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final yourCookie = validateByteArrayType(
-        map[MessageFields.yourCookie], MessageFields.yourCookie);
+    final yourCookie = Cookie(validateByteArrayType(
+        map[MessageFields.yourCookie], MessageFields.yourCookie));
     final responders = validateListType<int>(
         map[MessageFields.responders], MessageFields.responders);
 
@@ -66,7 +65,7 @@ class ServerAuthInitiator extends Message {
       ..packString(MessageFields.type)
       ..packString(_type)
       ..packString(MessageFields.yourCookie)
-      ..packBinary(yourCookie);
+      ..packBinary(yourCookie.toBytes());
 
     if (hasKeys) {
       msgPacker
