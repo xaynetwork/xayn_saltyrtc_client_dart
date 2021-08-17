@@ -1,11 +1,12 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show CombinedSequence;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError, validateId;
+    show ValidationError;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
@@ -23,8 +24,8 @@ class Nonce with EquatableMixin {
   static const totalLength = 24;
 
   final Cookie cookie;
-  final int source;
-  final int destination;
+  final Id source;
+  final Id destination;
   final CombinedSequence combinedSequence;
 
   @override
@@ -35,10 +36,7 @@ class Nonce with EquatableMixin {
     this.source,
     this.destination,
     this.combinedSequence,
-  ) {
-    validateId(source, 'source');
-    validateId(destination, 'destination');
-  }
+  );
 
   factory Nonce.fromBytes(Uint8List bytes) {
     if (bytes.length < totalLength) {
@@ -46,8 +44,8 @@ class Nonce with EquatableMixin {
     }
 
     final cookie = bytes.sublist(0, Cookie.cookieLength);
-    final source = bytes[Cookie.cookieLength];
-    final destination = bytes[Cookie.cookieLength + 1];
+    final source = Id(bytes[Cookie.cookieLength]);
+    final destination = Id(bytes[Cookie.cookieLength + 1]);
     final combinedSequence = CombinedSequence.fromBytes(bytes.sublist(
         Cookie.cookieLength + 2,
         Cookie.cookieLength + 2 + CombinedSequence.numBytes));
@@ -58,8 +56,8 @@ class Nonce with EquatableMixin {
   Uint8List toBytes() {
     final builder = BytesBuilder(copy: false);
     builder.add(cookie.toBytes());
-    builder.addByte(source);
-    builder.addByte(destination);
+    builder.addByte(source.value);
+    builder.addByte(destination.value);
     builder.add(combinedSequence.toBytes());
 
     return builder.toBytes();

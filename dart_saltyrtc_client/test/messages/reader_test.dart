@@ -12,6 +12,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
+import 'package:dart_saltyrtc_client/src/messages/id.dart';
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show signedKeysLength;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
@@ -82,11 +83,11 @@ void main() {
   });
 
   test('Read new responder', () {
-    checkRead(() => NewResponder(2));
+    checkRead(() => NewResponder(IdResponder(2)));
   });
 
   test('Read drop responder', () {
-    checkRead(() => DropResponder(2, CloseCode.protocolError));
+    checkRead(() => DropResponder(IdResponder(2), CloseCode.protocolError));
   });
 
   test('Read send error', () {

@@ -1,15 +1,15 @@
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show SharedKeyStore, Crypto;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show CombinedSequence;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart';
 import 'package:dart_saltyrtc_client/src/protocol/states.dart'
     show PeerHandshake;
 
 abstract class Peer {
-  final int id;
+  final Id id;
   SharedKeyStore? _sessionSharedKey;
   SharedKeyStore? _permanentSharedKey;
 
@@ -20,9 +20,7 @@ abstract class Peer {
 
   Peer.fromRandom(this.id, Crypto crypto)
       : csp = CombinedSequencePair.fromRandom(crypto),
-        cp = CookiePair.fromRandom(crypto) {
-    validateId(id, 'id');
-  }
+        cp = CookiePair.fromRandom(crypto);
 
   SharedKeyStore? get sessionSharedKey => _sessionSharedKey;
 
@@ -42,9 +40,7 @@ abstract class Peer {
 }
 
 class Server extends Peer {
-  static const serverAddress = 0;
-
-  Server(Crypto crypto) : super.fromRandom(serverAddress, crypto);
+  Server(Crypto crypto) : super.fromRandom(Id.serverAddress, crypto);
 }
 
 class Responder extends Peer {
@@ -55,7 +51,7 @@ class Responder extends Peer {
   /// we save the state of the handshake for each responder
   PeerHandshake state = PeerHandshake.start;
 
-  Responder(int id, this.counter, Crypto crypto) : super.fromRandom(id, crypto);
+  Responder(Id id, this.counter, Crypto crypto) : super.fromRandom(id, crypto);
 }
 
 class Initiator extends Peer {
@@ -65,7 +61,7 @@ class Initiator extends Peer {
 
   Initiator(Crypto crypto)
       : connected = false,
-        super.fromRandom(initiatorAddress, crypto);
+        super.fromRandom(Id.initiatorAddress, crypto);
 }
 
 class CombinedSequencePair {

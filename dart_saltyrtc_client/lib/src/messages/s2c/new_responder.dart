@@ -1,7 +1,8 @@
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdResponder;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateType, validateIdResponder, validateIntegerType;
+    show validateType, validateIntegerType;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -9,19 +10,18 @@ const _type = MessageType.newResponder;
 
 @immutable
 class NewResponder extends Message {
-  final int id;
+  final IdResponder id;
 
   @override
   List<Object> get props => [id];
 
-  NewResponder(this.id) {
-    validateIdResponder(id);
-  }
+  NewResponder(this.id);
 
   factory NewResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
 
-    final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
+    final id = IdResponder(
+        validateIntegerType(map[MessageFields.id], MessageFields.id));
 
     return NewResponder(id);
   }
@@ -36,6 +36,6 @@ class NewResponder extends Message {
       ..packString(MessageFields.type)
       ..packString(_type)
       ..packString(MessageFields.id)
-      ..packInt(id);
+      ..packInt(id.value);
   }
 }

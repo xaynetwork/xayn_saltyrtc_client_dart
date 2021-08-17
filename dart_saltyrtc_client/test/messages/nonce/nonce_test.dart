@@ -1,5 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
@@ -21,24 +22,34 @@ void main() {
   test('valid cookie', () {
     final cs = CombinedSequence(Int64.ZERO);
 
-    expect(() => Cookie(Uint8List(Cookie.cookieLength - 1)),
-        throwsA(isA<ValidationError>()));
+    expect(
+      () => Cookie(Uint8List(Cookie.cookieLength - 1)),
+      throwsA(isA<ValidationError>()),
+    );
 
-    expect(() => Cookie(Uint8List(Cookie.cookieLength + 1)),
-        throwsA(isA<ValidationError>()));
+    expect(
+      () => Cookie(Uint8List(Cookie.cookieLength + 1)),
+      throwsA(isA<ValidationError>()),
+    );
 
-    Nonce(Cookie(Uint8List(Cookie.cookieLength)), 1, 1, cs);
+    Nonce(Cookie(Uint8List(Cookie.cookieLength)), Id(1), Id(1), cs);
   });
 
   test('valid source', () {
     final cs = CombinedSequence(Int64.ZERO);
     final cookie = Cookie(Uint8List(Cookie.cookieLength));
 
-    expect(() => Nonce(cookie, -1, 1, cs), throwsA(isA<ValidationError>()));
-    expect(() => Nonce(cookie, 256, 1, cs), throwsA(isA<ValidationError>()));
+    expect(
+      () => Nonce(cookie, Id(-1), Id(1), cs),
+      throwsA(isA<ValidationError>()),
+    );
+    expect(
+      () => Nonce(cookie, Id(256), Id(1), cs),
+      throwsA(isA<ValidationError>()),
+    );
 
-    for (final source in List.generate(255, (i) => i)) {
-      Nonce(cookie, source, 1, cs);
+    for (final source in List.generate(255, (i) => Id(i))) {
+      Nonce(cookie, source, Id(1), cs);
     }
   });
 
@@ -46,11 +57,13 @@ void main() {
     final cs = CombinedSequence(Int64.ZERO);
     final cookie = Cookie(Uint8List(Cookie.cookieLength));
 
-    expect(() => Nonce(cookie, 1, -1, cs), throwsA(isA<ValidationError>()));
-    expect(() => Nonce(cookie, 1, 256, cs), throwsA(isA<ValidationError>()));
+    expect(() => Nonce(cookie, Id(1), Id(-1), cs),
+        throwsA(isA<ValidationError>()));
+    expect(() => Nonce(cookie, Id(1), Id(256), cs),
+        throwsA(isA<ValidationError>()));
 
-    for (final destination in List.generate(255, (i) => i)) {
-      Nonce(cookie, 1, destination, cs);
+    for (final destination in List.generate(255, (i) => Id(i))) {
+      Nonce(cookie, Id(1), destination, cs);
     }
   });
 
@@ -62,13 +75,15 @@ void main() {
     final csOne =
         CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
 
-    expect(Nonce(cookieZero, 0, 0, csZero).toBytes().length, Nonce.totalLength);
+    expect(Nonce(cookieZero, Id(0), Id(0), csZero).toBytes().length,
+        Nonce.totalLength);
 
-    expect(Nonce(cookieZero, 0, 0, csZero).toBytes(), everyElement(equals(0)));
-    expect(
-        Nonce(cookieOne, 255, 255, csOne).toBytes(), everyElement(equals(255)));
+    expect(Nonce(cookieZero, Id(0), Id(0), csZero).toBytes(),
+        everyElement(equals(0)));
+    expect(Nonce(cookieOne, Id(255), Id(255), csOne).toBytes(),
+        everyElement(equals(255)));
 
-    final alternate = Nonce(cookieOne, 0, 255, csZero).toBytes();
+    final alternate = Nonce(cookieOne, Id(0), Id(255), csZero).toBytes();
     // cookie
     expect(
         alternate.sublist(0, Cookie.cookieLength), everyElement(equals(255)));
@@ -93,10 +108,10 @@ void main() {
         CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
 
     final nonces = [
-      Nonce(cookieZero, 0, 0, csZero),
-      Nonce(cookieOne, 255, 255, csOne),
-      Nonce(cookieOne, 0, 255, csZero),
-      Nonce(cookieZero, 255, 0, csOne),
+      Nonce(cookieZero, Id(0), Id(0), csZero),
+      Nonce(cookieOne, Id(255), Id(255), csOne),
+      Nonce(cookieOne, Id(0), Id(255), csZero),
+      Nonce(cookieZero, Id(255), Id(0), csOne),
     ];
 
     for (final nonce in nonces) {
