@@ -4,7 +4,7 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
 /// Store the public and private asymmetric key of a peer.
-class KeyStore {
+abstract class KeyStore {
   final Uint8List publicKey;
   final Uint8List privateKey;
 
@@ -12,6 +12,12 @@ class KeyStore {
     Crypto.checkPublicKey(publicKey);
     Crypto.checkPrivateKey(privateKey);
   }
+
+  Uint8List decrypt({
+    required Uint8List remotePublicKey,
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  });
 }
 
 /// A `SharedKeyStore` holds the resulting precalculated shared key of
@@ -36,6 +42,7 @@ abstract class SharedKeyStore {
   });
 }
 
+/// Token that is used to authenticate a responder if it is not trusted
 abstract class AuthToken {
   Uint8List encrypt({
     required Uint8List message,
