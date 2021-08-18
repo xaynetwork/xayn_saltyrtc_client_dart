@@ -2,8 +2,6 @@ import 'dart:typed_data';
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
     show SharedKeyStore, KeyStore, AuthToken, Crypto;
-import 'package:flutter_saltyrtc_client/crypto/checks.dart'
-    show checkNonce, checkPrivateKey, checkPublicKey, checkSymmetricKey;
 import 'package:libsodium/libsodium.dart' as _sodium;
 
 Crypto? _instance;
@@ -24,8 +22,8 @@ class _DartSodiumSharedKeyStore implements SharedKeyStore {
     required Uint8List remotePublicKey,
   }) : _sharedKey =
             _sodium.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey) {
-    checkPublicKey(remotePublicKey);
-    checkPrivateKey(ownPrivateKey);
+    Crypto.checkPublicKey(remotePublicKey);
+    Crypto.checkPrivateKey(ownPrivateKey);
   }
 
   @override
@@ -33,7 +31,7 @@ class _DartSodiumSharedKeyStore implements SharedKeyStore {
     required Uint8List ciphertext,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey);
   }
 
@@ -42,7 +40,7 @@ class _DartSodiumSharedKeyStore implements SharedKeyStore {
     required Uint8List message,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.CryptoBox.encryptAfternm(message, nonce, _sharedKey);
   }
 }
@@ -51,7 +49,7 @@ class _DartSodiumAuthToken implements AuthToken {
   final Uint8List _authToken;
 
   _DartSodiumAuthToken(this._authToken) {
-    checkSymmetricKey(_authToken);
+    Crypto.checkSymmetricKey(_authToken);
   }
 
   @override
@@ -59,7 +57,7 @@ class _DartSodiumAuthToken implements AuthToken {
     required Uint8List ciphertext,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.Sodium.cryptoSecretboxOpenEasy(
         ciphertext, nonce, _authToken);
   }
@@ -69,7 +67,7 @@ class _DartSodiumAuthToken implements AuthToken {
     required Uint8List message,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.Sodium.cryptoSecretboxEasy(message, nonce, _authToken);
   }
 }
@@ -81,8 +79,8 @@ class _DartSodiumKeyStore extends KeyStore {
   final Uint8List privateKey;
 
   _DartSodiumKeyStore({required this.publicKey, required this.privateKey}) {
-    checkPublicKey(publicKey);
-    checkPrivateKey(privateKey);
+    Crypto.checkPublicKey(publicKey);
+    Crypto.checkPrivateKey(privateKey);
   }
 }
 

@@ -52,4 +52,27 @@ abstract class Crypto {
   AuthToken createAuthToken();
 
   AuthToken createAuthTokenFromToken({required Uint8List token});
+
+  static void checkNonce(Uint8List nonce) {
+    _checkLength(nonce, Crypto.nonceBytes, 'nonce');
+  }
+
+  static void checkPublicKey(Uint8List publicKey) {
+    _checkLength(publicKey, Crypto.publicKeyBytes, 'public key');
+  }
+
+  static void checkPrivateKey(Uint8List privateKey) {
+    _checkLength(privateKey, Crypto.privateKeyBytes, 'private key');
+  }
+
+  static void checkSymmetricKey(Uint8List symmKey) {
+    _checkLength(symmKey, Crypto.symmKeyBytes, 'symmetric key');
+  }
+}
+
+void _checkLength(Uint8List data, int expected, String name) {
+  final len = data.length;
+  if (len != expected) {
+    throw ArgumentError('$name must be $expected, found $len');
+  }
 }

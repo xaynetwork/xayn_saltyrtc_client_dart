@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
-import 'package:flutter_saltyrtc_client/crypto/checks.dart'
-    show checkNonce, checkPrivateKey, checkPublicKey, checkSymmetricKey;
 import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart';
 import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart';
 
@@ -27,8 +25,8 @@ class _JSKeyStore extends KeyStore {
   final Uint8List privateKey;
 
   _JSKeyStore({required this.publicKey, required this.privateKey}) {
-    checkPublicKey(publicKey);
-    checkPrivateKey(privateKey);
+    Crypto.checkPublicKey(publicKey);
+    Crypto.checkPrivateKey(privateKey);
   }
 
   factory _JSKeyStore.fromKeyPair(KeyPair keyPair) =>
@@ -46,8 +44,8 @@ class _JSSharedKeyStore implements SharedKeyStore {
   })  : _sodium = sodium,
         _sharedKey =
             sodium.crypto_box_beforenm(remotePublicKey, ownPrivateKey) {
-    checkPublicKey(remotePublicKey);
-    checkPrivateKey(ownPrivateKey);
+    Crypto.checkPublicKey(remotePublicKey);
+    Crypto.checkPrivateKey(ownPrivateKey);
   }
 
   @override
@@ -55,7 +53,7 @@ class _JSSharedKeyStore implements SharedKeyStore {
     required Uint8List ciphertext,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.crypto_box_open_easy_afternm(ciphertext, nonce, _sharedKey);
   }
 
@@ -64,7 +62,7 @@ class _JSSharedKeyStore implements SharedKeyStore {
     required Uint8List message,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.crypto_box_easy_afternm(message, nonce, _sharedKey);
   }
 }
@@ -78,7 +76,7 @@ class _JSAuthToken implements AuthToken {
     required Uint8List authToken,
   })  : _sodium = sodium,
         _authToken = authToken {
-    checkSymmetricKey(_authToken);
+    Crypto.checkSymmetricKey(_authToken);
   }
 
   @override
@@ -86,7 +84,7 @@ class _JSAuthToken implements AuthToken {
     required Uint8List ciphertext,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.crypto_secretbox_open_easy(ciphertext, nonce, _authToken);
   }
 
@@ -95,7 +93,7 @@ class _JSAuthToken implements AuthToken {
     required Uint8List message,
     required Uint8List nonce,
   }) {
-    checkNonce(nonce);
+    Crypto.checkNonce(nonce);
     return _sodium.crypto_secretbox_easy(message, nonce, _authToken);
   }
 }
