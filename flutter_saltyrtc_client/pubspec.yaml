@@ -6,7 +6,7 @@ homepage:
 
 environment:
   sdk: ">=2.13.4 <3.0.0"
-  flutter: ">=2.3.0 < 3.0.0"
+  flutter: ">=2.4.0-4.2.pre < 3.0.0"
 
 dependencies:
   flutter:
@@ -22,7 +22,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^1.0.0
-  test: 1.17.9
+  # This is often incompatible with flutter_test,
+  # we allow the patch version to be changed so the solver can choose the correct one
+  test: ^1.17.0
   equatable: 2.0.3
 
 # For information on the generic Dart part of this file, see the
