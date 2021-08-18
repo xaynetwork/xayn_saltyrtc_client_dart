@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
     show SharedKeyStore, KeyStore, AuthToken, Crypto;
@@ -14,17 +14,15 @@ Crypto get cryptoInstance {
   return _instance!;
 }
 
-class _DartSodiumSharedKeyStore implements SharedKeyStore {
+class _DartSodiumSharedKeyStore extends SharedKeyStore {
   final Uint8List _sharedKey;
 
   _DartSodiumSharedKeyStore({
     required Uint8List ownPrivateKey,
     required Uint8List remotePublicKey,
-  }) : _sharedKey =
-            _sodium.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey) {
-    Crypto.checkPublicKey(remotePublicKey);
-    Crypto.checkPrivateKey(ownPrivateKey);
-  }
+  })  : _sharedKey =
+            _sodium.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey),
+        super(ownPrivateKey: ownPrivateKey, remotePublicKey: remotePublicKey);
 
   @override
   Uint8List decrypt({

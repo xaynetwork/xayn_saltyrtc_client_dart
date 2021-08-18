@@ -1,5 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
 /// Store the public and private asymmetric key of a peer.
@@ -13,7 +14,17 @@ class KeyStore {
   }
 }
 
+/// A `SharedKeyStore` holds the resulting precalculated shared key of
+/// the local peer's secret key and the remote peer's public key.
 abstract class SharedKeyStore {
+  final Uint8List remotePublicKey;
+  final Uint8List ownPrivateKey;
+
+  SharedKeyStore({required this.ownPrivateKey, required this.remotePublicKey}) {
+    Crypto.checkPrivateKey(ownPrivateKey);
+    Crypto.checkPublicKey(remotePublicKey);
+  }
+
   Uint8List encrypt({
     required Uint8List message,
     required Uint8List nonce,

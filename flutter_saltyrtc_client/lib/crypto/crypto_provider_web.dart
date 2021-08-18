@@ -19,7 +19,7 @@ Crypto get cryptoInstance {
   return _instance!;
 }
 
-class _JSSharedKeyStore implements SharedKeyStore {
+class _JSSharedKeyStore extends SharedKeyStore {
   final LibSodiumJS _sodium;
   final Uint8List _sharedKey;
 
@@ -28,11 +28,8 @@ class _JSSharedKeyStore implements SharedKeyStore {
     required Uint8List ownPrivateKey,
     required Uint8List remotePublicKey,
   })  : _sodium = sodium,
-        _sharedKey =
-            sodium.crypto_box_beforenm(remotePublicKey, ownPrivateKey) {
-    Crypto.checkPublicKey(remotePublicKey);
-    Crypto.checkPrivateKey(ownPrivateKey);
-  }
+        _sharedKey = sodium.crypto_box_beforenm(remotePublicKey, ownPrivateKey),
+        super(ownPrivateKey: ownPrivateKey, remotePublicKey: remotePublicKey);
 
   @override
   Uint8List decrypt({
