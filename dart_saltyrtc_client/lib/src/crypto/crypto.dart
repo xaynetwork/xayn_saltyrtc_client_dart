@@ -1,6 +1,5 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
 /// Store the public and private asymmetric key of a peer.
