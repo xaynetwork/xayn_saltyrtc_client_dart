@@ -72,18 +72,6 @@ class _DartSodiumAuthToken implements AuthToken {
   }
 }
 
-class _DartSodiumKeyStore extends KeyStore {
-  @override
-  final Uint8List publicKey;
-  @override
-  final Uint8List privateKey;
-
-  _DartSodiumKeyStore({required this.publicKey, required this.privateKey}) {
-    Crypto.checkPublicKey(publicKey);
-    Crypto.checkPrivateKey(privateKey);
-  }
-}
-
 class _DartSodiumCrypto extends Crypto {
   _DartSodiumCrypto() {
     _sodium.Sodium.init();
@@ -97,7 +85,7 @@ class _DartSodiumCrypto extends Crypto {
   @override
   KeyStore createKeyStore() {
     final keyPair = _sodium.CryptoBox.randomKeys();
-    return _DartSodiumKeyStore(publicKey: keyPair.pk, privateKey: keyPair.sk);
+    return KeyStore(publicKey: keyPair.pk, privateKey: keyPair.sk);
   }
 
   @override
@@ -105,7 +93,7 @@ class _DartSodiumCrypto extends Crypto {
     required Uint8List publicKey,
     required Uint8List privateKey,
   }) {
-    return _DartSodiumKeyStore(publicKey: publicKey, privateKey: privateKey);
+    return KeyStore(publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
@@ -114,7 +102,7 @@ class _DartSodiumCrypto extends Crypto {
     required Uint8List remotePublicKey,
   }) {
     return _DartSodiumSharedKeyStore(
-      ownPrivateKey: (ownKeyStore as _DartSodiumKeyStore).privateKey,
+      ownPrivateKey: ownKeyStore.privateKey,
       remotePublicKey: remotePublicKey,
     );
   }

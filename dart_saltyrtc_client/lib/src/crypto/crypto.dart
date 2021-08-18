@@ -1,10 +1,16 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
-abstract class KeyStore {
-  abstract final Uint8List publicKey;
-  abstract final Uint8List privateKey;
+/// Store the public and private asymmetric key of a peer.
+class KeyStore {
+  final Uint8List publicKey;
+  final Uint8List privateKey;
+
+  KeyStore({required this.publicKey, required this.privateKey}) {
+    Crypto.checkPublicKey(publicKey);
+    Crypto.checkPrivateKey(privateKey);
+  }
 }
 
 abstract class SharedKeyStore {

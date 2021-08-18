@@ -1,8 +1,10 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
-import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart';
-import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart';
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
+    show SharedKeyStore, KeyStore, AuthToken, Crypto;
+import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart'
+    show loadSodiumInBrowser;
+import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart' show LibSodiumJS;
 
 Future initCrypto() async {
   _sodiumJS = await loadSodiumInBrowser();
@@ -15,22 +17,6 @@ Crypto get cryptoInstance {
   _instance ??= _JSCrypto(_sodiumJS);
 
   return _instance!;
-}
-
-class _JSKeyStore extends KeyStore {
-  @override
-  final Uint8List publicKey;
-
-  @override
-  final Uint8List privateKey;
-
-  _JSKeyStore({required this.publicKey, required this.privateKey}) {
-    Crypto.checkPublicKey(publicKey);
-    Crypto.checkPrivateKey(privateKey);
-  }
-
-  factory _JSKeyStore.fromKeyPair(KeyPair keyPair) =>
-      _JSKeyStore(privateKey: keyPair.privateKey, publicKey: keyPair.publicKey);
 }
 
 class _JSSharedKeyStore implements SharedKeyStore {
@@ -110,7 +96,9 @@ class _JSCrypto extends Crypto {
 
   @override
   KeyStore createKeyStore() {
-    return _JSKeyStore.fromKeyPair(_sodium.crypto_box_keypair());
+    final keyPair = _sodium.crypto_box_keypair();
+    return KeyStore(
+        privateKey: keyPair.privateKey, publicKey: keyPair.publicKey);
   }
 
   @override
@@ -118,7 +106,7 @@ class _JSCrypto extends Crypto {
     required Uint8List publicKey,
     required Uint8List privateKey,
   }) {
-    return _JSKeyStore(publicKey: publicKey, privateKey: privateKey);
+    return KeyStore(publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
@@ -128,7 +116,7 @@ class _JSCrypto extends Crypto {
   }) {
     return _JSSharedKeyStore(
       sodium: _sodium,
-      ownPrivateKey: (ownKeyStore as _JSKeyStore).privateKey,
+      ownPrivateKey: ownKeyStore.privateKey,
       remotePublicKey: remotePublicKey,
     );
   }
