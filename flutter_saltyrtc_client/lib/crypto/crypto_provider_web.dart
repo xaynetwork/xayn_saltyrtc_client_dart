@@ -1,8 +1,10 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
-import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart';
-import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart';
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
+    show SharedKeyStore, KeyStore, AuthToken, Crypto;
+import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart'
+    show loadSodiumInBrowser;
+import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart' show LibSodiumJS;
 
 Future initCrypto() async {
   _sodiumJS = await loadSodiumInBrowser();
@@ -17,30 +19,90 @@ Crypto get cryptoInstance {
   return _instance!;
 }
 
-class JSKeyStore extends KeyStore {
-  @override
-  final Uint8List publicKey;
+class _JSKeyStore extends KeyStore {
+  final LibSodiumJS _sodium;
+
+  _JSKeyStore(
+      {required LibSodiumJS sodium,
+      required Uint8List publicKey,
+      required Uint8List privateKey})
+      : _sodium = sodium,
+        super(publicKey: publicKey, privateKey: privateKey);
 
   @override
-  final Uint8List privateKey;
-
-  JSKeyStore({required this.publicKey, required this.privateKey});
-
-  factory JSKeyStore.fromKeyPair(KeyPair keyPair) =>
-      JSKeyStore(privateKey: keyPair.privateKey, publicKey: keyPair.publicKey);
+  Uint8List decrypt({
+    required Uint8List remotePublicKey,
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  }) {
+    final sks = _JSSharedKeyStore(
+        sodium: _sodium,
+        ownPrivateKey: privateKey,
+        remotePublicKey: remotePublicKey);
+    return sks.decrypt(ciphertext: ciphertext, nonce: nonce);
+  }
 }
 
-class JSSharedKeyStore implements SharedKeyStore {
-  final Uint8List Function() createSharedKey;
+class _JSSharedKeyStore extends SharedKeyStore {
+  final LibSodiumJS _sodium;
+  final Uint8List _sharedKey;
 
-  JSSharedKeyStore({
-    required this.createSharedKey,
-  });
-
-  Uint8List? _sharedKey;
+  _JSSharedKeyStore({
+    required LibSodiumJS sodium,
+    required Uint8List ownPrivateKey,
+    required Uint8List remotePublicKey,
+  })  : _sodium = sodium,
+        _sharedKey = sodium.crypto_box_beforenm(remotePublicKey, ownPrivateKey),
+        super(ownPrivateKey: ownPrivateKey, remotePublicKey: remotePublicKey);
 
   @override
-  Uint8List get sharedKey => _sharedKey = _sharedKey ?? createSharedKey();
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  }) {
+    Crypto.checkNonce(nonce);
+    return _sodium.crypto_box_open_easy_afternm(ciphertext, nonce, _sharedKey);
+  }
+
+  @override
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  }) {
+    Crypto.checkNonce(nonce);
+    return _sodium.crypto_box_easy_afternm(message, nonce, _sharedKey);
+  }
+}
+
+class _JSAuthToken implements AuthToken {
+  final LibSodiumJS _sodium;
+  final Uint8List _authToken;
+
+  _JSAuthToken({
+    required LibSodiumJS sodium,
+    required Uint8List authToken,
+  })  : _sodium = sodium,
+        _authToken = authToken {
+    Crypto.checkSymmetricKey(_authToken);
+  }
+
+  @override
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  }) {
+    Crypto.checkNonce(nonce);
+    return _sodium.crypto_secretbox_open_easy(ciphertext, nonce, _authToken);
+  }
+
+  @override
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  }) {
+    Crypto.checkNonce(nonce);
+    return _sodium.crypto_secretbox_easy(message, nonce, _authToken);
+  }
 }
 
 class _JSCrypto extends Crypto {
@@ -49,32 +111,26 @@ class _JSCrypto extends Crypto {
   _JSCrypto(this._sodium);
 
   @override
-  KeyStore createRandomKeyStore() {
-    return JSKeyStore.fromKeyPair(_sodium.crypto_box_keypair());
+  Uint8List randomBytes(int size) {
+    return _sodium.randombytes_buf(size);
   }
 
   @override
-  Uint8List createRandomNonce() {
-    return _sodium.randombytes_buf(_sodium.crypto_box_NONCEBYTES);
+  KeyStore createKeyStore() {
+    final keyPair = _sodium.crypto_box_keypair();
+    return _JSKeyStore(
+        sodium: _sodium,
+        privateKey: keyPair.privateKey,
+        publicKey: keyPair.publicKey);
   }
 
   @override
-  Uint8List decrypt({
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
+  KeyStore createKeyStoreFromKeys({
+    required Uint8List publicKey,
+    required Uint8List privateKey,
   }) {
-    return _sodium.crypto_box_open_easy_afternm(
-        ciphertext, nonce, shared.sharedKey);
-  }
-
-  @override
-  Uint8List encrypt({
-    required Uint8List message,
-    required Uint8List nonce,
-    required SharedKeyStore shared,
-  }) {
-    return _sodium.crypto_box_easy_afternm(message, nonce, shared.sharedKey);
+    return _JSKeyStore(
+        sodium: _sodium, publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
@@ -82,21 +138,20 @@ class _JSCrypto extends Crypto {
     required KeyStore ownKeyStore,
     required Uint8List remotePublicKey,
   }) {
-    return JSSharedKeyStore(
-        createSharedKey: () => _sodium.crypto_box_beforenm(
-            remotePublicKey, ownKeyStore.privateKey));
+    return _JSSharedKeyStore(
+      sodium: _sodium,
+      ownPrivateKey: ownKeyStore.privateKey,
+      remotePublicKey: remotePublicKey,
+    );
   }
 
   @override
-  KeyStore createKeyStore({
-    required Uint8List publicKey,
-    required Uint8List privateKey,
-  }) {
-    return JSKeyStore(publicKey: publicKey, privateKey: privateKey);
+  AuthToken createAuthToken() {
+    return createAuthTokenFromToken(token: randomBytes(Crypto.symmKeyBytes));
   }
 
   @override
-  Uint8List randomBytes(int size) {
-    return _sodium.randombytes_buf(size);
+  AuthToken createAuthTokenFromToken({required Uint8List token}) {
+    return _JSAuthToken(sodium: _sodium, authToken: token);
   }
 }

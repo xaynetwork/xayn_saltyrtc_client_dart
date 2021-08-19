@@ -1,7 +1,8 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
-import 'package:libsodium/libsodium.dart' as dart;
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
+    show SharedKeyStore, KeyStore, AuthToken, Crypto;
+import 'package:libsodium/libsodium.dart' as _sodium;
 
 Crypto? _instance;
 
@@ -13,63 +14,101 @@ Crypto get cryptoInstance {
   return _instance!;
 }
 
-class DartSodiumSharedKeyStore implements SharedKeyStore {
-  final Uint8List ownPrivateKey, remotePublicKey;
+class _DartSodiumKeyStore extends KeyStore {
+  _DartSodiumKeyStore(
+      {required Uint8List publicKey, required Uint8List privateKey})
+      : super(publicKey: publicKey, privateKey: privateKey);
 
-  DartSodiumSharedKeyStore({
-    required this.ownPrivateKey,
-    required this.remotePublicKey,
+  @override
+  Uint8List decrypt({
+    required Uint8List remotePublicKey,
+    required Uint8List ciphertext,
+    required Uint8List nonce,
   }) {
-    dart.Sodium.init();
-  }
-
-  Uint8List? _sharedKey;
-
-  @override
-  Uint8List get sharedKey => _sharedKey = _sharedKey ?? _createSharedKey();
-
-  Uint8List _createSharedKey() {
-    return dart.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey);
+    final sks = _DartSodiumSharedKeyStore(
+        ownPrivateKey: privateKey, remotePublicKey: remotePublicKey);
+    return sks.decrypt(ciphertext: ciphertext, nonce: nonce);
   }
 }
 
-class DartSodiumKeyStore extends KeyStore {
-  @override
-  final Uint8List publicKey;
-  @override
-  final Uint8List privateKey;
+class _DartSodiumSharedKeyStore extends SharedKeyStore {
+  final Uint8List _sharedKey;
 
-  DartSodiumKeyStore({required this.publicKey, required this.privateKey});
-}
-
-class _DartSodiumCrypto extends Crypto {
-  @override
-  KeyStore createRandomKeyStore() {
-    final keyPair = dart.CryptoBox.randomKeys();
-    return DartSodiumKeyStore(publicKey: keyPair.pk, privateKey: keyPair.sk);
-  }
-
-  @override
-  Uint8List createRandomNonce() {
-    return dart.CryptoBox.randomNonce();
-  }
+  _DartSodiumSharedKeyStore({
+    required Uint8List ownPrivateKey,
+    required Uint8List remotePublicKey,
+  })  : _sharedKey =
+            _sodium.CryptoBox.sharedSecret(remotePublicKey, ownPrivateKey),
+        super(ownPrivateKey: ownPrivateKey, remotePublicKey: remotePublicKey);
 
   @override
   Uint8List decrypt({
     required Uint8List ciphertext,
     required Uint8List nonce,
-    required SharedKeyStore shared,
   }) {
-    return dart.CryptoBox.decryptAfternm(ciphertext, nonce, shared.sharedKey);
+    Crypto.checkNonce(nonce);
+    return _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey);
   }
 
   @override
   Uint8List encrypt({
     required Uint8List message,
     required Uint8List nonce,
-    required SharedKeyStore shared,
   }) {
-    return dart.CryptoBox.encryptAfternm(message, nonce, shared.sharedKey);
+    Crypto.checkNonce(nonce);
+    return _sodium.CryptoBox.encryptAfternm(message, nonce, _sharedKey);
+  }
+}
+
+class _DartSodiumAuthToken implements AuthToken {
+  final Uint8List _authToken;
+
+  _DartSodiumAuthToken(this._authToken) {
+    Crypto.checkSymmetricKey(_authToken);
+  }
+
+  @override
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  }) {
+    Crypto.checkNonce(nonce);
+    return _sodium.Sodium.cryptoSecretboxOpenEasy(
+        ciphertext, nonce, _authToken);
+  }
+
+  @override
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  }) {
+    Crypto.checkNonce(nonce);
+    return _sodium.Sodium.cryptoSecretboxEasy(message, nonce, _authToken);
+  }
+}
+
+class _DartSodiumCrypto extends Crypto {
+  _DartSodiumCrypto() {
+    _sodium.Sodium.init();
+  }
+
+  @override
+  Uint8List randomBytes(int size) {
+    return _sodium.RandomBytes.buffer(size);
+  }
+
+  @override
+  KeyStore createKeyStore() {
+    final keyPair = _sodium.CryptoBox.randomKeys();
+    return _DartSodiumKeyStore(publicKey: keyPair.pk, privateKey: keyPair.sk);
+  }
+
+  @override
+  KeyStore createKeyStoreFromKeys({
+    required Uint8List publicKey,
+    required Uint8List privateKey,
+  }) {
+    return _DartSodiumKeyStore(publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
@@ -77,22 +116,19 @@ class _DartSodiumCrypto extends Crypto {
     required KeyStore ownKeyStore,
     required Uint8List remotePublicKey,
   }) {
-    return DartSodiumSharedKeyStore(
-      ownPrivateKey: (ownKeyStore as DartSodiumKeyStore).privateKey,
+    return _DartSodiumSharedKeyStore(
+      ownPrivateKey: ownKeyStore.privateKey,
       remotePublicKey: remotePublicKey,
     );
   }
 
   @override
-  KeyStore createKeyStore({
-    required Uint8List publicKey,
-    required Uint8List privateKey,
-  }) {
-    return DartSodiumKeyStore(publicKey: publicKey, privateKey: privateKey);
+  AuthToken createAuthToken() {
+    return createAuthTokenFromToken(token: randomBytes(Crypto.symmKeyBytes));
   }
 
   @override
-  Uint8List randomBytes(int size) {
-    return dart.RandomBytes.buffer(size);
+  AuthToken createAuthTokenFromToken({required Uint8List token}) {
+    return _DartSodiumAuthToken(token);
   }
 }
