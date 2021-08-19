@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdClient;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdClient, Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -22,8 +22,8 @@ class Disconnected extends Message {
     // An initiator should validate that the id is a responder.
     // A responder should validate the id to be 1.
     // Here we validate the rage 1 <= id <= 255.
-    final id =
-        IdClient(validateIntegerType(map[MessageFields.id], MessageFields.id));
+    final id = Id.clientId(
+        validateIntegerType(map[MessageFields.id], MessageFields.id));
 
     return Disconnected(id);
   }

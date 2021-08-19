@@ -32,24 +32,25 @@ void main() {
       throwsA(isA<ValidationError>()),
     );
 
-    Nonce(Cookie(Uint8List(Cookie.cookieLength)), Id(1), Id(1), cs);
+    Nonce(
+        Cookie(Uint8List(Cookie.cookieLength)), Id.peerId(1), Id.peerId(1), cs);
   });
 
-  test('valid source', () {
+  test('id valid source', () {
     final cs = CombinedSequence(Int64.ZERO);
     final cookie = Cookie(Uint8List(Cookie.cookieLength));
 
     expect(
-      () => Nonce(cookie, Id(-1), Id(1), cs),
+      () => Nonce(cookie, Id.peerId(-1), Id.peerId(1), cs),
       throwsA(isA<ValidationError>()),
     );
     expect(
-      () => Nonce(cookie, Id(256), Id(1), cs),
+      () => Nonce(cookie, Id.peerId(256), Id.peerId(1), cs),
       throwsA(isA<ValidationError>()),
     );
 
-    for (final source in List.generate(255, (i) => Id(i))) {
-      Nonce(cookie, source, Id(1), cs);
+    for (final source in List.generate(255, (i) => Id.peerId(i))) {
+      Nonce(cookie, source, Id.peerId(1), cs);
     }
   });
 
@@ -57,13 +58,13 @@ void main() {
     final cs = CombinedSequence(Int64.ZERO);
     final cookie = Cookie(Uint8List(Cookie.cookieLength));
 
-    expect(() => Nonce(cookie, Id(1), Id(-1), cs),
+    expect(() => Nonce(cookie, Id.peerId(1), Id.peerId(-1), cs),
         throwsA(isA<ValidationError>()));
-    expect(() => Nonce(cookie, Id(1), Id(256), cs),
+    expect(() => Nonce(cookie, Id.peerId(1), Id.peerId(256), cs),
         throwsA(isA<ValidationError>()));
 
-    for (final destination in List.generate(255, (i) => Id(i))) {
-      Nonce(cookie, Id(1), destination, cs);
+    for (final destination in List.generate(255, (i) => Id.peerId(i))) {
+      Nonce(cookie, Id.peerId(1), destination, cs);
     }
   });
 
@@ -75,15 +76,17 @@ void main() {
     final csOne =
         CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
 
-    expect(Nonce(cookieZero, Id(0), Id(0), csZero).toBytes().length,
+    expect(
+        Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes().length,
         Nonce.totalLength);
 
-    expect(Nonce(cookieZero, Id(0), Id(0), csZero).toBytes(),
+    expect(Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes(),
         everyElement(equals(0)));
-    expect(Nonce(cookieOne, Id(255), Id(255), csOne).toBytes(),
+    expect(Nonce(cookieOne, Id.peerId(255), Id.peerId(255), csOne).toBytes(),
         everyElement(equals(255)));
 
-    final alternate = Nonce(cookieOne, Id(0), Id(255), csZero).toBytes();
+    final alternate =
+        Nonce(cookieOne, Id.peerId(0), Id.peerId(255), csZero).toBytes();
     // cookie
     expect(
         alternate.sublist(0, Cookie.cookieLength), everyElement(equals(255)));
@@ -108,10 +111,10 @@ void main() {
         CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
 
     final nonces = [
-      Nonce(cookieZero, Id(0), Id(0), csZero),
-      Nonce(cookieOne, Id(255), Id(255), csOne),
-      Nonce(cookieOne, Id(0), Id(255), csZero),
-      Nonce(cookieZero, Id(255), Id(0), csOne),
+      Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero),
+      Nonce(cookieOne, Id.peerId(255), Id.peerId(255), csOne),
+      Nonce(cookieOne, Id.peerId(0), Id.peerId(255), csZero),
+      Nonce(cookieZero, Id.peerId(255), Id.peerId(0), csOne),
     ];
 
     for (final nonce in nonces) {

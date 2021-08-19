@@ -1,41 +1,69 @@
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateId, validateIdResponder, validateIdClient;
+    show
+        validateId,
+        validateIdResponder,
+        validateIdClient,
+        checkIdClient,
+        checkIdResponder;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
 /// Represent an address/id in the saltyrtc protocol.
 /// It can only contains values in [0, 255]
 @immutable
-class Id with EquatableMixin {
-  static final Id serverAddress = Id(0);
-  static final Id initiatorAddress = Id(1);
+abstract class Id with EquatableMixin {
+  static final Id serverAddress = Id.peerId(0);
+  static final Id initiatorAddress = Id.peerId(1);
 
   /// this is the value of the id and is guaranteed that belongs to the range [0, 255]
-  final int value;
+  abstract final int value;
 
   @override
   List<Object> get props => [value];
 
-  Id(this.value) {
+  bool isClient();
+  bool isResponder();
+
+  static Id peerId(int value) {
     validateId(value, 'id');
+
+    return _Id(value);
   }
 
-  factory Id.ofResponder(int id) {
-    return IdResponder(id);
+  static IdClient clientId(int value) {
+    validateIdClient(value);
+
+    return _Id(value);
+  }
+
+  static IdResponder responderId(int value) {
+    validateIdResponder(value);
+
+    return _Id(value);
   }
 }
 
-// TODO find a way to avoid repeating the checks on every super.
-// @protected on constructors does not give a warning
+/// Represent the id of a initiator or a responder.
+abstract class IdClient implements Id {}
 
-class IdClient extends Id {
-  IdClient(int id) : super(id) {
-    validateIdClient(id);
+abstract class IdResponder implements IdClient {}
+
+class _Id with EquatableMixin implements IdResponder {
+  @override
+  final int value;
+
+  _Id(this.value);
+
+  @override
+  List<Object> get props => [value];
+
+  @override
+  bool isClient() {
+    return checkIdClient(value);
   }
-}
 
-class IdResponder extends IdClient {
-  IdResponder(int id) : super(id) {
-    validateIdResponder(id);
+  @override
+  bool isResponder() {
+    return checkIdResponder(value);
   }
 }

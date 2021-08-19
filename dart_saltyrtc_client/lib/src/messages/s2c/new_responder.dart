@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdResponder;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdResponder, Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -20,7 +20,7 @@ class NewResponder extends Message {
   factory NewResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
 
-    final id = IdResponder(
+    final id = Id.responderId(
         validateIntegerType(map[MessageFields.id], MessageFields.id));
 
     return NewResponder(id);

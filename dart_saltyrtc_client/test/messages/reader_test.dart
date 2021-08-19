@@ -83,11 +83,11 @@ void main() {
   });
 
   test('Read new responder', () {
-    checkRead(() => NewResponder(IdResponder(2)));
+    checkRead(() => NewResponder(Id.responderId(2)));
   });
 
   test('Read drop responder', () {
-    checkRead(() => DropResponder(IdResponder(2), CloseCode.protocolError));
+    checkRead(() => DropResponder(Id.responderId(2), CloseCode.protocolError));
   });
 
   test('Read send error', () {

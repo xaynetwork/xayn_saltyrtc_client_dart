@@ -1,6 +1,6 @@
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdResponder;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdResponder, Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -23,7 +23,7 @@ class DropResponder extends Message {
   factory DropResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
 
-    final id = IdResponder(
+    final id = Id.responderId(
         validateIntegerType(map[MessageFields.id], MessageFields.id));
     final reasonValue = map[MessageFields.reason];
     final reason = reasonValue == null

@@ -67,19 +67,25 @@ List<T> validateListType<T>(Object? value, String name) {
   return value.cast<T>();
 }
 
+/// Returns true iff value in [min, max].
+bool checkInteger(int value, int min, int max) {
+  return value >= min && value <= max;
+}
+
 /// Check that `value` belongs to the interval [min, max].
 void validateInteger(int value, int min, int max, String name) {
-  if (value < min) {
-    throw ValidationError('$name must be >= $min');
-  }
-  if (value > max) {
-    throw ValidationError('$name must be <= $max');
+  if (!checkInteger(value, min, max)) {
+    throw ValidationError('$name must be >= $min and <= $max');
   }
 }
 
 /// Check that `value` is a valid id of a peer or a server.
 void validateId(int value, String name) {
   validateInteger(value, 0, 255, name);
+}
+
+bool checkIdClient(int value) {
+  return checkInteger(value, 1, 255);
 }
 
 /// Check that `value` is a valid id of a client.
@@ -90,6 +96,10 @@ void validateIdClient(int value) {
 /// Check that `value` is a valid id of a responder.
 void validateIdResponder(int value, [String name = MessageFields.id]) {
   validateInteger(value, 2, 255, name);
+}
+
+bool checkIdResponder(int value) {
+  return checkInteger(value, 2, 255);
 }
 
 /// Check that `value` belongs to `valid`.

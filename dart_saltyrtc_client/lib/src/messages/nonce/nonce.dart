@@ -44,8 +44,8 @@ class Nonce with EquatableMixin {
     }
 
     final cookie = bytes.sublist(0, Cookie.cookieLength);
-    final source = Id(bytes[Cookie.cookieLength]);
-    final destination = Id(bytes[Cookie.cookieLength + 1]);
+    final source = Id.peerId(bytes[Cookie.cookieLength]);
+    final destination = Id.peerId(bytes[Cookie.cookieLength + 1]);
     final combinedSequence = CombinedSequence.fromBytes(bytes.sublist(
         Cookie.cookieLength + 2,
         Cookie.cookieLength + 2 + CombinedSequence.numBytes));
