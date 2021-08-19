@@ -9,13 +9,14 @@ import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
 /// Represent an address/id in the saltyrtc protocol.
-/// It can only contain values in [0, 255]
+/// It can only contains values in [0, 255]
 @immutable
 abstract class Id with EquatableMixin {
+  static final Id unknownAddress = Id.peerId(0);
   static final Id serverAddress = Id.peerId(0);
   static final Id initiatorAddress = Id.peerId(1);
 
-  /// This is the value of the id and it is guaranteed that it belongs to the range [0, 255]
+  /// this is the value of the id and is guaranteed that belongs to the range [0, 255]
   abstract final int value;
 
   @override
@@ -23,6 +24,9 @@ abstract class Id with EquatableMixin {
 
   bool isClient();
   bool isResponder();
+  bool isUnknown();
+  bool isServer();
+  bool isInitiator();
 
   static Id peerId(int value) {
     validateId(value, 'id');
@@ -66,4 +70,13 @@ class _Id with EquatableMixin implements IdResponder {
   bool isResponder() {
     return checkIdResponder(value);
   }
+
+  @override
+  bool isUnknown() => this == Id.serverAddress;
+
+  @override
+  bool isServer() => this == Id.serverAddress;
+
+  @override
+  bool isInitiator() => this == Id.serverAddress;
 }
