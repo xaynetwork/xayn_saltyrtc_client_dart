@@ -91,7 +91,7 @@ class CookiePair {
 
   Cookie? get theirs => _theirs;
 
-  // a normal setter require that return type of the getter is a subtype of the
-  // type of `cookie`. We don't want to be able set null here.
+  // A normal setter requires that the return type of the getter is a subtype of the
+  // type of `cookie`. We don't want to be able to set null here.
   void setTheirs(Cookie cookie) => _theirs = cookie;
 }
