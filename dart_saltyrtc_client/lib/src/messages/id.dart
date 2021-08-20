@@ -15,7 +15,7 @@ abstract class Id with EquatableMixin {
   static final Id serverAddress = Id.peerId(0);
   static final Id initiatorAddress = Id.peerId(1);
 
-  /// this is the value of the id and is guaranteed that belongs to the range [0, 255]
+  /// This is the value of the id and it is guaranteed that it belongs to the range [0, 255]
   abstract final int value;
 
   @override
