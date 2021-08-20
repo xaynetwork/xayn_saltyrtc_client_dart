@@ -43,7 +43,7 @@ abstract class Id with EquatableMixin {
   }
 }
 
-/// Represent the id of a initiator or a responder.
+/// Represent the id of an initiator or a responder.
 abstract class IdClient implements Id {}
 
 abstract class IdResponder implements IdClient {}
