@@ -67,7 +67,7 @@ List<T> validateListType<T>(Object? value, String name) {
   return value.cast<T>();
 }
 
-/// Returns true iff value in [min, max].
+/// Returns true iff the value is in [min, max].
 bool checkInteger(int value, int min, int max) {
   return value >= min && value <= max;
 }
