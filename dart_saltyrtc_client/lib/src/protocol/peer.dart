@@ -44,7 +44,7 @@ class Server extends Peer {
 }
 
 class Responder extends Peer {
-  /// used to identify the oldest responder during the path cleaning procedure.
+  /// Used to identify the oldest responder during the path cleaning procedure.
   final int counter;
 
   /// an initiator can receive messages from multiple responder during the peer handshake
