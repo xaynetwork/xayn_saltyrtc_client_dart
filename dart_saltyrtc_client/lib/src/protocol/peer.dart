@@ -24,8 +24,8 @@ abstract class Peer {
 
   SharedKeyStore? get sessionSharedKey => _sessionSharedKey;
 
-  // a normal setter require that return type of the getter is a subtype of the
-  // type of `sks`. We don't want to be able set null here.
+  // A normal setter requires that the return type of the getter is a subtype of the
+  // type of `sks`. We don't want to be able to set null here.
   void setSessionSharedKey(SharedKeyStore sks) => _sessionSharedKey = sks;
 
   bool get hasSessionSharedKey => _sessionSharedKey != null;
