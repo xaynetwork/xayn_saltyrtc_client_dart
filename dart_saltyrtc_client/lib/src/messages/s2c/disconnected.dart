@@ -1,7 +1,8 @@
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdClient, Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateType, validateIdPeer, validateIntegerType;
+    show validateType, validateIntegerType;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -9,21 +10,20 @@ const _type = MessageType.disconnected;
 
 @immutable
 class Disconnected extends Message {
-  final int id;
+  final IdClient id;
 
   @override
   List<Object> get props => [id];
 
-  Disconnected(this.id) {
-    // An initiator should validate that the id is a responder.
-    // A responder should validate the id to be 1.
-    // Here we validate the rage 1 <= id <= 255.
-    validateIdPeer(id);
-  }
+  Disconnected(this.id);
 
   factory Disconnected.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final id = validateIntegerType(map[MessageFields.id], MessageFields.id);
+    // An initiator should validate that the id is a responder.
+    // A responder should validate the id to be 1.
+    // Here we validate the rage 1 <= id <= 255.
+    final id = Id.clientId(
+        validateIntegerType(map[MessageFields.id], MessageFields.id));
 
     return Disconnected(id);
   }
@@ -38,6 +38,6 @@ class Disconnected extends Message {
       ..packString(MessageFields.type)
       ..packString(_type)
       ..packString(MessageFields.id)
-      ..packInt(id);
+      ..packInt(id.value);
   }
 }

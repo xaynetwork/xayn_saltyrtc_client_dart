@@ -1,15 +1,13 @@
-import 'dart:typed_data' show Uint8List;
-
 import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
     show writeDataTagWithTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, TasksData;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
+    show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
         validateByteArrayType,
-        validateByteArray,
         validateTasksDataType,
         validateTasksData,
         validateStringType;
@@ -20,7 +18,7 @@ const _type = MessageType.auth;
 
 @immutable
 class AuthInitiator extends Message {
-  final Uint8List yourCookie;
+  final Cookie yourCookie;
   final String task;
   final TasksData data;
 
@@ -28,14 +26,13 @@ class AuthInitiator extends Message {
   List<Object> get props => [yourCookie, task, data];
 
   AuthInitiator(this.yourCookie, this.task, this.data) {
-    validateByteArray(yourCookie, Nonce.cookieLength, MessageFields.yourCookie);
     validateTasksData([task], data);
   }
 
   factory AuthInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final yourCookie = validateByteArrayType(
-        map[MessageFields.yourCookie], MessageFields.yourCookie);
+    final yourCookie = Cookie(validateByteArrayType(
+        map[MessageFields.yourCookie], MessageFields.yourCookie));
     final task =
         validateStringType(map[MessageFields.task], MessageFields.task);
     final data =
@@ -54,7 +51,7 @@ class AuthInitiator extends Message {
       ..packString(MessageFields.type)
       ..packString(_type)
       ..packString(MessageFields.yourCookie)
-      ..packBinary(yourCookie)
+      ..packBinary(yourCookie.toBytes())
       ..packString(MessageFields.task)
       ..packString(task);
 

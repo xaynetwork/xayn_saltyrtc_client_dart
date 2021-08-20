@@ -1,9 +1,12 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show CombinedSequence;
+import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
+    show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError, validateId;
+    show ValidationError;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
@@ -18,12 +21,11 @@ import 'package:meta/meta.dart' show immutable;
 /// we treat overflow and sequence as one 48bit number (combined sequence number)
 @immutable
 class Nonce with EquatableMixin {
-  static const cookieLength = 16;
   static const totalLength = 24;
 
-  final Uint8List cookie;
-  final int source;
-  final int destination;
+  final Cookie cookie;
+  final Id source;
+  final Id destination;
   final CombinedSequence combinedSequence;
 
   @override
@@ -34,33 +36,28 @@ class Nonce with EquatableMixin {
     this.source,
     this.destination,
     this.combinedSequence,
-  ) {
-    if (cookie.length != cookieLength) {
-      throw ValidationError('cookie must be $cookieLength bytes long');
-    }
-    validateId(source, 'source');
-    validateId(destination, 'destination');
-  }
+  );
 
   factory Nonce.fromBytes(Uint8List bytes) {
     if (bytes.length < totalLength) {
       throw ValidationError('buffer limit must be at least $totalLength');
     }
 
-    final cookie = bytes.sublist(0, cookieLength);
-    final source = bytes[cookieLength];
-    final destination = bytes[cookieLength + 1];
+    final cookie = bytes.sublist(0, Cookie.cookieLength);
+    final source = Id.peerId(bytes[Cookie.cookieLength]);
+    final destination = Id.peerId(bytes[Cookie.cookieLength + 1]);
     final combinedSequence = CombinedSequence.fromBytes(bytes.sublist(
-        cookieLength + 2, cookieLength + 2 + CombinedSequence.numBytes));
+        Cookie.cookieLength + 2,
+        Cookie.cookieLength + 2 + CombinedSequence.numBytes));
 
-    return Nonce(cookie, source, destination, combinedSequence);
+    return Nonce(Cookie(cookie), source, destination, combinedSequence);
   }
 
   Uint8List toBytes() {
     final builder = BytesBuilder(copy: false);
-    builder.add(cookie);
-    builder.addByte(source);
-    builder.addByte(destination);
+    builder.add(cookie.toBytes());
+    builder.addByte(source.value);
+    builder.addByte(destination.value);
     builder.add(combinedSequence.toBytes());
 
     return builder.toBytes();
