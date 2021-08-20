@@ -47,7 +47,7 @@ class Responder extends Peer {
   /// Used to identify the oldest responder during the path cleaning procedure.
   final int counter;
 
-  /// an initiator can receive messages from multiple responder during the peer handshake
+  /// An initiator can receive messages from multiple responder during the peer handshake
   /// we save the state of the handshake for each responder
   PeerHandshake state = PeerHandshake.start;
 
