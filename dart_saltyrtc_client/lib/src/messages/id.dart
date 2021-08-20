@@ -9,7 +9,7 @@ import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
 /// Represent an address/id in the saltyrtc protocol.
-/// It can only contains values in [0, 255]
+/// It can only contain values in [0, 255]
 @immutable
 abstract class Id with EquatableMixin {
   static final Id serverAddress = Id.peerId(0);
