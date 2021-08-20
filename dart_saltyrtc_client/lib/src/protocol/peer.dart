@@ -32,8 +32,8 @@ abstract class Peer {
 
   SharedKeyStore? get permanentSharedKey => _permanentSharedKey;
 
-  // a normal setter require that return type of the getter is a subtype of the
-  // type of `sks`. We don't want to be able set null here.
+  // A normal setter requires that the return type of the getter is a subtype of the
+  // type of `sks`. We don't want to be able to set null here.
   void setPermanentSharedKey(SharedKeyStore sks) => _permanentSharedKey = sks;
 
   bool get hasPermanentSharedKey => _permanentSharedKey != null;
