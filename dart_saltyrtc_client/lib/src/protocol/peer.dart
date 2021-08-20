@@ -75,8 +75,8 @@ class CombinedSequencePair {
 
   CombinedSequence? get theirs => _theirs;
 
-  // a normal setter require that return type of the getter is a subtype of the
-  // type of `cs`. We don't want to be able set null here.
+  // A normal setter require that the return type of the getter is a subtype of the
+  // type of `cs`. We don't want to be able to set null here.
   void setTheirs(CombinedSequence cs) => _theirs = cs;
 }
 
