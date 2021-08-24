@@ -1,31 +1,44 @@
+import 'dart:typed_data' show Uint8List;
+
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show SharedKeyStore, Crypto;
+    show AuthToken, Crypto, SharedKeyStore;
+import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
+import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:dart_saltyrtc_client/src/messages/id.dart'
+    show Id, IdResponder, IdServer, IdInitiator;
+import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show CombinedSequence;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+    show ProtocolError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/states.dart'
-    show PeerHandshake;
+    show ClientHandshake;
 
 abstract class Peer {
-  final Id id;
   SharedKeyStore? _sessionSharedKey;
   SharedKeyStore? _permanentSharedKey;
 
-  final CombinedSequencePair csp;
-  final CookiePair cp;
+  final CombinedSequencePair csPair;
+  final CookiePair cookiePair;
 
-  Peer(this.id, this.csp, this.cp);
+  Id get id;
 
-  Peer.fromRandom(this.id, Crypto crypto)
-      : csp = CombinedSequencePair.fromRandom(crypto),
-        cp = CookiePair.fromRandom(crypto);
+  Peer(this.csPair, this.cookiePair);
+
+  Peer.fromRandom(Crypto crypto)
+      : csPair = CombinedSequencePair.fromRandom(crypto),
+        cookiePair = CookiePair.fromRandom(crypto);
+
+  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]);
 
   SharedKeyStore? get sessionSharedKey => _sessionSharedKey;
 
-  // A normal setter requires that the return type of the getter is a subtype of the
-  // type of `sks`. We don't want to be able to set null here.
+  // a normal setter require that return type of the getter is a subtype of the
+  // type of `sks`. We don't want to be able set null here.
   void setSessionSharedKey(SharedKeyStore sks) => _sessionSharedKey = sks;
 
   bool get hasSessionSharedKey => _sessionSharedKey != null;
@@ -40,28 +53,77 @@ abstract class Peer {
 }
 
 class Server extends Peer {
-  Server(Crypto crypto) : super.fromRandom(Id.serverAddress, crypto);
+  @override
+  final IdServer id = Id.serverAddress;
+
+  Server(Crypto crypto) : super.fromRandom(crypto);
+
+  @override
+  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]) {
+    final sks = ensureNotNull(sessionSharedKey);
+    return sks.encrypt(message: msg.toBytes(), nonce: nonce.toBytes());
+  }
 }
 
 class Responder extends Peer {
-  /// Used to identify the oldest responder during the path cleaning procedure.
+  @override
+  final IdResponder id;
+
+  /// used to identify the oldest responder during the path cleaning procedure.
   final int counter;
 
-  /// An initiator can receive messages from multiple responder during the peer handshake
+  /// an initiator can receive messages from multiple responder during the peer handshake
   /// we save the state of the handshake for each responder
-  PeerHandshake state = PeerHandshake.start;
+  ClientHandshake state = ClientHandshake.start;
 
-  Responder(Id id, this.counter, Crypto crypto) : super.fromRandom(id, crypto);
+  Responder(this.id, this.counter, Crypto crypto) : super.fromRandom(crypto);
+
+  @override
+  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]) {
+    final SharedKeyStore sks;
+    // if it's a Key message we need to use our permanent key
+    if (msg is Key) {
+      sks = ensureNotNull(permanentSharedKey);
+    } else {
+      // other messages will be encrypted with the session key
+      sks = ensureNotNull(sessionSharedKey);
+    }
+    return sks.encrypt(message: msg.toBytes(), nonce: nonce.toBytes());
+  }
 }
 
 class Initiator extends Peer {
-  static const initiatorAddress = 1;
+  @override
+  final IdInitiator id = Id.initiatorAddress;
 
   bool connected;
 
   Initiator(Crypto crypto)
       : connected = false,
-        super.fromRandom(Id.initiatorAddress, crypto);
+        super.fromRandom(crypto);
+
+  @override
+  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? authToken]) {
+    final msgBytes = msg.toBytes();
+    final nonceBytes = msg.toBytes();
+    // if it's a Token message we need to use authToken
+    if (msg is Token) {
+      if (authToken == null) {
+        throw ProtocolError(
+            'Cannot encrypt token message for peer: auth token is null');
+      }
+      return authToken.encrypt(message: msgBytes, nonce: nonceBytes);
+    }
+
+    final SharedKeyStore sks;
+    if (msg is Key) {
+      sks = ensureNotNull(permanentSharedKey);
+    } else {
+      // other messages will be encrypted with the session key
+      sks = ensureNotNull(sessionSharedKey);
+    }
+    return sks.encrypt(message: msgBytes, nonce: nonceBytes);
+  }
 }
 
 class CombinedSequencePair {

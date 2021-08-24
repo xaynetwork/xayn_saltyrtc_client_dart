@@ -13,8 +13,8 @@ import 'package:meta/meta.dart' show immutable;
 @immutable
 abstract class Id with EquatableMixin {
   static final Id unknownAddress = Id.peerId(0);
-  static final Id serverAddress = Id.peerId(0);
-  static final Id initiatorAddress = Id.peerId(1);
+  static final IdServer serverAddress = _Id(0);
+  static final IdInitiator initiatorAddress = _Id(1);
 
   /// this is the value of the id and is guaranteed that belongs to the range [0, 255]
   abstract final int value;
@@ -47,12 +47,19 @@ abstract class Id with EquatableMixin {
   }
 }
 
-/// Represent the id of an initiator or a responder.
+/// Represent the id of a server.
+abstract class IdServer implements Id {}
+
+/// Represent the id of a initiator or a responder.
 abstract class IdClient implements Id {}
 
+/// Represent the id of a initiator.
+abstract class IdInitiator implements IdClient {}
+
+/// Represent the id of a responder.
 abstract class IdResponder implements IdClient {}
 
-class _Id with EquatableMixin implements IdResponder {
+class _Id with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   @override
   final int value;
 

@@ -63,7 +63,8 @@ void main() {
   });
 
   test('Read server auth initiator', () {
-    checkRead(() => ServerAuthInitiator(yourCookie, signedKeys, [2]));
+    checkRead(
+        () => ServerAuthInitiator(yourCookie, signedKeys, [Id.responderId(2)]));
   });
 
   test('Read server auth responder', () {
