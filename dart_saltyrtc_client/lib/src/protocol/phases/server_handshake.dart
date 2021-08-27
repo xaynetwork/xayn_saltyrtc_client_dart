@@ -42,6 +42,19 @@ const saltyrtcSubprotocol = 'v1.saltyrtc.org';
 
 enum ServerHandshakeState { start, helloSent, authSent, done }
 
+/// In this phase the client and server will exchange cryptographic keys.
+/// Messages flow:
+///
+///     +--------------+     +-------------+
+/// --->+ server-hello |  +->+ client-auth |
+///     +------+-------+  |  +------+------+
+///            |          |         |
+///            v          |         v
+///     +------+-------+  |  +------+------+
+///     | client-hello +--+  | server-auth |
+///     +--------------+     +------+------+
+///
+/// client-hello is only sent by the responder.
 abstract class ServerHandshakePhase extends Phase {
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
 

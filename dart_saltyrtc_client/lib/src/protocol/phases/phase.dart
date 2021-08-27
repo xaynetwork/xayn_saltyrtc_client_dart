@@ -22,9 +22,10 @@ import 'package:meta/meta.dart' show protected;
 
 /// The protocol goes through 3 different phases
 /// 1. Server handshake
-/// 2. Peer handshake
+/// 2. Client handshake
 /// 3. Handover to the selected task
 
+/// Data that is common to all phases and roles.
 class Common {
   final Crypto crypto;
   final Role role;
@@ -57,6 +58,7 @@ class Common {
   }
 }
 
+/// Additional data for an initiator.
 class InitiatorData {
   final Map<IdResponder, Responder> responders = {};
 
@@ -76,6 +78,7 @@ class InitiatorData {
   }
 }
 
+/// Additional data for a responder.
 class ResponderData {
   final Initiator initiator;
   AuthToken? authToken;
@@ -83,6 +86,8 @@ class ResponderData {
   ResponderData(this.initiator);
 }
 
+/// A phase can handle a message and returns the next phase.
+/// This also contains common and auxiliary code.
 abstract class Phase {
   /// Data common to all phases and role.
   final Common common;
@@ -118,7 +123,7 @@ abstract class Phase {
 
   @protected
   void validateNonceSource(Nonce nonce) {
-    // this is only valid for PeerHandshake and Handover phases
+    // this is only valid for ClientHandshake and Handover phases
     // messages in these phases can only come from server or peer
     final source = nonce.source;
     if (source != Id.serverAddress) {
@@ -134,7 +139,7 @@ abstract class Phase {
 
   @protected
   void validateNonceDestination(Nonce nonce) {
-    // this is only valid for PeerHandshake and Handover states
+    // this is only valid for ClientHandshake and Handover states
     final address = common.address;
     final destination = nonce.destination;
     if (destination != address) {
@@ -157,7 +162,7 @@ abstract class Phase {
     final nonce =
         Nonce(receiver.cookiePair.ours, common.address, receiver.id, cs);
 
-    // If we don't to encrypt is just the concatenation
+    // If we don't encrypt is just the concatenation
     if (!encrypt) {
       final builder = BytesBuilder(copy: false);
       builder.add(nonce.toBytes());
@@ -180,6 +185,7 @@ abstract class Phase {
     _validateNonceCookie(nonce);
   }
 
+  // this is common between al phases.
   void _validateNonceCs(Nonce nonce) {
     final source = nonce.source;
     final peer = getPeerWithId(source);
@@ -205,6 +211,7 @@ abstract class Phase {
     peer.csPair.setTheirs(nonce.combinedSequence);
   }
 
+  // this is common between al phases.
   void _validateNonceCookie(Nonce nonce) {
     final source = nonce.source;
     final peer = getPeerWithId(nonce.source);
@@ -221,6 +228,7 @@ abstract class Phase {
   }
 }
 
+/// Brings in data an common methods for an initator.
 mixin InitiatorPhase implements Phase {
   InitiatorData get data;
 
@@ -241,6 +249,7 @@ mixin InitiatorPhase implements Phase {
   }
 }
 
+/// Brings in data an common methods for a responder.
 mixin ResponderPhase implements Phase {
   ResponderData get data;
 

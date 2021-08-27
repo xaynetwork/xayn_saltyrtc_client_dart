@@ -18,6 +18,7 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/states.dart'
     show ClientHandshake;
 
+/// A peer can be the server, the initiator or a responder
 abstract class Peer {
   SharedKeyStore? _sessionSharedKey;
   SharedKeyStore? _permanentSharedKey;
@@ -37,8 +38,8 @@ abstract class Peer {
 
   SharedKeyStore? get sessionSharedKey => _sessionSharedKey;
 
-  // a normal setter require that return type of the getter is a subtype of the
-  // type of `sks`. We don't want to be able set null here.
+  // A normal setter requires that return type of the getter is a subtype of the
+  // type of `sks`. We don't want to be able to set null here.
   void setSessionSharedKey(SharedKeyStore sks) => _sessionSharedKey = sks;
 
   bool get hasSessionSharedKey => _sessionSharedKey != null;
@@ -69,10 +70,10 @@ class Responder extends Peer {
   @override
   final IdResponder id;
 
-  /// used to identify the oldest responder during the path cleaning procedure.
+  /// Used to identify the oldest responder during the path cleaning procedure.
   final int counter;
 
-  /// an initiator can receive messages from multiple responder during the peer handshake
+  /// An initiator can receive messages from multiple responder during the peer handshake
   /// we save the state of the handshake for each responder
   ClientHandshake state = ClientHandshake.start;
 
