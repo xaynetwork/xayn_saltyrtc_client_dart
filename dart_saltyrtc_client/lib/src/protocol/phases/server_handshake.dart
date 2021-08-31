@@ -171,7 +171,7 @@ abstract class ServerHandshakePhase extends Phase {
       serverCookie,
       common.server.permanentSharedKey?.remotePublicKey,
       subprotocols,
-      common.pingInternval,
+      common.pingInterval,
     );
 
     final bytes = buildPacket(msg, common.server);

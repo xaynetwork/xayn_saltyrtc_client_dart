@@ -1,9 +1,7 @@
-import 'dart:io';
-import 'dart:typed_data' show Uint8List;
+import 'dart:typed_data' show Uint8List, BytesBuilder;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, AuthToken;
+    show Crypto, AuthToken, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
 import 'package:dart_saltyrtc_client/src/messages/message.dart';
@@ -36,7 +34,7 @@ class Common {
   final Uint8List? expectedServerKey;
 
   /// How often the server will ping the client.
-  final int pingInternval;
+  final int pingInterval;
 
   /// Tasks that the user support
   final List<Task> tasks;
@@ -50,7 +48,7 @@ class Common {
     this.expectedServerKey,
     this.role,
     this.tasks,
-    this.pingInternval,
+    this.pingInterval,
   ) : server = Server(crypto) {
     if (expectedServerKey != null) {
       Crypto.checkPublicKey(expectedServerKey!);
@@ -94,11 +92,13 @@ abstract class Phase {
 
   Phase(this.common);
 
+  /// Handle a message directly from the WebSocket,
+  /// bytes will contains <nonce><message>.
   Phase handleMessage(Uint8List bytes) {
     try {
       final nonce = Nonce.fromBytes(bytes);
 
-      _validateNonce(nonce);
+      _handleNonce(nonce);
 
       // remove the nonce
       bytes.removeRange(0, Nonce.totalLength);
@@ -178,15 +178,28 @@ abstract class Phase {
     throw UnimplementedError();
   }
 
-  void _validateNonce(Nonce nonce) {
+  /// Validate the nonce and update the values from it in the peer structure.
+  void _handleNonce(Nonce nonce) {
     validateNonceSource(nonce);
     validateNonceDestination(nonce);
-    _validateNonceCs(nonce);
-    _validateNonceCookie(nonce);
+
+    // to validate the combined sequence and the cookie we need the associated peer
+    final source = nonce.source;
+    final peer = getPeerWithId(nonce.source);
+    if (peer == null) {
+      throw ProtocolError('Could not find peer $source');
+    }
+
+    _validateNonceCs(peer, nonce);
+    _validateNonceCookie(peer, nonce);
+
+    // the combined sequence will change with at each message, we update it here.
+    peer.csPair.setTheirs(nonce.combinedSequence);
   }
 
-  // this is common between al phases.
-  void _validateNonceCs(Nonce nonce) {
+  /// It validates the combined sequence value that a peer send in the nonce.
+  /// Returns the peer associated to the source field on the nonce.
+  void _validateNonceCs(Peer peer, Nonce nonce) {
     final source = nonce.source;
     final peer = getPeerWithId(source);
     if (peer == null) {
@@ -207,28 +220,20 @@ abstract class Phase {
     else if (nonce.combinedSequence <= cspTheirs) {
       throw ValidationError('$source CS must be incremented');
     }
-
-    peer.csPair.setTheirs(nonce.combinedSequence);
   }
 
   // this is common between al phases.
-  void _validateNonceCookie(Nonce nonce) {
-    final source = nonce.source;
-    final peer = getPeerWithId(nonce.source);
-    if (peer == null) {
-      throw ProtocolError('Could not find peer $source');
-    }
-
+  void _validateNonceCookie(Peer peer, Nonce nonce) {
     final cpTheirs = peer.cookiePair.theirs;
     if (cpTheirs != null) {
       if (cpTheirs != nonce.cookie) {
-        throw ValidationError('$source cookie changed');
+        throw ValidationError('${nonce.source} cookie changed');
       }
     }
   }
 }
 
-/// Brings in data an common methods for an initator.
+/// Brings in data an common methods for an initiator.
 mixin InitiatorPhase implements Phase {
   InitiatorData get data;
 
