@@ -71,6 +71,8 @@ class Responder extends Peer {
   final IdResponder id;
 
   /// Used to identify the oldest responder during the path cleaning procedure.
+  /// The client keeps a counter of how many responder connected.
+  /// This is the value of that counter when this responder connected.
   final int counter;
 
   /// An initiator can receive messages from multiple responder during the peer handshake
