@@ -2,6 +2,19 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
+/// Something that can encrypt and decrypt data.
+abstract class CryptoBox {
+  Uint8List encrypt({
+    required Uint8List message,
+    required Uint8List nonce,
+  });
+
+  Uint8List decrypt({
+    required Uint8List ciphertext,
+    required Uint8List nonce,
+  });
+}
+
 /// Store the public and private asymmetric key of a peer.
 abstract class KeyStore {
   final Uint8List publicKey;
@@ -21,7 +34,7 @@ abstract class KeyStore {
 
 /// A `SharedKeyStore` holds the resulting precalculated shared key of
 /// the local peer's secret key and the remote peer's public key.
-abstract class SharedKeyStore {
+abstract class SharedKeyStore implements CryptoBox {
   final Uint8List remotePublicKey;
   final Uint8List ownPrivateKey;
 
@@ -29,30 +42,10 @@ abstract class SharedKeyStore {
     Crypto.checkPrivateKey(ownPrivateKey);
     Crypto.checkPublicKey(remotePublicKey);
   }
-
-  Uint8List encrypt({
-    required Uint8List message,
-    required Uint8List nonce,
-  });
-
-  Uint8List decrypt({
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-  });
 }
 
 /// Token that is used to authenticate a responder if it is not trusted
-abstract class AuthToken {
-  Uint8List encrypt({
-    required Uint8List message,
-    required Uint8List nonce,
-  });
-
-  Uint8List decrypt({
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-  });
-}
+abstract class AuthToken implements CryptoBox {}
 
 abstract class Crypto {
   // specified by NaCl.

@@ -1,7 +1,8 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, Crypto, SharedKeyStore;
+    show AuthToken, Crypto, SharedKeyStore, CryptoBox;
 import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -60,9 +61,8 @@ class Server extends Peer {
   Server(Crypto crypto) : super.fromRandom(crypto);
 
   @override
-  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]) {
-    final sks = ensureNotNull(sessionSharedKey);
-    return sks.encrypt(message: msg.toBytes(), nonce: nonce.toBytes());
+  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? _token]) {
+    return _encrypt(msg, nonce, sessionSharedKey);
   }
 }
 
@@ -81,15 +81,7 @@ class Responder extends Peer {
 
   @override
   Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]) {
-    final SharedKeyStore sks;
-    // if it's a Key message we need to use our permanent key
-    if (msg is Key) {
-      sks = ensureNotNull(permanentSharedKey);
-    } else {
-      // other messages will be encrypted with the session key
-      sks = ensureNotNull(sessionSharedKey);
-    }
-    return sks.encrypt(message: msg.toBytes(), nonce: nonce.toBytes());
+    return _encryptMsg(msg, nonce, permanentSharedKey, sessionSharedKey);
   }
 }
 
@@ -105,26 +97,35 @@ class Initiator extends Peer {
 
   @override
   Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? authToken]) {
-    final msgBytes = msg.toBytes();
-    final nonceBytes = msg.toBytes();
     // if it's a Token message we need to use authToken
     if (msg is Token) {
       if (authToken == null) {
         throw ProtocolError(
             'Cannot encrypt token message for peer: auth token is null');
       }
-      return authToken.encrypt(message: msgBytes, nonce: nonceBytes);
+      return _encrypt(msg, nonce, authToken);
     }
 
-    final SharedKeyStore sks;
-    if (msg is Key) {
-      sks = ensureNotNull(permanentSharedKey);
-    } else {
-      // other messages will be encrypted with the session key
-      sks = ensureNotNull(sessionSharedKey);
-    }
-    return sks.encrypt(message: msgBytes, nonce: nonceBytes);
+    return _encryptMsg(msg, nonce, permanentSharedKey, sessionSharedKey);
   }
+}
+
+Uint8List _encrypt(Message msg, Nonce nonce, CryptoBox? key) {
+  final sks = ensureNotNull(key);
+  return sks.encrypt(message: msg.toBytes(), nonce: nonce.toBytes());
+}
+
+/// Encrypt a message by selecting which key we need to use depending on the message itself.
+/// If the message is a [Key] message we need to use our permanent key
+/// otherwise we use the session key.
+Uint8List _encryptMsg(
+  Message msg,
+  Nonce nonce,
+  SharedKeyStore? permanentSharedKey,
+  SharedKeyStore? sessionSharedKey,
+) {
+  final sks = msg is Key ? permanentSharedKey : sessionSharedKey;
+  return _encrypt(msg, nonce, sks);
 }
 
 class CombinedSequencePair {
