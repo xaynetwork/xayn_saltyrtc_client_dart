@@ -12,9 +12,10 @@ import 'package:meta/meta.dart' show immutable;
 /// It can only contain values in [0, 255]
 @immutable
 abstract class Id with EquatableMixin {
-  static final Id unknownAddress = Id.peerId(0);
-  static final IdServer serverAddress = _Id(0);
-  static final IdInitiator initiatorAddress = _Id(1);
+  // unknown and server have the same address as specified in the protocol
+  static final Id unknownAddress = _AnyId(0);
+  static final IdServer serverAddress = _AnyId(0);
+  static final IdInitiator initiatorAddress = _AnyId(1);
 
   /// This is the value of the id and it is guaranteed that it belongs to the range [0, 255]
   abstract final int value;
@@ -31,19 +32,19 @@ abstract class Id with EquatableMixin {
   static Id peerId(int value) {
     validateId(value, 'id');
 
-    return _Id(value);
+    return _AnyId(value);
   }
 
   static IdClient clientId(int value) {
     validateIdClient(value);
 
-    return _Id(value);
+    return _AnyId(value);
   }
 
   static IdResponder responderId(int value) {
     validateIdResponder(value);
 
-    return _Id(value);
+    return _AnyId(value);
   }
 }
 
@@ -59,11 +60,11 @@ abstract class IdInitiator implements IdClient {}
 /// Represent the id of a responder.
 abstract class IdResponder implements IdClient {}
 
-class _Id with EquatableMixin implements IdResponder, IdInitiator, IdServer {
+class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   @override
   final int value;
 
-  _Id(this.value);
+  _AnyId(this.value);
 
   @override
   List<Object> get props => [value];
@@ -79,11 +80,11 @@ class _Id with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   }
 
   @override
-  bool isUnknown() => this == Id.serverAddress;
+  bool isUnknown() => this == Id.unknownAddress;
 
   @override
   bool isServer() => this == Id.serverAddress;
 
   @override
-  bool isInitiator() => this == Id.serverAddress;
+  bool isInitiator() => this == Id.initiatorAddress;
 }
