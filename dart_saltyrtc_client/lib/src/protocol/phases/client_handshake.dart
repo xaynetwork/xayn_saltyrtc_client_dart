@@ -10,7 +10,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, Common, ResponderPhase;
+    show Phase, Common;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart';
 import 'package:meta/meta.dart' show protected;
 
@@ -50,22 +50,4 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
 
   @protected
   Phase handleClientMessage(Uint8List msgBytes, Nonce nonce);
-}
-
-class ResponderClientHandshakePhase extends ClientHandshakePhase
-    with ResponderPhase {
-  @override
-  final ResponderData data;
-
-  ResponderClientHandshakePhase(Common common, this.data) : super(common);
-
-  @override
-  void handleServerMessageOther(Message msg, Nonce nonce) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Phase handleClientMessage(Uint8List msgBytes, Nonce nonce) {
-    throw UnimplementedError();
-  }
 }

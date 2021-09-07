@@ -25,7 +25,8 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ensureNotNull, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart';
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
+    show ResponderClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         Common,
