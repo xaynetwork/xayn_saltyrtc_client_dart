@@ -14,6 +14,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError;
+import 'package:dart_saltyrtc_client/src/protocol/network.dart';
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder, Server, Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
@@ -44,6 +45,10 @@ class Common {
   /// Every client start with address set to unknown.
   Id address = Id.unknownAddress;
 
+  /// Sink to send messages to the server or close the connection.
+  /// This should not be used directly, use `send` instead.
+  WebSocketSink sink;
+
   Common(
     this.crypto,
     this.ourKeys,
@@ -51,6 +56,7 @@ class Common {
     this.role,
     this.tasks,
     this.pingInterval,
+    this.sink,
   ) : server = Server(crypto) {
     if (expectedServerKey != null) {
       Crypto.checkPublicKey(expectedServerKey!);
@@ -178,7 +184,13 @@ abstract class Phase {
 
   /// Send bytes as a message on the websocket channel
   void send(Uint8List bytes) {
-    throw UnimplementedError();
+    // the java implementation takes the bytes and the original message,
+    // if we are in the handover state the message  is sent to the task and it
+    // have to encrypt it before sending it, otherwise the bytes are sent on the
+    // websocket channel. This design allow the task to implement its own chunking
+    // and reduce the overhead of a message but it also move some encryption logic
+    // to the task it self. At the moment I pref to keep the code simpler.
+    common.sink.add(bytes);
   }
 
   /// Validate the nonce and update the values from it in the peer structure.
