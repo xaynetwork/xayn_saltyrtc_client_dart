@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:collection/collection.dart' show ListEquality;
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
@@ -25,6 +26,9 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ensureNotNull, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart';
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
+    show InitiatorClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -69,7 +73,7 @@ abstract class ServerHandshakePhase extends Phase {
   void sendClientHello();
 
   @protected
-  Phase goToClientHandshakePhase();
+  ClientHandshakePhase goToClientHandshakePhase();
 
   @override
   void validateNonceSource(Nonce nonce) {
@@ -153,6 +157,8 @@ abstract class ServerHandshakePhase extends Phase {
         );
     }
 
+    logger.v('Current server handshake status $handshakeState');
+
     // Check if we're done yet
     if (handshakeState == ServerHandshakeState.done) {
       return goToClientHandshakePhase();
@@ -173,7 +179,7 @@ abstract class ServerHandshakePhase extends Phase {
     final subprotocols = [saltyrtcSubprotocol];
     final msg = ClientAuth(
       serverCookie,
-      common.server.permanentSharedKey?.remotePublicKey,
+      common.expectedServerKey,
       subprotocols,
       common.pingInterval,
     );
@@ -226,8 +232,10 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
   InitiatorServerHandshakePhase(Common common, this.data) : super(common);
 
   @override
-  Phase goToClientHandshakePhase() {
-    return InitiatorServerHandshakePhase(common, data);
+  ClientHandshakePhase goToClientHandshakePhase() {
+    logger.d('Switching to initiator client handshake');
+
+    return InitiatorClientHandshakePhase(common, data);
   }
 
   @override
@@ -237,6 +245,8 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
 
   @override
   void handleServerAuth(Message msg, Nonce nonce) {
+    logger.d('Initiator server handshake handling server-auth');
+
     if (msg is! ServerAuthInitiator) {
       throw ProtocolError('Message is not ${MessageType.serverAuth}');
     }
@@ -315,12 +325,16 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   ResponderServerHandshakePhase(Common common, this.data) : super(common);
 
   @override
-  Phase goToClientHandshakePhase() {
+  ClientHandshakePhase goToClientHandshakePhase() {
+    logger.d('Switching to responder client handshake');
+
     return ResponderClientHandshakePhase(common, data);
   }
 
   @override
   void sendClientHello() {
+    logger.d('Switching to responder client handshake');
+
     final msg = ClientHello(common.ourKeys.publicKey);
     final bytes = buildPacket(msg, common.server, false);
     send(bytes);

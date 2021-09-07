@@ -108,10 +108,9 @@ abstract class Phase {
 
       _handleNonce(nonce);
 
-      // remove the nonce
-      bytes.removeRange(0, Nonce.totalLength);
+      final msgBytes = Uint8List.sublistView(bytes, Nonce.totalLength);
 
-      return run(bytes, nonce);
+      return run(msgBytes, nonce);
     } on ValidationError catch (e) {
       if (e.isProtocolError) {
         throw ProtocolError('Invalid incoming message: $e');
