@@ -237,6 +237,10 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
       throw ProtocolError('Message is not ${MessageType.serverAuth}');
     }
 
+    if (!nonce.destination.isInitiator()) {
+      throw ValidationError('Invalid none destination ${nonce.destination}');
+    }
+
     common.address = Id.initiatorAddress;
 
     validateRepeatedCookie(msg.yourCookie);
