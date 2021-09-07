@@ -41,7 +41,14 @@ abstract class Peer {
 
   // A normal setter requires that the return type of the getter is a subtype of the
   // type of `sks`. We don't want to be able to set null here.
-  void setSessionSharedKey(SharedKeyStore sks) => _sessionSharedKey = sks;
+  void setSessionSharedKey(SharedKeyStore sks) {
+    // we need to check that permanent and session are different
+    if (sks == permanentSharedKey) {
+      throw ProtocolError(
+          'Server session key is the same as the permanent key');
+    }
+    _sessionSharedKey = sks;
+  }
 
   bool get hasSessionSharedKey => _sessionSharedKey != null;
 
@@ -63,16 +70,6 @@ class Server extends Peer {
   @override
   Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? _token]) {
     return _encrypt(msg, nonce, sessionSharedKey);
-  }
-
-  @override
-  void setSessionSharedKey(SharedKeyStore sks) {
-    // we need to check that permanent and session are different
-    if (sks == permanentSharedKey) {
-      throw ProtocolError(
-          'Server session key is the same as the permanent key');
-    }
-    _sessionSharedKey = sks;
   }
 }
 
