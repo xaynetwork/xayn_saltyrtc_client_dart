@@ -65,6 +65,7 @@ class Server extends Peer {
     return _encrypt(msg, nonce, sessionSharedKey);
   }
 
+  @override
   void setSessionSharedKey(SharedKeyStore sks) {
     // we need to check that permanent and session are different
     if (sks == permanentSharedKey) {
