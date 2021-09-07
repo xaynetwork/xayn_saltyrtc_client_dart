@@ -104,7 +104,7 @@ abstract class ServerHandshakePhase extends Phase {
       // - initiator destination must be Id.initiatorAddress
       // - responder destination must be between 2 and 255
       case ServerHandshakeState.authSent:
-        if (common.role == Role.initiator) {
+        if (role == Role.initiator) {
           check(Id.initiatorAddress);
         } else {
           validateIdResponder(destination.value, 'nonce destination');

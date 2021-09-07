@@ -29,7 +29,6 @@ import 'package:meta/meta.dart' show protected;
 /// Data that is common to all phases and roles.
 class Common {
   final Crypto crypto;
-  final Role role;
   final KeyStore ourKeys;
   final Server server;
 
@@ -53,7 +52,6 @@ class Common {
     this.crypto,
     this.ourKeys,
     this.expectedServerKey,
-    this.role,
     this.tasks,
     this.pingInterval,
     this.sink,
@@ -100,6 +98,8 @@ abstract class Phase {
 
   Phase(this.common);
 
+  Role get role;
+
   /// Handle a message directly from the WebSocket,
   /// bytes will contains <nonce><message>.
   Phase handleMessage(Uint8List bytes) {
@@ -135,7 +135,7 @@ abstract class Phase {
     // messages in these phases can only come from server or peer
     final source = nonce.source;
     if (source != Id.serverAddress) {
-      if (common.role == Role.initiator) {
+      if (role == Role.initiator) {
         validateIdResponder(source.value, 'nonce source');
       } else if (source != Id.initiatorAddress) {
         throw ValidationError(
@@ -253,6 +253,9 @@ mixin InitiatorPhase implements Phase {
   InitiatorData get data;
 
   @override
+  Role get role => Role.initiator;
+
+  @override
   Peer? getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
     if (id.isResponder()) {
@@ -272,6 +275,9 @@ mixin InitiatorPhase implements Phase {
 /// Brings in data an common methods for a responder.
 mixin ResponderPhase implements Phase {
   ResponderData get data;
+
+  @override
+  Role get role => Role.responder;
 
   @override
   Peer? getPeerWithId(Id id) {
