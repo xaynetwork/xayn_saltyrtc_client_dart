@@ -1,5 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/messages/id.dart';
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, signedKeysLength;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
@@ -10,7 +11,6 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateByteArrayType,
         validateByteArray,
         validateListType,
-        validateIdResponder,
         ValidationError,
         validateTypeWithNull;
 import 'package:messagepack/messagepack.dart' show Packer;
@@ -22,7 +22,7 @@ const _type = MessageType.serverAuth;
 class ServerAuthInitiator extends Message {
   final Cookie yourCookie;
   final Uint8List? signedKeys;
-  final List<int> responders;
+  final List<IdResponder> responders;
 
   @override
   List<Object?> get props => [yourCookie, signedKeys, responders];
@@ -31,9 +31,6 @@ class ServerAuthInitiator extends Message {
     if (signedKeys != null) {
       validateByteArray(
           signedKeys!, signedKeysLength, MessageFields.signedKeys);
-    }
-    for (final id in responders) {
-      validateIdResponder(id, MessageFields.responders);
     }
     if (responders.length != responders.toSet().length) {
       throw ValidationError(
@@ -46,7 +43,9 @@ class ServerAuthInitiator extends Message {
     final yourCookie = Cookie(validateByteArrayType(
         map[MessageFields.yourCookie], MessageFields.yourCookie));
     final responders = validateListType<int>(
-        map[MessageFields.responders], MessageFields.responders);
+            map[MessageFields.responders], MessageFields.responders)
+        .map(Id.responderId)
+        .toList(growable: false);
 
     final signedKeys = validateTypeWithNull(map[MessageFields.signedKeys],
         MessageFields.signedKeys, validateByteArrayType);
@@ -77,7 +76,7 @@ class ServerAuthInitiator extends Message {
       ..packString(MessageFields.responders)
       ..packListLength(responders.length);
     for (final responder in responders) {
-      msgPacker.packInt(responder);
+      msgPacker.packInt(responder.value);
     }
   }
 }
