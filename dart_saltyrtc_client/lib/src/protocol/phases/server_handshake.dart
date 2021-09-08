@@ -25,6 +25,8 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ensureNotNull, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
+    show ResponderClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         Common,
@@ -67,7 +69,7 @@ abstract class ServerHandshakePhase extends Phase {
   void sendClientHello();
 
   @protected
-  Phase goToPeerHandshakePhase();
+  Phase goToClientHandshakePhase();
 
   @override
   void validateNonceSource(Nonce nonce) {
@@ -151,7 +153,7 @@ abstract class ServerHandshakePhase extends Phase {
 
     // Check if we're done yet
     if (handshakeState == ServerHandshakeState.done) {
-      return goToPeerHandshakePhase();
+      return goToClientHandshakePhase();
     } else {
       return this;
     }
@@ -222,8 +224,8 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
   InitiatorServerHandshakePhase(Common common, this.data) : super(common);
 
   @override
-  Phase goToPeerHandshakePhase() {
-    throw UnimplementedError();
+  Phase goToClientHandshakePhase() {
+    return InitiatorServerHandshakePhase(common, data);
   }
 
   @override
@@ -311,8 +313,8 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   ResponderServerHandshakePhase(Common common, this.data) : super(common);
 
   @override
-  Phase goToPeerHandshakePhase() {
-    throw UnimplementedError();
+  Phase goToClientHandshakePhase() {
+    return ResponderClientHandshakePhase(common, data);
   }
 
   @override

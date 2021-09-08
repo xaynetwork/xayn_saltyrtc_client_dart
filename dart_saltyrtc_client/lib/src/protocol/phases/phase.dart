@@ -7,7 +7,9 @@ import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
 import 'package:dart_saltyrtc_client/src/messages/message.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart';
 import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart';
+import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart';
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
@@ -265,5 +267,19 @@ mixin ResponderPhase implements Phase {
       return data.initiator;
     }
     throw ValidationError('Invalid peer id: $id');
+  }
+}
+
+/// Common methods for phases after the server handshake.
+/// Mostly control messages from the server.
+abstract class AfterServerHandshakePhase extends Phase {
+  AfterServerHandshakePhase(Common common) : super(common);
+
+  void handleSendError(SendError msg) {
+    throw UnimplementedError();
+  }
+
+  void handleDisconnected(Disconnected msg) {
+    throw UnimplementedError();
   }
 }
