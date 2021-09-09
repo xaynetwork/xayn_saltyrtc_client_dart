@@ -84,7 +84,7 @@ void main() {
     // we generate 254 responder and we expect some of them to be dropped
     final responders = List.generate(254, (id) => Id.responderId(2 + id));
 
-    final serverAuthResult = setupData.server.sendServerAuthInitiator(
+    setupData.server.sendServerAuthInitiator(
       state.phase,
       state.lastSentMessage.nonce.cookie,
       responders,
