@@ -2,14 +2,19 @@ import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, AuthToken, KeyStore;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
-import 'package:dart_saltyrtc_client/src/messages/message.dart';
-import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart';
+import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
+import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
+    show OverflowException;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart';
-import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart';
-import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart';
+import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
+import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
+    show DropResponder;
+import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
+    show SendError;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
