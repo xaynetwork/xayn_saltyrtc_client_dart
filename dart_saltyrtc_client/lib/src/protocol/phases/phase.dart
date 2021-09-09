@@ -127,9 +127,9 @@ abstract class Phase {
   @protected
   Phase run(Uint8List msgBytes, Nonce nonce);
 
-  /// Returns a peer with a given id.
+  /// Returns a peer with a given id, if it is not possible it throw a ValidationError.
   @protected
-  Peer? getPeerWithId(Id id);
+  Peer getPeerWithId(Id id);
 
   @protected
   void validateNonceSource(Nonce nonce) {
@@ -201,11 +201,7 @@ abstract class Phase {
     validateNonceDestination(nonce);
 
     // to validate the combined sequence and the cookie we need the associated peer
-    final source = nonce.source;
     final peer = getPeerWithId(nonce.source);
-    if (peer == null) {
-      throw ProtocolError('Could not find peer $source');
-    }
 
     _validateNonceCs(peer, nonce);
     _validateNonceCookie(peer, nonce);
@@ -219,9 +215,6 @@ abstract class Phase {
   void _validateNonceCs(Peer peer, Nonce nonce) {
     final source = nonce.source;
     final peer = getPeerWithId(source);
-    if (peer == null) {
-      throw ProtocolError('Could not find peer $source');
-    }
 
     final cspTheirs = peer.csPair.theirs;
 
@@ -258,12 +251,23 @@ mixin InitiatorPhase implements Phase {
   Role get role => Role.initiator;
 
   @override
-  Peer? getPeerWithId(Id id) {
+  Peer getPeerWithId(Id id) {
     if (id.isServer()) return server;
     if (id.isResponder()) {
-      return data.responders[id];
+      final responder = data.responders[id];
+      if (responder != null) {
+        return responder;
+      } else {
+        // this can happen when a responder has been dropped
+        // but a message was still in flight.
+        // we want to ignore this message but not to terminate the connection
+        throw ValidationError(
+          'Invalid responder id: $id',
+          isProtocolError: false,
+        );
+      }
     }
-    throw ValidationError('Invalid peer id: $id');
+    throw ProtocolError('Invalid peer id: $id');
   }
 
   void dropResponder(Responder responder, CloseCode closeCode) {
@@ -282,12 +286,12 @@ mixin ResponderPhase implements Phase {
   Role get role => Role.responder;
 
   @override
-  Peer? getPeerWithId(Id id) {
+  Peer getPeerWithId(Id id) {
     if (id.isServer()) return server;
     if (id.isInitiator()) {
       return data.initiator;
     }
-    throw ValidationError('Invalid peer id: $id');
+    throw ProtocolError('Invalid peer id: $id');
   }
 }
 
