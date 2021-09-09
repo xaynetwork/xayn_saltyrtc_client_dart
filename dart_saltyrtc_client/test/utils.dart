@@ -32,7 +32,7 @@ class SetupData {
   );
 
   factory SetupData.init(
-    Phase Function(Common) initPhase, [
+    Phase Function(Common, int) initPhase, [
     int pingInterval = 13,
     List<Task> tasks = const [],
   ]) {
@@ -46,10 +46,9 @@ class SetupData {
       clientPermanentKeys,
       server.permanentPublicKey,
       tasks,
-      pingInterval,
       ws,
     );
-    final phase = initPhase(common);
+    final phase = initPhase(common, pingInterval);
 
     return SetupData._(
         crypto, clientPermanentKeys, server, outMsgs, phase, pingInterval);
@@ -57,16 +56,25 @@ class SetupData {
 }
 
 InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
-  Common common, [
+  Common common,
+  int pingInterval, [
   InitiatorData? data,
 ]) {
-  return InitiatorServerHandshakePhase(common, data ?? InitiatorData(null));
+  return InitiatorServerHandshakePhase(
+    common,
+    pingInterval,
+    data ?? InitiatorData(null),
+  );
 }
 
 ResponderServerHandshakePhase makeResponderServerHandshakePhase(
-  Common common, [
+  Common common,
+  int pingInterval, [
   ResponderData? data,
 ]) {
   return ResponderServerHandshakePhase(
-      common, data ?? ResponderData(Initiator(common.crypto)));
+    common,
+    pingInterval,
+    data ?? ResponderData(Initiator(common.crypto)),
+  );
 }

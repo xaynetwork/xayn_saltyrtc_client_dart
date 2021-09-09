@@ -41,9 +41,6 @@ class Common {
   /// Optional permanent key of the server. It can be used to verify the server.
   final Uint8List? expectedServerKey;
 
-  /// How often the server will ping the client.
-  final int pingInterval;
-
   /// Tasks that the user support
   final List<Task> tasks;
 
@@ -59,7 +56,6 @@ class Common {
     this.ourKeys,
     this.expectedServerKey,
     this.tasks,
-    this.pingInterval,
     this.sink,
   ) : server = Server(crypto) {
     if (expectedServerKey != null) {
@@ -77,9 +73,6 @@ class InitiatorData {
 
   /// Responder trusted key
   final Uint8List? responderTrustedKey;
-
-  /// Selected responder
-  Responder? responder;
 
   InitiatorData(this.responderTrustedKey) {
     if (responderTrustedKey != null) {

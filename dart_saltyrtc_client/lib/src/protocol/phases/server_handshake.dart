@@ -63,8 +63,9 @@ enum ServerHandshakeState { start, helloSent, authSent, done }
 /// client-hello is only sent by the responder.
 abstract class ServerHandshakePhase extends Phase {
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
+  final int _pingInterval;
 
-  ServerHandshakePhase(Common common) : super(common);
+  ServerHandshakePhase(Common common, this._pingInterval) : super(common);
 
   @protected
   void handleServerAuth(Message msg, Nonce nonce);
@@ -181,7 +182,7 @@ abstract class ServerHandshakePhase extends Phase {
       serverCookie,
       common.expectedServerKey,
       subprotocols,
-      common.pingInterval,
+      _pingInterval,
     );
 
     final bytes = buildPacket(msg, common.server);
@@ -229,7 +230,8 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
   @override
   final InitiatorData data;
 
-  InitiatorServerHandshakePhase(Common common, this.data) : super(common);
+  InitiatorServerHandshakePhase(Common common, int pingInterval, this.data)
+      : super(common, pingInterval);
 
   @override
   ClientHandshakePhase goToClientHandshakePhase() {
@@ -322,7 +324,8 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   @override
   final ResponderData data;
 
-  ResponderServerHandshakePhase(Common common, this.data) : super(common);
+  ResponderServerHandshakePhase(Common common, int pingInterval, this.data)
+      : super(common, pingInterval);
 
   @override
   ClientHandshakePhase goToClientHandshakePhase() {
