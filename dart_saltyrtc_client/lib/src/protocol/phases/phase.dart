@@ -1,19 +1,19 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, AuthToken, KeyStore;
+    show InitialClientAuthMethod, Crypto, AuthToken, KeyStore;
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
-    show Id, IdResponder, IdClient;
+    show Id, IdClient, IdResponder;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show OverflowException;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
-    show DropResponder;
+import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart';
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -23,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Peer, Responder, Server, Initiator, AuthenticatedServer;
+    show AuthenticatedServer, Initiator, Peer, Server;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
@@ -73,19 +73,10 @@ class ClientHandshakeInput {
 
 /// Additional data for an initiator.
 class InitiatorData {
-  final Map<IdResponder, Responder> responders = {};
+  /// Trusted public key of the responder we expect to peer with.
+  final InitialClientAuthMethod authMethod;
 
-  /// Used to track the oldest responder
-  int responderCounter = 0;
-
-  /// Responder trusted key
-  final Uint8List? responderTrustedKey;
-
-  InitiatorData(this.responderTrustedKey) {
-    if (responderTrustedKey != null) {
-      Crypto.checkPublicKey(responderTrustedKey!);
-    }
-  }
+  InitiatorData(this.authMethod);
 }
 
 /// Additional data for a responder.
@@ -121,7 +112,7 @@ abstract class Phase {
       if (e.isProtocolError) {
         throw ProtocolError('Invalid incoming message: $e');
       } else {
-        // TODO log that we are dropping a message
+        logger.w('Dropping message: $e');
         return this;
       }
     } on StateError catch (e) {
@@ -166,6 +157,13 @@ abstract class Phase {
     }
   }
 
+  /// Short form for `send(buildPacket(msg, to))`
+  void sendMessage(Message msg, {required Peer to, bool encrypted = true}) {
+    final type = msg.type;
+    send(buildPacket(msg, to, encrypted));
+    logger.d('Send $type');
+  }
+
   /// Build binary packet to send.
   Uint8List buildPacket(Message msg, Peer receiver, [bool encrypt = true]) {
     final cs = receiver.csPair.ours;
@@ -205,87 +203,37 @@ abstract class Phase {
     validateNonceSource(nonce);
     validateNonceDestination(nonce);
 
-    // to validate the combined sequence and the cookie we need the associated peer
-    final peer = getPeerWithId(nonce.source);
-
-    _validateNonceCs(peer, nonce);
-    _validateNonceCookie(peer, nonce);
-
-    // the combined sequence will change with at each message, we update it here.
-    peer.csPair.setTheirs(nonce.combinedSequence);
-  }
-
-  /// It validates the combined sequence value that a peer send in the nonce.
-  /// Returns the peer associated to the source field on the nonce.
-  void _validateNonceCs(Peer peer, Nonce nonce) {
     final source = nonce.source;
+    // to validate the combined sequence and the cookie we need the associated peer
     final peer = getPeerWithId(source);
 
-    final cspTheirs = peer.csPair.theirs;
-
-    // this is the first message from that sender, the overflow number must be zero
-    if (cspTheirs == null) {
-      // this if must be separated otherwise the type system does not understand
-      // that cspTheirs != null in the else
-      if (!nonce.combinedSequence.isOverflowZero) {
-        throw ValidationError('First message from $source');
-      }
-    }
-    // this is not the first message, the CS must be incremented
-    else if (nonce.combinedSequence <= cspTheirs) {
-      throw ValidationError('$source CS must be incremented');
-    }
-  }
-
-  // this is common between al phases.
-  void _validateNonceCookie(Peer peer, Nonce nonce) {
-    final cpTheirs = peer.cookiePair.theirs;
-    if (cpTheirs != null) {
-      if (cpTheirs != nonce.cookie) {
-        throw ValidationError('${nonce.source} cookie changed');
-      }
-    }
+    peer.csPair.updateAndCheck(nonce.combinedSequence, source);
+    peer.cookiePair.updateAndCheck(nonce.cookie, source);
   }
 }
 
-/// Brings in data an common methods for an initiator.
-mixin InitiatorPhase implements Phase, InitiatorSendDropResponder {
-  InitiatorData get data;
-
+mixin InitiatorIdentity implements Phase {
   @override
   Role get role => Role.initiator;
+}
+
+mixin WithPeer implements Phase {
+  Peer get peer;
 
   @override
   Peer getPeerWithId(Id id) {
-    if (id.isServer()) return common.server;
-    if (id.isResponder()) {
-      final responder = data.responders[id];
-      if (responder != null) {
-        return responder;
-      } else {
-        // this can happen when a responder has been dropped
-        // but a message was still in flight.
-        // we want to ignore this message but not to terminate the connection
-        throw ValidationError(
-          'Invalid responder id: $id',
-          isProtocolError: false,
-        );
-      }
+    if (id.isServer()) {
+      return common.server;
+    } else if (id == peer.id) {
+      return peer;
     }
     throw ProtocolError('Invalid peer id: $id');
-  }
-
-  void dropResponder(Responder responder, CloseCode closeCode) {
-    data.responders.remove(responder.id);
-    sendDropResponder(responder.id, closeCode);
   }
 }
 
 mixin InitiatorSendDropResponder on Phase {
   void sendDropResponder(IdResponder id, CloseCode closeCode) {
-    final msg = DropResponder(id, closeCode);
-    final bytes = buildPacket(msg, common.server);
-    send(bytes);
+    sendMessage(DropResponder(id, closeCode), to: common.server);
   }
 }
 

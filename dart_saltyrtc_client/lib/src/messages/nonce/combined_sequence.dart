@@ -58,9 +58,6 @@ class CombinedSequence with EquatableMixin {
         .skip(2)
         .toList(growable: false));
   }
-
-  bool operator <=(CombinedSequence cs) =>
-      _combinedSequenceNumber <= cs._combinedSequenceNumber;
 }
 
 /// This means that the `overflow` field of `CombinedSequence` overflowed.

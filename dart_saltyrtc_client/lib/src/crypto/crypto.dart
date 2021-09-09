@@ -92,3 +92,50 @@ void _checkLength(Uint8List data, int expected, String name) {
     throw ArgumentError('$name must be $expected, found $len');
   }
 }
+
+class InitialClientAuthMethod {
+  final SharedKeyStore? _trustedRespondersSharedPermanentKey;
+  final AuthToken? _authToken;
+
+  InitialClientAuthMethod.fromTrustedResponderPublicPermanentKey(Crypto crypto,
+      KeyStore initiatorKeys, Uint8List responderPublicPermanentKey)
+      : _trustedRespondersSharedPermanentKey =
+            createResponderSharedPermanentKey(
+                crypto, initiatorKeys, responderPublicPermanentKey),
+        _authToken = null;
+
+  InitialClientAuthMethod.fromAuthToken(this._authToken)
+      : _trustedRespondersSharedPermanentKey = null;
+
+  // /// Trust the given responder (which gained trust by using a token message).
+  // ///
+  // /// This does only set the trust for this protocol instance, the
+  // /// "trusted responder permanent key" still needs to be passed to the
+  // /// application using SaltyRTC for permanent or at least "longer" storage.
+  // void trustResponder(Crypto crypto, KeyStore initiatorKeys,
+  //     Uint8List responderPublicPermanentKey) {
+  //   if (responderIsTrusted()) {
+  //     throw StateError('Responder already trusted');
+  //   }
+  //   _authToken = null;
+  //   _trustedResponderSharedPermanentKey = createResponderSharedPermanentKey(
+  //       crypto, initiatorKeys, responderPublicPermanentKey);
+  // }
+
+  AuthToken? authToken() => _authToken;
+
+  /// A preset responder shared permanent key.
+  ///
+  /// This key is a shared key based on the initiators permanent key and the
+  /// responders permanent key.
+  SharedKeyStore? presetResponderSharedKey() =>
+      _trustedRespondersSharedPermanentKey;
+
+  static SharedKeyStore createResponderSharedPermanentKey(Crypto crypto,
+      KeyStore initiatorKeys, Uint8List responderPublicPermanentKey) {
+    Crypto.checkPublicKey(responderPublicPermanentKey);
+    return crypto.createSharedKeyStore(
+        ownKeyStore: initiatorKeys,
+        remotePublicKey: responderPublicPermanentKey);
+  }
+}

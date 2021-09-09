@@ -2,9 +2,7 @@ import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:collection/collection.dart' show ListEquality;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType, Message, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
@@ -25,9 +23,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show ValidationError, validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ensureNotNull;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
-    show ClientHandshakePhase;
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
@@ -38,19 +34,17 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         CommonAfterServerHandshake,
         Phase,
         InitiatorData,
-        InitiatorPhase,
         InitiatorSendDropResponder,
+        InitiatorIdentity,
         ResponderData,
         ResponderPhase,
         ClientHandshakeInput;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
-import 'package:dart_saltyrtc_client/src/protocol/states.dart'
-    show ClientHandshake;
 import 'package:meta/meta.dart' show protected;
 
 const saltyrtcSubprotocol = 'v1.saltyrtc.org';
 
-enum ServerHandshakeState { start, helloSent, authSent, done }
+enum ServerHandshakeState { start, helloSent, authSent }
 
 /// In this phase the client and server will exchange cryptographic keys.
 /// Messages flow:
@@ -77,13 +71,10 @@ abstract class ServerHandshakePhase extends Phase {
       : super(common);
 
   @protected
-  void handleServerAuth(Message msg, Nonce nonce);
+  Phase handleServerAuth(Message msg, Nonce nonce);
 
   @protected
   void sendClientHello();
-
-  @protected
-  ClientHandshakePhase goToClientHandshakePhase();
 
   @override
   void validateNonceSource(Nonce nonce) {
@@ -124,10 +115,13 @@ abstract class ServerHandshakePhase extends Phase {
           validateIdResponder(destination.value, 'nonce destination');
         }
         return;
-      // server handshake is done so we can use the general implementation
-      case ServerHandshakeState.done:
-        super.validateNonceDestination(nonce);
     }
+  }
+
+  @override
+  Peer getPeerWithId(Id id) {
+    if (id.isServer()) return common.server;
+    throw ProtocolError('Invalid peer id: $id');
   }
 
   @override
@@ -150,29 +144,14 @@ abstract class ServerHandshakePhase extends Phase {
             throw ProtocolError(
                 'Expected ${MessageType.serverHello}, but got ${msg.type}');
           }
+          logger.v('Current server handshake status $handshakeState');
         }
-        break;
+        return this;
       case ServerHandshakeState.helloSent:
         throw ProtocolError(
             'Received ${msg.type} message before sending ${MessageType.clientAuth}');
       case ServerHandshakeState.authSent:
-        {
-          handleServerAuth(msg, nonce);
-        }
-        break;
-      case ServerHandshakeState.done:
-        StateError(
-          'Received server handshake message when it is already finished',
-        );
-    }
-
-    logger.v('Current server handshake status $handshakeState');
-
-    // Check if we're done yet
-    if (handshakeState == ServerHandshakeState.done) {
-      return goToClientHandshakePhase();
-    } else {
-      return this;
+        return handleServerAuth(msg, nonce);
     }
   }
 
@@ -180,21 +159,20 @@ abstract class ServerHandshakePhase extends Phase {
     final sks = common.crypto.createSharedKeyStore(
         ownKeyStore: common.ourKeys, remotePublicKey: msg.key);
     common.server.setSessionSharedKey(sks);
-    common.server.cookiePair.setTheirs(nonce.cookie);
   }
 
   void sendClientAuth() {
     final serverCookie = ensureNotNull(common.server.cookiePair.theirs);
     final subprotocols = [saltyrtcSubprotocol];
-    final msg = ClientAuth(
-      serverCookie,
-      common.expectedServerKey,
-      subprotocols,
-      _pingInterval,
+    sendMessage(
+      ClientAuth(
+        serverCookie,
+        common.expectedServerKey,
+        subprotocols,
+        _pingInterval,
+      ),
+      to: common.server,
     );
-
-    final bytes = buildPacket(msg, common.server);
-    send(bytes);
     handshakeState = ServerHandshakeState.authSent;
   }
 
@@ -234,8 +212,7 @@ abstract class ServerHandshakePhase extends Phase {
 }
 
 class InitiatorServerHandshakePhase extends ServerHandshakePhase
-    with InitiatorPhase, InitiatorSendDropResponder {
-  @override
+    with InitiatorIdentity, InitiatorSendDropResponder {
   final InitiatorData data;
 
   InitiatorServerHandshakePhase(
@@ -246,23 +223,12 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
   ) : super(common, clientHandshakeInput, pingInterval);
 
   @override
-  ClientHandshakePhase goToClientHandshakePhase() {
-    logger.d('Switching to initiator client handshake');
-
-    return InitiatorClientHandshakePhase(
-      CommonAfterServerHandshake(common),
-      clientHandshakeInput,
-      data,
-    );
-  }
-
-  @override
   void sendClientHello() {
     // noop as an initiator
   }
 
   @override
-  void handleServerAuth(Message msg, Nonce nonce) {
+  Phase handleServerAuth(Message msg, Nonce nonce) {
     logger.d('Initiator server handshake handling server-auth');
 
     if (msg is! ServerAuthInitiator) {
@@ -282,55 +248,14 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
         nonce: nonce,
         expectedServerKey: common.expectedServerKey);
 
-    msg.responders.forEach(processNewResponder);
-
-    handshakeState = ServerHandshakeState.done;
-  }
-
-  void processNewResponder(IdResponder id) {
-    // discard previous responder with same id
-    data.responders.remove(id);
-
-    final responder = Responder(id, data.responderCounter++, common.crypto);
-    final responderTrustedKey = data.responderTrustedKey;
-    // we already have the permanent key of the responder
-    if (responderTrustedKey != null) {
-      // we have the token
-      responder.state = ClientHandshake.token;
-      try {
-        final sks = common.crypto.createSharedKeyStore(
-            ownKeyStore: common.ourKeys, remotePublicKey: responderTrustedKey);
-        responder.setPermanentSharedKey(sks);
-      } on ValidationError {
-        throw StateError('Invalid responder trusted key');
-      }
-    }
-
-    data.responders[responder.id] = responder;
-
-    // if we have more then this responders we drop the oldest
-    const responderSizeThreshold = 252;
-
-    if (data.responders.length > responderSizeThreshold) {
-      _dropOldestInactiveResponder();
-    }
-  }
-
-  void _dropOldestInactiveResponder() {
-    final responder = data.responders.entries
-        .where((entry) => entry.value.state == ClientHandshake.start)
-        .fold<Responder?>(null, (min, entry) {
-      final v = entry.value;
-      if (min == null) {
-        return v;
-      }
-
-      return min.counter < v.counter ? min : v;
-    });
-
-    if (responder != null) {
-      dropResponder(responder, CloseCode.droppedByInitiator);
-    }
+    logger.d('Switching to initiator client handshake');
+    final nextPhase = InitiatorClientHandshakePhase(
+      CommonAfterServerHandshake(common),
+      clientHandshakeInput,
+      data,
+    );
+    msg.responders.forEach(nextPhase.addNewResponder);
+    return nextPhase;
   }
 }
 
@@ -344,28 +269,15 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
       : super(common, clientHandshakeInput, pingInterval);
 
   @override
-  ClientHandshakePhase goToClientHandshakePhase() {
-    logger.d('Switching to responder client handshake');
-
-    return ResponderClientHandshakePhase(
-      CommonAfterServerHandshake(common),
-      clientHandshakeInput,
-      data,
-    );
-  }
-
-  @override
   void sendClientHello() {
     logger.d('Switching to responder client handshake');
-
-    final msg = ClientHello(common.ourKeys.publicKey);
-    final bytes = buildPacket(msg, common.server, false);
-    send(bytes);
+    sendMessage(ClientHello(common.ourKeys.publicKey),
+        to: common.server, encrypted: false);
     handshakeState = ServerHandshakeState.helloSent;
   }
 
   @override
-  void handleServerAuth(Message msg, Nonce nonce) {
+  Phase handleServerAuth(Message msg, Nonce nonce) {
     if (msg is! ServerAuthResponder) {
       throw ProtocolError('Message is not ${MessageType.serverAuth}');
     }
@@ -386,6 +298,11 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
 
     data.initiator.connected = true;
 
-    handshakeState = ServerHandshakeState.done;
+    logger.d('Switching to responder client handshake');
+    return ResponderClientHandshakePhase(
+      CommonAfterServerHandshake(common),
+      clientHandshakeInput,
+      data,
+    );
   }
 }

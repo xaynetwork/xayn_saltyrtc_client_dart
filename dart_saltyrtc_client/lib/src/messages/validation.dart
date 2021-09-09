@@ -18,6 +18,12 @@ class ValidationError implements Exception {
   String toString() => _msg;
 }
 
+/// Exception indicating the the message is malformed and should be ignored.
+@immutable
+class IgnoreMessageError extends ValidationError {
+  IgnoreMessageError(String msg) : super(msg, isProtocolError: false);
+}
+
 /// Check that `value` represent a `type`.
 void validateType(Object? value, String type) {
   if (value is! String) {

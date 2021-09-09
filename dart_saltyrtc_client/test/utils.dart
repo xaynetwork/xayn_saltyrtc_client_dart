@@ -1,8 +1,9 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:async/async.dart' show StreamQueue;
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, KeyStore;
+    show Crypto, InitialClientAuthMethod, KeyStore;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Phase, Common, InitiatorData, ResponderData, ClientHandshakeInput;
@@ -65,7 +66,9 @@ InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
     common,
     clientHandshakeInput,
     pingInterval,
-    data ?? InitiatorData(null),
+    data ??
+        InitiatorData(InitialClientAuthMethod.fromAuthToken(
+            common.crypto.createAuthToken())),
   );
 }
 

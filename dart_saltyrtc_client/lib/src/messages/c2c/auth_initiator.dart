@@ -16,8 +16,10 @@ import 'package:meta/meta.dart' show immutable;
 
 const _type = MessageType.auth;
 
+/// Auth message as send by the initiator.
 @immutable
 class AuthInitiator extends Message {
+  /// The cookie of the receiver of the message.
   final Cookie yourCookie;
   final String task;
   final TasksData data;
