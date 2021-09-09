@@ -5,14 +5,16 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show ResponderPhase, ResponderData, Common, Phase;
+    show ResponderPhase, ResponderData, Common, Phase, ClientHandshakeInput;
 
 class ResponderClientHandshakePhase extends ClientHandshakePhase
     with ResponderPhase {
   @override
   final ResponderData data;
 
-  ResponderClientHandshakePhase(Common common, this.data) : super(common);
+  ResponderClientHandshakePhase(
+      Common common, ClientHandshakeInput input, this.data)
+      : super(common, input);
 
   @override
   void handleServerMessageOther(Message msg, Nonce nonce) {

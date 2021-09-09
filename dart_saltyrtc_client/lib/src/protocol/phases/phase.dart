@@ -41,9 +41,6 @@ class Common {
   /// Optional permanent key of the server. It can be used to verify the server.
   final Uint8List? expectedServerKey;
 
-  /// Tasks that the user support
-  final List<Task> tasks;
-
   /// Every client start with address set to unknown.
   Id address = Id.unknownAddress;
 
@@ -55,13 +52,20 @@ class Common {
     this.crypto,
     this.ourKeys,
     this.expectedServerKey,
-    this.tasks,
     this.sink,
   ) : server = Server(crypto) {
     if (expectedServerKey != null) {
       Crypto.checkPublicKey(expectedServerKey!);
     }
   }
+}
+
+/// Data that is needed for the client handshake and is passed by the user.
+class ClientHandshakeInput {
+  /// Tasks that the user support
+  final List<Task> tasks;
+
+  ClientHandshakeInput(this.tasks);
 }
 
 /// Additional data for an initiator.

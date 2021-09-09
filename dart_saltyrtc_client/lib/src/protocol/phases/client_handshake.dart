@@ -16,7 +16,9 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart';
 import 'package:meta/meta.dart' show protected;
 
 abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
-  ClientHandshakePhase(Common common) : super(common);
+  final ClientHandshakeInput input;
+
+  ClientHandshakePhase(Common common, this.input) : super(common);
 
   @override
   Phase run(Uint8List msgBytes, Nonce nonce) {
