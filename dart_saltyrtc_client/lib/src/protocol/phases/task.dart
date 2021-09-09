@@ -1,14 +1,11 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show SharedKeyStore;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart' show readMessage;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart';
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+    show ProtocolError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Initiator, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
