@@ -5,6 +5,7 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, SharedKeyStore, CryptoBox;
 import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
     show Id, IdResponder, IdServer, IdInitiator;
@@ -15,9 +16,10 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull;
+    show ProtocolError, ensureNotNull, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/states.dart'
     show ClientHandshake;
+import 'package:meta/meta.dart';
 
 /// A peer can be the server, the initiator or a responder
 abstract class Peer {
@@ -65,11 +67,55 @@ class Server extends Peer {
   @override
   final IdServer id = Id.serverAddress;
 
-  Server(Crypto crypto) : super.fromRandom(crypto);
+  Server.fromRandom(Crypto crypto) : super.fromRandom(crypto);
+
+  @protected
+  Server(CombinedSequencePair csPair, CookiePair cookiePair)
+      : super(csPair, cookiePair);
 
   @override
   Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? _token]) {
     return _encrypt(msg, nonce, sessionSharedKey);
+  }
+
+  /// Return an AuthenticatedServer iff hasSessionSharedKey.
+  AuthenticatedServer asAuthenticated() {
+    if (!hasSessionSharedKey) {
+      throw SaltyRtcError(
+        CloseCode.internalError,
+        'Server is not authenticated',
+      );
+    }
+
+    return AuthenticatedServer(
+        csPair, cookiePair, permanentSharedKey, sessionSharedKey!);
+  }
+}
+
+class AuthenticatedServer extends Server {
+  @override
+  final SharedKeyStore _sessionSharedKey;
+
+  AuthenticatedServer(
+    CombinedSequencePair csPair,
+    CookiePair cookiePair,
+    SharedKeyStore? permanentSharedKey,
+    this._sessionSharedKey,
+  ) : super(csPair, cookiePair) {
+    if (permanentSharedKey != null) {
+      setPermanentSharedKey(permanentSharedKey);
+    }
+  }
+
+  @override
+  SharedKeyStore get sessionSharedKey => _sessionSharedKey;
+
+  @override
+  void setSessionSharedKey(SharedKeyStore sks) {
+    throw SaltyRtcError(
+      CloseCode.internalError,
+      'Cannot set session key on an already authenticated server',
+    );
   }
 }
 

@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Peer, Responder, Server, Initiator;
+    show Peer, Responder, Server, Initiator, AuthenticatedServer;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
@@ -36,7 +36,6 @@ import 'package:meta/meta.dart' show protected;
 class Common {
   final Crypto crypto;
   final KeyStore ourKeys;
-  final Server server;
 
   /// Optional permanent key of the server. It can be used to verify the server.
   final Uint8List? expectedServerKey;
@@ -53,7 +52,7 @@ class Common {
     this.ourKeys,
     this.expectedServerKey,
     this.sink,
-  ) : server = Server(crypto) {
+  ) {
     if (expectedServerKey != null) {
       Crypto.checkPublicKey(expectedServerKey!);
     }
@@ -101,6 +100,7 @@ abstract class Phase {
 
   Phase(this.common);
 
+  Server get server;
   Role get role;
 
   /// Handle a message directly from the WebSocket,
@@ -259,7 +259,7 @@ mixin InitiatorPhase implements Phase {
 
   @override
   Peer? getPeerWithId(Id id) {
-    if (id.isServer()) return common.server;
+    if (id.isServer()) return server;
     if (id.isResponder()) {
       return data.responders[id];
     }
@@ -269,7 +269,7 @@ mixin InitiatorPhase implements Phase {
   void dropResponder(Responder responder, CloseCode closeCode) {
     data.responders.remove(responder.id);
     final msg = DropResponder(responder.id, closeCode);
-    final bytes = buildPacket(msg, common.server);
+    final bytes = buildPacket(msg, server);
     send(bytes);
   }
 }
@@ -283,7 +283,7 @@ mixin ResponderPhase implements Phase {
 
   @override
   Peer? getPeerWithId(Id id) {
-    if (id.isServer()) return common.server;
+    if (id.isServer()) return server;
     if (id.isInitiator()) {
       return data.initiator;
     }
@@ -294,7 +294,10 @@ mixin ResponderPhase implements Phase {
 /// Common methods for phases after the server handshake.
 /// Mostly control messages from the server.
 abstract class AfterServerHandshakePhase extends Phase {
-  AfterServerHandshakePhase(Common common) : super(common);
+  @override
+  final AuthenticatedServer server;
+
+  AfterServerHandshakePhase(Common common, this.server) : super(common);
 
   void handleSendError(SendError msg) {
     throw UnimplementedError();
