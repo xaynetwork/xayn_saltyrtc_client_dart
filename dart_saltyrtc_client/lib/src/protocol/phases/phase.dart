@@ -68,9 +68,6 @@ class InitiatorData {
   /// Responder trusted key
   final Uint8List? responderTrustedKey;
 
-  /// Selected responder
-  Responder? responder;
-
   InitiatorData(this.responderTrustedKey) {
     if (responderTrustedKey != null) {
       Crypto.checkPublicKey(responderTrustedKey!);
@@ -251,7 +248,7 @@ mixin InitiatorPhase implements Phase {
   void dropResponder(Responder responder, CloseCode closeCode) {
     data.responders.remove(responder.id);
     final msg = DropResponder(responder.id, closeCode);
-    final bytes = buildPacket(msg, responder);
+    final bytes = buildPacket(msg, common.server);
     send(bytes);
   }
 }
