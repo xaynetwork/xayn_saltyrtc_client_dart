@@ -7,15 +7,20 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show ResponderPhase, ResponderData, Common, Phase, ClientHandshakeInput;
+    show
+        ResponderPhase,
+        ResponderData,
+        CommonAfterServerHandshake,
+        Phase,
+        ClientHandshakeInput;
 
 class ResponderClientHandshakePhase extends ClientHandshakePhase
     with ResponderPhase {
   @override
   final ResponderData data;
 
-  ResponderClientHandshakePhase(Common common, ClientHandshakeInput input,
-      AuthenticatedServer authServer, this.data)
+  ResponderClientHandshakePhase(CommonAfterServerHandshake common,
+      ClientHandshakeInput input, AuthenticatedServer authServer, this.data)
       : super(common, authServer, input);
 
   @override

@@ -6,7 +6,12 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show InitiatorPhase, InitiatorData, Common, Phase, ClientHandshakeInput;
+    show
+        InitiatorPhase,
+        InitiatorData,
+        Phase,
+        ClientHandshakeInput,
+        CommonAfterServerHandshake;
 
 class InitiatorClientHandshakePhase extends ClientHandshakePhase
     with InitiatorPhase {
@@ -14,7 +19,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   final InitiatorData data;
 
   InitiatorClientHandshakePhase(
-    Common common,
+    CommonAfterServerHandshake common,
     ClientHandshakeInput input,
     AuthenticatedServer authServer,
     this.data,

@@ -11,16 +11,15 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, Common;
+import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart';
 import 'package:meta/meta.dart' show protected;
 
 abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
   final ClientHandshakeInput input;
 
-  ClientHandshakePhase(
-      Common common, AuthenticatedServer authServer, this.input)
+  ClientHandshakePhase(CommonAfterServerHandshake common,
+      AuthenticatedServer authServer, this.input)
       : super(common, authServer);
 
   @override

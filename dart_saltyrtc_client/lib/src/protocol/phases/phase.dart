@@ -4,7 +4,8 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, AuthToken, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
+import 'package:dart_saltyrtc_client/src/messages/id.dart'
+    show Id, IdResponder, IdClient;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show OverflowException;
@@ -299,9 +300,12 @@ mixin ResponderPhase implements Phase {
 /// Mostly control messages from the server.
 abstract class AfterServerHandshakePhase extends Phase {
   @override
+  final CommonAfterServerHandshake common;
+
+  @override
   final AuthenticatedServer server;
 
-  AfterServerHandshakePhase(Common common, this.server) : super(common);
+  AfterServerHandshakePhase(this.common, this.server) : super(common);
 
   void handleSendError(SendError msg) {
     throw UnimplementedError();
@@ -310,4 +314,22 @@ abstract class AfterServerHandshakePhase extends Phase {
   void handleDisconnected(Disconnected msg) {
     throw UnimplementedError();
   }
+}
+
+/// Data that is common to all phases and roles after the server handshake.
+class CommonAfterServerHandshake extends Common {
+  /// After the server handshake the address is an IdClient and it cannot be
+  /// modified anymore.
+  @override
+  final IdClient address;
+
+  CommonAfterServerHandshake(
+    Common common,
+    this.address,
+  ) : super(
+          common.crypto,
+          common.ourKeys,
+          common.expectedServerKey,
+          common.sink,
+        );
 }

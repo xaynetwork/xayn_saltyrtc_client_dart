@@ -5,6 +5,8 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateIdClient,
         checkIdClient,
         checkIdResponder;
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+    show ProtocolError;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
@@ -28,6 +30,9 @@ abstract class Id with EquatableMixin {
   bool isUnknown();
   bool isServer();
   bool isInitiator();
+
+  /// Return the current Id as a client id or throw exception.
+  IdClient asClient();
 
   static Id peerId(int value) {
     validateId(value, 'id');
@@ -87,4 +92,13 @@ class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
 
   @override
   bool isInitiator() => this == Id.initiatorAddress;
+
+  @override
+  IdClient asClient() {
+    if (!isClient()) {
+      ProtocolError('Id must represent a client id but is $value');
+    }
+
+    return this;
+  }
 }

@@ -35,6 +35,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_respon
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         Common,
+        CommonAfterServerHandshake,
         Phase,
         InitiatorData,
         InitiatorPhase,
@@ -251,7 +252,10 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     logger.d('Switching to initiator client handshake');
 
     return InitiatorClientHandshakePhase(
-        common, clientHandshakeInput, server.asAuthenticated(), data);
+        CommonAfterServerHandshake(common, common.address.asClient()),
+        clientHandshakeInput,
+        server.asAuthenticated(),
+        data);
   }
 
   @override
@@ -347,7 +351,10 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
     logger.d('Switching to responder client handshake');
 
     return ResponderClientHandshakePhase(
-        common, clientHandshakeInput, server.asAuthenticated(), data);
+        CommonAfterServerHandshake(common, common.address.asClient()),
+        clientHandshakeInput,
+        server.asAuthenticated(),
+        data);
   }
 
   @override
