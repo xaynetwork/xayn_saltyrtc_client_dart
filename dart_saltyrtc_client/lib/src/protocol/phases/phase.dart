@@ -38,6 +38,9 @@ class Common {
   final Crypto crypto;
   final KeyStore ourKeys;
 
+  /// Server instance.
+  Server server;
+
   /// Optional permanent key of the server. It can be used to verify the server.
   final Uint8List? expectedServerKey;
 
@@ -53,7 +56,7 @@ class Common {
     this.ourKeys,
     this.expectedServerKey,
     this.sink,
-  ) {
+  ) : server = Server.fromRandom(crypto) {
     if (expectedServerKey != null) {
       Crypto.checkPublicKey(expectedServerKey!);
     }
@@ -101,7 +104,6 @@ abstract class Phase {
 
   Phase(this.common);
 
-  Server get server;
   Role get role;
 
   /// Handle a message directly from the WebSocket,
@@ -253,7 +255,7 @@ mixin InitiatorPhase implements Phase {
 
   @override
   Peer getPeerWithId(Id id) {
-    if (id.isServer()) return server;
+    if (id.isServer()) return common.server;
     if (id.isResponder()) {
       final responder = data.responders[id];
       if (responder != null) {
@@ -274,7 +276,7 @@ mixin InitiatorPhase implements Phase {
   void dropResponder(Responder responder, CloseCode closeCode) {
     data.responders.remove(responder.id);
     final msg = DropResponder(responder.id, closeCode);
-    final bytes = buildPacket(msg, server);
+    final bytes = buildPacket(msg, common.server);
     send(bytes);
   }
 }
@@ -288,7 +290,7 @@ mixin ResponderPhase implements Phase {
 
   @override
   Peer getPeerWithId(Id id) {
-    if (id.isServer()) return server;
+    if (id.isServer()) return common.server;
     if (id.isInitiator()) {
       return data.initiator;
     }
@@ -302,10 +304,7 @@ abstract class AfterServerHandshakePhase extends Phase {
   @override
   final CommonAfterServerHandshake common;
 
-  @override
-  final AuthenticatedServer server;
-
-  AfterServerHandshakePhase(this.common, this.server) : super(common);
+  AfterServerHandshakePhase(this.common) : super(common);
 
   void handleSendError(SendError msg) {
     throw UnimplementedError();
@@ -323,10 +322,15 @@ class CommonAfterServerHandshake extends Common {
   @override
   final IdClient address;
 
+  /// After the server handshake the session key cannot be nullable anymore.
+  @override
+  final AuthenticatedServer server;
+
   CommonAfterServerHandshake(
     Common common,
-    this.address,
-  ) : super(
+  )   : address = common.address.asClient(),
+        server = common.server.asAuthenticated(),
+        super(
           common.crypto,
           common.ourKeys,
           common.expectedServerKey,

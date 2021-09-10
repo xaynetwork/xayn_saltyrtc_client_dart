@@ -25,9 +25,9 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show ValidationError, validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ensureNotNull, SaltyRtcError;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Responder, Server;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart';
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
+    show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
@@ -66,16 +66,14 @@ enum ServerHandshakeState { start, helloSent, authSent, done }
 /// client-hello is only sent by the responder.
 abstract class ServerHandshakePhase extends Phase {
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
-  @override
-  final Server server;
+
   // data that is needed by the client handshake phase
   final ClientHandshakeInput clientHandshakeInput;
   final int _pingInterval;
 
   ServerHandshakePhase(
       Common common, this.clientHandshakeInput, this._pingInterval)
-      : server = Server.fromRandom(common.crypto),
-        super(common);
+      : super(common);
 
   @protected
   void handleServerAuth(Message msg, Nonce nonce);
@@ -135,7 +133,7 @@ abstract class ServerHandshakePhase extends Phase {
   Phase run(Uint8List msgBytes, Nonce nonce) {
     // the first message is not encrypted
     if (handshakeState != ServerHandshakeState.start) {
-      final sks = ensureNotNull(server.sessionSharedKey);
+      final sks = ensureNotNull(common.server.sessionSharedKey);
       msgBytes = sks.decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
     }
 
@@ -181,12 +179,12 @@ abstract class ServerHandshakePhase extends Phase {
   void handleServerHello(ServerHello msg, Nonce nonce) {
     final sks = common.crypto.createSharedKeyStore(
         ownKeyStore: common.ourKeys, remotePublicKey: msg.key);
-    server.setSessionSharedKey(sks);
-    server.cookiePair.setTheirs(nonce.cookie);
+    common.server.setSessionSharedKey(sks);
+    common.server.cookiePair.setTheirs(nonce.cookie);
   }
 
   void sendClientAuth() {
-    final serverCookie = ensureNotNull(server.cookiePair.theirs);
+    final serverCookie = ensureNotNull(common.server.cookiePair.theirs);
     final subprotocols = [saltyrtcSubprotocol];
     final msg = ClientAuth(
       serverCookie,
@@ -195,7 +193,7 @@ abstract class ServerHandshakePhase extends Phase {
       _pingInterval,
     );
 
-    final bytes = buildPacket(msg, server);
+    final bytes = buildPacket(msg, common.server);
     send(bytes);
     handshakeState = ServerHandshakeState.authSent;
   }
@@ -213,7 +211,7 @@ abstract class ServerHandshakePhase extends Phase {
           'Server did not send ${MessageFields.signedKeys} in ${MessageType.serverAuth} message');
     }
 
-    final sks = ensureNotNull(server.sessionSharedKey);
+    final sks = ensureNotNull(common.server.sessionSharedKey);
     final decrypted = common.ourKeys.decrypt(
         remotePublicKey: expectedServerKey,
         ciphertext: signedKey,
@@ -228,7 +226,7 @@ abstract class ServerHandshakePhase extends Phase {
   }
 
   void validateRepeatedCookie(Cookie cookie) {
-    if (cookie != server.cookiePair.ours) {
+    if (cookie != common.server.cookiePair.ours) {
       throw ProtocolError(
           'Bad repeated cookie in ${MessageType.serverAuth} message');
     }
@@ -252,10 +250,10 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     logger.d('Switching to initiator client handshake');
 
     return InitiatorClientHandshakePhase(
-        CommonAfterServerHandshake(common, common.address.asClient()),
-        clientHandshakeInput,
-        server.asAuthenticated(),
-        data);
+      CommonAfterServerHandshake(common),
+      clientHandshakeInput,
+      data,
+    );
   }
 
   @override
@@ -351,10 +349,10 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
     logger.d('Switching to responder client handshake');
 
     return ResponderClientHandshakePhase(
-        CommonAfterServerHandshake(common, common.address.asClient()),
-        clientHandshakeInput,
-        server.asAuthenticated(),
-        data);
+      CommonAfterServerHandshake(common),
+      clientHandshakeInput,
+      data,
+    );
   }
 
   @override
@@ -362,7 +360,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
     logger.d('Switching to responder client handshake');
 
     final msg = ClientHello(common.ourKeys.publicKey);
-    final bytes = buildPacket(msg, server, false);
+    final bytes = buildPacket(msg, common.server, false);
     send(bytes);
     handshakeState = ServerHandshakeState.helloSent;
   }

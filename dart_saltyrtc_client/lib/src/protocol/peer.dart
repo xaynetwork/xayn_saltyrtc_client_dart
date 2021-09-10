@@ -189,6 +189,7 @@ class CombinedSequencePair {
 
   CombinedSequencePair(this.ours, CombinedSequence this._theirs);
 
+  /// Initialize our data with from random.
   CombinedSequencePair.fromRandom(Crypto crypto)
       : ours = CombinedSequence.fromRandom(crypto.randomBytes);
 
@@ -205,6 +206,7 @@ class CookiePair {
 
   CookiePair(this.ours, Cookie this._theirs);
 
+  /// Initialize our data with from random.
   CookiePair.fromRandom(Crypto crypto)
       : ours = Cookie.fromRandom(crypto.randomBytes);
 

@@ -10,7 +10,6 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart';
 import 'package:meta/meta.dart' show protected;
@@ -18,9 +17,8 @@ import 'package:meta/meta.dart' show protected;
 abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
   final ClientHandshakeInput input;
 
-  ClientHandshakePhase(CommonAfterServerHandshake common,
-      AuthenticatedServer authServer, this.input)
-      : super(common, authServer);
+  ClientHandshakePhase(CommonAfterServerHandshake common, this.input)
+      : super(common);
 
   @override
   Phase run(Uint8List msgBytes, Nonce nonce) {
@@ -36,7 +34,7 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
   }
 
   Phase _handleServerMessage(Uint8List msgBytes, Nonce nonce) {
-    final msg = readMessage(server.sessionSharedKey
+    final msg = readMessage(common.server.sessionSharedKey
         .decrypt(ciphertext: msgBytes, nonce: nonce.toBytes()));
 
     if (msg is SendError) {
