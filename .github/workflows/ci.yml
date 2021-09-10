@@ -11,9 +11,8 @@ permissions:
   contents: read
 
 env:
-  FLUTTER_VERSION: '2.4.0-4.2.pre'
-  FLUTTER_CHANNEL: 'beta'
-  JAVA_VERSION: '12.x'
+  FLUTTER_VERSION: '2.5'
+  FLUTTER_CHANNEL: 'stable'
   UBUNTU_FLUTTER_PATH: '/opt/hostedtoolcache/flutter'
 
 jobs:
