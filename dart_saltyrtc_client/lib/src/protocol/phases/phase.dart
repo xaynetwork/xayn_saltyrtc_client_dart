@@ -249,7 +249,7 @@ abstract class Phase {
 }
 
 /// Brings in data an common methods for an initiator.
-mixin InitiatorPhase implements Phase {
+mixin InitiatorPhase implements Phase, InitiatorSendDropResponder {
   InitiatorData get data;
 
   @override
@@ -277,7 +277,18 @@ mixin InitiatorPhase implements Phase {
 
   void dropResponder(Responder responder, CloseCode closeCode) {
     data.responders.remove(responder.id);
+    sendDropResponder(responder.id, closeCode);
+    /*
     final msg = DropResponder(responder.id, closeCode);
+    final bytes = buildPacket(msg, common.server);
+    send(bytes);
+     */
+  }
+}
+
+mixin InitiatorSendDropResponder on Phase {
+  void sendDropResponder(IdResponder id, CloseCode closeCode) {
+    final msg = DropResponder(id, closeCode);
     final bytes = buildPacket(msg, common.server);
     send(bytes);
   }

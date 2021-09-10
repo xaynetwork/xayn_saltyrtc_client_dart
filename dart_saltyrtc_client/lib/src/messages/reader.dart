@@ -40,7 +40,7 @@ import 'package:messagepack/messagepack.dart' show Unpacker;
 /// Parse message from bytes. If the type is not one of types defined by the protocol
 /// but is in `taskTypes` it will return `TaskMessage`.
 /// It will throw an exception otherwise.
-Message readMessage(Uint8List bytes, [List<String> taskTypes = const []]) {
+Message readMessage(Uint8List bytes, {List<String> taskTypes = const []}) {
   final msgUnpacker = Unpacker(bytes);
   final map = validateStringMapType(msgUnpacker.unpackMap(), 'message');
   final type = validateTypeType(map[MessageFields.type]);
