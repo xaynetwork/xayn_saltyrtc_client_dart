@@ -12,7 +12,7 @@ class ValidationError implements Exception {
   final bool isProtocolError;
   final String _msg;
 
-  ValidationError(this._msg, [this.isProtocolError = false]);
+  ValidationError(this._msg, {this.isProtocolError = true});
 
   @override
   String toString() => _msg;
