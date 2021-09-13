@@ -5,7 +5,6 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, SharedKeyStore, CryptoBox;
 import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
     show Id, IdResponder, IdServer, IdInitiator;
@@ -16,10 +15,10 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull, SaltyRtcError;
+    show ProtocolError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/states.dart'
     show ClientHandshake;
-import 'package:meta/meta.dart';
+import 'package:meta/meta.dart' show protected;
 
 /// A peer can be the server, the initiator or a responder
 abstract class Peer {
@@ -81,10 +80,7 @@ class Server extends Peer {
   /// Return an AuthenticatedServer iff hasSessionSharedKey.
   AuthenticatedServer asAuthenticated() {
     if (!hasSessionSharedKey) {
-      throw SaltyRtcError(
-        CloseCode.internalError,
-        'Server is not authenticated',
-      );
+      throw StateError('Server is not authenticated');
     }
 
     return AuthenticatedServer(
@@ -112,8 +108,7 @@ class AuthenticatedServer extends Server {
 
   @override
   void setSessionSharedKey(SharedKeyStore sks) {
-    throw SaltyRtcError(
-      CloseCode.internalError,
+    throw StateError(
       'Cannot set session key on an already authenticated server',
     );
   }

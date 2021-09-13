@@ -24,7 +24,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show ValidationError, validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull, SaltyRtcError;
+    show ProtocolError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
@@ -160,8 +160,7 @@ abstract class ServerHandshakePhase extends Phase {
         }
         break;
       case ServerHandshakeState.done:
-        throw SaltyRtcError(
-          CloseCode.internalError,
+        StateError(
           'Received server handshake message when it is already finished',
         );
     }
@@ -302,8 +301,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
             ownKeyStore: common.ourKeys, remotePublicKey: responderTrustedKey);
         responder.setPermanentSharedKey(sks);
       } on ValidationError {
-        throw SaltyRtcError(
-            CloseCode.internalError, 'Invalid responder trusted key');
+        throw StateError('Invalid responder trusted key');
       }
     }
 

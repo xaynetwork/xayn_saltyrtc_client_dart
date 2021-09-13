@@ -19,7 +19,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError;
+    show ProtocolError, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
@@ -124,6 +124,8 @@ abstract class Phase {
         // TODO log that we are dropping a message
         return this;
       }
+    } on StateError catch (e) {
+      throw SaltyRtcError(CloseCode.internalError, e.message);
     }
   }
 
