@@ -4,7 +4,8 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, AuthToken, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
+import 'package:dart_saltyrtc_client/src/messages/id.dart'
+    show Id, IdResponder, IdClient;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show OverflowException;
@@ -18,11 +19,11 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError;
+    show ProtocolError, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Peer, Responder, Server, Initiator;
+    show Peer, Responder, Server, Initiator, AuthenticatedServer;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
@@ -36,16 +37,12 @@ import 'package:meta/meta.dart' show protected;
 class Common {
   final Crypto crypto;
   final KeyStore ourKeys;
-  final Server server;
+
+  /// Server instance.
+  Server server;
 
   /// Optional permanent key of the server. It can be used to verify the server.
   final Uint8List? expectedServerKey;
-
-  /// How often the server will ping the client.
-  final int pingInterval;
-
-  /// Tasks that the user support
-  final List<Task> tasks;
 
   /// Every client start with address set to unknown.
   Id address = Id.unknownAddress;
@@ -58,14 +55,20 @@ class Common {
     this.crypto,
     this.ourKeys,
     this.expectedServerKey,
-    this.tasks,
-    this.pingInterval,
     this.sink,
-  ) : server = Server(crypto) {
+  ) : server = Server.fromRandom(crypto) {
     if (expectedServerKey != null) {
       Crypto.checkPublicKey(expectedServerKey!);
     }
   }
+}
+
+/// Data that is needed for the client handshake and is passed by the user.
+class ClientHandshakeInput {
+  /// Tasks that the user support
+  final List<Task> tasks;
+
+  ClientHandshakeInput(this.tasks);
 }
 
 /// Additional data for an initiator.
@@ -77,9 +80,6 @@ class InitiatorData {
 
   /// Responder trusted key
   final Uint8List? responderTrustedKey;
-
-  /// Selected responder
-  Responder? responder;
 
   InitiatorData(this.responderTrustedKey) {
     if (responderTrustedKey != null) {
@@ -124,15 +124,17 @@ abstract class Phase {
         // TODO log that we are dropping a message
         return this;
       }
+    } on StateError catch (e) {
+      throw SaltyRtcError(CloseCode.internalError, e.message);
     }
   }
 
   @protected
   Phase run(Uint8List msgBytes, Nonce nonce);
 
-  /// Returns a peer with a given id.
+  /// Returns a peer with a given id, if it is not possible it throw a ValidationError.
   @protected
-  Peer? getPeerWithId(Id id);
+  Peer getPeerWithId(Id id);
 
   @protected
   void validateNonceSource(Nonce nonce) {
@@ -204,11 +206,7 @@ abstract class Phase {
     validateNonceDestination(nonce);
 
     // to validate the combined sequence and the cookie we need the associated peer
-    final source = nonce.source;
     final peer = getPeerWithId(nonce.source);
-    if (peer == null) {
-      throw ProtocolError('Could not find peer $source');
-    }
 
     _validateNonceCs(peer, nonce);
     _validateNonceCookie(peer, nonce);
@@ -222,9 +220,6 @@ abstract class Phase {
   void _validateNonceCs(Peer peer, Nonce nonce) {
     final source = nonce.source;
     final peer = getPeerWithId(source);
-    if (peer == null) {
-      throw ProtocolError('Could not find peer $source');
-    }
 
     final cspTheirs = peer.csPair.theirs;
 
@@ -261,12 +256,23 @@ mixin InitiatorPhase implements Phase {
   Role get role => Role.initiator;
 
   @override
-  Peer? getPeerWithId(Id id) {
+  Peer getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
     if (id.isResponder()) {
-      return data.responders[id];
+      final responder = data.responders[id];
+      if (responder != null) {
+        return responder;
+      } else {
+        // this can happen when a responder has been dropped
+        // but a message was still in flight.
+        // we want to ignore this message but not to terminate the connection
+        throw ValidationError(
+          'Invalid responder id: $id',
+          isProtocolError: false,
+        );
+      }
     }
-    throw ValidationError('Invalid peer id: $id');
+    throw ProtocolError('Invalid peer id: $id');
   }
 
   void dropResponder(Responder responder, CloseCode closeCode) {
@@ -285,19 +291,22 @@ mixin ResponderPhase implements Phase {
   Role get role => Role.responder;
 
   @override
-  Peer? getPeerWithId(Id id) {
+  Peer getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
     if (id.isInitiator()) {
       return data.initiator;
     }
-    throw ValidationError('Invalid peer id: $id');
+    throw ProtocolError('Invalid peer id: $id');
   }
 }
 
 /// Common methods for phases after the server handshake.
 /// Mostly control messages from the server.
 abstract class AfterServerHandshakePhase extends Phase {
-  AfterServerHandshakePhase(Common common) : super(common);
+  @override
+  final CommonAfterServerHandshake common;
+
+  AfterServerHandshakePhase(this.common) : super(common);
 
   void handleSendError(SendError msg) {
     throw UnimplementedError();
@@ -306,4 +315,27 @@ abstract class AfterServerHandshakePhase extends Phase {
   void handleDisconnected(Disconnected msg) {
     throw UnimplementedError();
   }
+}
+
+/// Data that is common to all phases and roles after the server handshake.
+class CommonAfterServerHandshake extends Common {
+  /// After the server handshake the address is an IdClient and it cannot be
+  /// modified anymore.
+  @override
+  final IdClient address;
+
+  /// After the server handshake the session key cannot be nullable anymore.
+  @override
+  final AuthenticatedServer server;
+
+  CommonAfterServerHandshake(
+    Common common,
+  )   : address = common.address.asClient(),
+        server = common.server.asAuthenticated(),
+        super(
+          common.crypto,
+          common.ourKeys,
+          common.expectedServerKey,
+          common.sink,
+        );
 }

@@ -24,9 +24,10 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show ValidationError, validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull, SaltyRtcError;
+    show ProtocolError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart';
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
+    show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
@@ -34,11 +35,13 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_respon
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         Common,
+        CommonAfterServerHandshake,
         Phase,
         InitiatorData,
         InitiatorPhase,
         ResponderData,
-        ResponderPhase;
+        ResponderPhase,
+        ClientHandshakeInput;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/states.dart'
     show ClientHandshake;
@@ -64,7 +67,13 @@ enum ServerHandshakeState { start, helloSent, authSent, done }
 abstract class ServerHandshakePhase extends Phase {
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
 
-  ServerHandshakePhase(Common common) : super(common);
+  // data that is needed by the client handshake phase
+  final ClientHandshakeInput clientHandshakeInput;
+  final int _pingInterval;
+
+  ServerHandshakePhase(
+      Common common, this.clientHandshakeInput, this._pingInterval)
+      : super(common);
 
   @protected
   void handleServerAuth(Message msg, Nonce nonce);
@@ -151,8 +160,7 @@ abstract class ServerHandshakePhase extends Phase {
         }
         break;
       case ServerHandshakeState.done:
-        throw SaltyRtcError(
-          CloseCode.internalError,
+        StateError(
           'Received server handshake message when it is already finished',
         );
     }
@@ -181,7 +189,7 @@ abstract class ServerHandshakePhase extends Phase {
       serverCookie,
       common.expectedServerKey,
       subprotocols,
-      common.pingInterval,
+      _pingInterval,
     );
 
     final bytes = buildPacket(msg, common.server);
@@ -229,13 +237,22 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
   @override
   final InitiatorData data;
 
-  InitiatorServerHandshakePhase(Common common, this.data) : super(common);
+  InitiatorServerHandshakePhase(
+    Common common,
+    ClientHandshakeInput clientHandshakeInput,
+    int pingInterval,
+    this.data,
+  ) : super(common, clientHandshakeInput, pingInterval);
 
   @override
   ClientHandshakePhase goToClientHandshakePhase() {
     logger.d('Switching to initiator client handshake');
 
-    return InitiatorClientHandshakePhase(common, data);
+    return InitiatorClientHandshakePhase(
+      CommonAfterServerHandshake(common),
+      clientHandshakeInput,
+      data,
+    );
   }
 
   @override
@@ -284,8 +301,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
             ownKeyStore: common.ourKeys, remotePublicKey: responderTrustedKey);
         responder.setPermanentSharedKey(sks);
       } on ValidationError {
-        throw SaltyRtcError(
-            CloseCode.internalError, 'Invalid responder trusted key');
+        throw StateError('Invalid responder trusted key');
       }
     }
 
@@ -322,13 +338,19 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   @override
   final ResponderData data;
 
-  ResponderServerHandshakePhase(Common common, this.data) : super(common);
+  ResponderServerHandshakePhase(Common common,
+      ClientHandshakeInput clientHandshakeInput, int pingInterval, this.data)
+      : super(common, clientHandshakeInput, pingInterval);
 
   @override
   ClientHandshakePhase goToClientHandshakePhase() {
     logger.d('Switching to responder client handshake');
 
-    return ResponderClientHandshakePhase(common, data);
+    return ResponderClientHandshakePhase(
+      CommonAfterServerHandshake(common),
+      clientHandshakeInput,
+      data,
+    );
   }
 
   @override

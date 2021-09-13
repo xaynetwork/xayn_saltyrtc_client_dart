@@ -5,14 +5,23 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show InitiatorPhase, InitiatorData, Common, Phase;
+    show
+        InitiatorPhase,
+        InitiatorData,
+        Phase,
+        ClientHandshakeInput,
+        CommonAfterServerHandshake;
 
 class InitiatorClientHandshakePhase extends ClientHandshakePhase
     with InitiatorPhase {
   @override
   final InitiatorData data;
 
-  InitiatorClientHandshakePhase(Common common, this.data) : super(common);
+  InitiatorClientHandshakePhase(
+    CommonAfterServerHandshake common,
+    ClientHandshakeInput input,
+    this.data,
+  ) : super(common, input);
 
   @override
   void handleServerMessageOther(Message msg, Nonce nonce) {

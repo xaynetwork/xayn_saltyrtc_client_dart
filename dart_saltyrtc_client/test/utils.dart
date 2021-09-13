@@ -5,7 +5,7 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, KeyStore;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, Common, InitiatorData, ResponderData;
+    show Phase, Common, InitiatorData, ResponderData, ClientHandshakeInput;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
@@ -32,7 +32,7 @@ class SetupData {
   );
 
   factory SetupData.init(
-    Phase Function(Common) initPhase, [
+    Phase Function(Common, ClientHandshakeInput, int) initPhase, [
     int pingInterval = 13,
     List<Task> tasks = const [],
   ]) {
@@ -45,11 +45,10 @@ class SetupData {
       MockCrypto(),
       clientPermanentKeys,
       server.permanentPublicKey,
-      tasks,
-      pingInterval,
       ws,
     );
-    final phase = initPhase(common);
+    final clientHandshakeInput = ClientHandshakeInput(tasks);
+    final phase = initPhase(common, clientHandshakeInput, pingInterval);
 
     return SetupData._(
         crypto, clientPermanentKeys, server, outMsgs, phase, pingInterval);
@@ -57,16 +56,29 @@ class SetupData {
 }
 
 InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
-  Common common, [
+  Common common,
+  ClientHandshakeInput clientHandshakeInput,
+  int pingInterval, [
   InitiatorData? data,
 ]) {
-  return InitiatorServerHandshakePhase(common, data ?? InitiatorData(null));
+  return InitiatorServerHandshakePhase(
+    common,
+    clientHandshakeInput,
+    pingInterval,
+    data ?? InitiatorData(null),
+  );
 }
 
 ResponderServerHandshakePhase makeResponderServerHandshakePhase(
-  Common common, [
+  Common common,
+  ClientHandshakeInput clientHandshakeInput,
+  int pingInterval, [
   ResponderData? data,
 ]) {
   return ResponderServerHandshakePhase(
-      common, data ?? ResponderData(Initiator(common.crypto)));
+    common,
+    clientHandshakeInput,
+    pingInterval,
+    data ?? ResponderData(Initiator(common.crypto)),
+  );
 }

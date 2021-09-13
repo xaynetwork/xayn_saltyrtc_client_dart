@@ -9,14 +9,16 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, Common;
+    show ProtocolError;
+import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart';
 import 'package:meta/meta.dart' show protected;
 
 abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
-  ClientHandshakePhase(Common common) : super(common);
+  final ClientHandshakeInput input;
+
+  ClientHandshakePhase(CommonAfterServerHandshake common, this.input)
+      : super(common);
 
   @override
   Phase run(Uint8List msgBytes, Nonce nonce) {
@@ -32,7 +34,7 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
   }
 
   Phase _handleServerMessage(Uint8List msgBytes, Nonce nonce) {
-    final msg = readMessage(ensureNotNull(common.server.sessionSharedKey)
+    final msg = readMessage(common.server.sessionSharedKey
         .decrypt(ciphertext: msgBytes, nonce: nonce.toBytes()));
 
     if (msg is SendError) {
