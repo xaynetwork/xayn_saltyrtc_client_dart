@@ -133,8 +133,9 @@ abstract class Phase {
         validateIdResponder(source.value, 'nonce source');
       } else if (source != Id.initiatorAddress) {
         throw ValidationError(
-            'Responder peer message does not come from initiator. Found $source',
-            false);
+          'Responder peer message does not come from initiator. Found $source',
+          isProtocolError: false,
+        );
       }
     }
   }

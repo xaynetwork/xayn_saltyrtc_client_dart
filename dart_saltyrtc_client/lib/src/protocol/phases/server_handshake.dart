@@ -76,7 +76,9 @@ abstract class ServerHandshakePhase extends Phase {
     final source = nonce.source;
     if (source != Id.serverAddress) {
       throw ValidationError(
-          'Received message is not from server. Found $source', false);
+        'Received message is not from server. Found $source',
+        isProtocolError: false,
+      );
     }
   }
 
