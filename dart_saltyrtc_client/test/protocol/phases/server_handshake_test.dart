@@ -1,23 +1,23 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/message.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/s2c/client_auth.dart'
     show ClientAuth;
 import 'package:dart_saltyrtc_client/src/messages/s2c/client_hello.dart'
     show ClientHello;
-import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart';
+import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
+    show DropResponder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart';
 import 'package:test/test.dart';
 
 import '../../logging.dart' show setUpLogging;
-import '../../server_mock.dart' show NonceAndMessage, Decrypt;
+import '../../server_mock.dart'
+    show NonceAndMessage, Decrypt, IntermediateState;
 import '../../utils.dart'
     show
         SetupData,
@@ -35,7 +35,7 @@ void main() {
     var phase = setupData.phase;
 
     final serverHelloResult = server.sendServerHello(phase);
-    phase = serverHelloResult.nextPhase;
+    phase = serverHelloResult.phase;
 
     // after server-hello we expect a client-hello
     final clientHello = checkClientHello(
@@ -57,9 +57,9 @@ void main() {
     final clientAddress = Id.responderId(5);
     final serverAuthResult = server.sendServerAuthResponder(
         phase, clientHello.nonce.cookie, false, clientAddress);
-    expect(serverAuthResult.nextPhase, isA<ResponderClientHandshakePhase>());
+    expect(serverAuthResult.phase, isA<ResponderClientHandshakePhase>());
 
-    phase = serverAuthResult.nextPhase;
+    phase = serverAuthResult.phase;
     expect(phase.common.address, equals(clientAddress));
   });
 
@@ -69,10 +69,10 @@ void main() {
     final state = await initiatorHandShakeTillClientAuth(setupData);
 
     final serverAuthResult = setupData.server.sendServerAuthInitiator(
-        state.phase, state.lastSentMessage.nonce.cookie, []);
-    expect(serverAuthResult.nextPhase, isA<InitiatorClientHandshakePhase>());
+        state.phase, state.msgSentToClient.nonce.cookie, []);
+    expect(serverAuthResult.phase, isA<InitiatorClientHandshakePhase>());
 
-    final phase = serverAuthResult.nextPhase;
+    final phase = serverAuthResult.phase;
     expect(phase.common.address, equals(Id.initiatorAddress));
   });
 
@@ -86,7 +86,7 @@ void main() {
 
     setupData.server.sendServerAuthInitiator(
       state.phase,
-      state.lastSentMessage.nonce.cookie,
+      state.msgSentToClient.nonce.cookie,
       responders,
     );
 
@@ -142,13 +142,6 @@ NonceAndMessage<ClientAuth> checkClientAuth({
   return data;
 }
 
-class IntermediateState<M extends Message> {
-  final Phase phase;
-  final NonceAndMessage<M> lastSentMessage;
-
-  IntermediateState(this.phase, this.lastSentMessage);
-}
-
 Future<IntermediateState<ClientAuth>> initiatorHandShakeTillClientAuth(
     SetupData setupData) async {
   final server = setupData.server;
@@ -156,7 +149,7 @@ Future<IntermediateState<ClientAuth>> initiatorHandShakeTillClientAuth(
   var phase = setupData.phase;
 
   final serverHelloResult = server.sendServerHello(phase);
-  phase = serverHelloResult.nextPhase;
+  phase = serverHelloResult.phase;
 
   // set the client key as if the server server knows the path
   // the initiator is connected to
@@ -171,5 +164,5 @@ Future<IntermediateState<ClientAuth>> initiatorHandShakeTillClientAuth(
     yourKey: server.permanentPublicKey,
   );
 
-  return IntermediateState(phase, clientAuth);
+  return IntermediateState(clientAuth, phase);
 }

@@ -19,7 +19,8 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError;
-import 'package:dart_saltyrtc_client/src/protocol/network.dart';
+import 'package:dart_saltyrtc_client/src/protocol/network.dart'
+    show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder, Server, Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;

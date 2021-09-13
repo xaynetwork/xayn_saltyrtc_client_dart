@@ -1,5 +1,4 @@
-import 'dart:async' show StreamController;
-import 'dart:async';
+import 'dart:async' show StreamController, FutureOr, StreamSink;
 import 'dart:typed_data' show Uint8List, Endian;
 
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'

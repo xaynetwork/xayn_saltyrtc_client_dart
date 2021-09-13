@@ -34,11 +34,11 @@ class NonceAndMessage<M extends Message> {
         message = readMessage((decrypt ?? _getMsg)(bytes)) as M;
 }
 
-class Interaction<M extends Message> {
+class IntermediateState<M extends Message> {
   final NonceAndMessage<M> msgSentToClient;
-  final Phase nextPhase;
+  final Phase phase;
 
-  Interaction(this.msgSentToClient, this.nextPhase);
+  IntermediateState(this.msgSentToClient, this.phase);
 }
 
 /// Provide utils to mock the interaction with the server.
@@ -71,11 +71,11 @@ class MockServer {
     return sks.decrypt(ciphertext: ciphertext, nonce: nonce);
   }
 
-  Interaction<ServerHello> sendServerHello(Phase phase) {
+  IntermediateState<ServerHello> sendServerHello(Phase phase) {
     return _send(_serverHello(), phase, encrypt: false);
   }
 
-  Interaction<ServerAuthInitiator> sendServerAuthInitiator(
+  IntermediateState<ServerAuthInitiator> sendServerAuthInitiator(
     Phase phase,
     Cookie yourCookie,
     List<IdResponder> responders,
@@ -87,7 +87,7 @@ class MockServer {
     );
   }
 
-  Interaction<ServerAuthResponder> sendServerAuthResponder(
+  IntermediateState<ServerAuthResponder> sendServerAuthResponder(
     Phase phase,
     Cookie yourCookie,
     bool initiatorConnected,
@@ -100,7 +100,7 @@ class MockServer {
     );
   }
 
-  Interaction<M> _send<M extends Message>(
+  IntermediateState<M> _send<M extends Message>(
     NonceAndMessage<M> nam,
     Phase phase, {
     bool encrypt = true,
@@ -113,7 +113,7 @@ class MockServer {
       expect(nextPhase, equals(phase));
     }
 
-    return Interaction(nam, nextPhase);
+    return IntermediateState(nam, nextPhase);
   }
 
   NonceAndMessage<ServerAuthResponder> _serverAuthResponder(

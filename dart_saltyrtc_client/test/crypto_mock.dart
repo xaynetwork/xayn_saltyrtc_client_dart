@@ -2,7 +2,6 @@ import 'dart:math' show Random;
 import 'dart:typed_data' show BytesBuilder, Uint8List;
 
 import 'package:collection/collection.dart' show ListEquality;
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show SharedKeyStore, Crypto, AuthToken, KeyStore;
 
