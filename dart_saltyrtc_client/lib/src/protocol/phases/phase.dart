@@ -2,18 +2,25 @@ import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, AuthToken, KeyStore;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
-import 'package:dart_saltyrtc_client/src/messages/message.dart';
-import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart';
+import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
+import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
+    show OverflowException;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart';
-import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart';
-import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart';
+import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
+import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
+    show DropResponder;
+import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
+    show SendError;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError;
+import 'package:dart_saltyrtc_client/src/protocol/network.dart'
+    show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder, Server, Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
@@ -28,7 +35,6 @@ import 'package:meta/meta.dart' show protected;
 /// Data that is common to all phases and roles.
 class Common {
   final Crypto crypto;
-  final Role role;
   final KeyStore ourKeys;
   final Server server;
 
@@ -44,13 +50,17 @@ class Common {
   /// Every client start with address set to unknown.
   Id address = Id.unknownAddress;
 
+  /// Sink to send messages to the server or close the connection.
+  /// This should not be used directly, use `send` instead.
+  WebSocketSink sink;
+
   Common(
     this.crypto,
     this.ourKeys,
     this.expectedServerKey,
-    this.role,
     this.tasks,
     this.pingInterval,
+    this.sink,
   ) : server = Server(crypto) {
     if (expectedServerKey != null) {
       Crypto.checkPublicKey(expectedServerKey!);
@@ -94,6 +104,8 @@ abstract class Phase {
 
   Phase(this.common);
 
+  Role get role;
+
   /// Handle a message directly from the WebSocket,
   /// bytes will contains <nonce><message>.
   Phase handleMessage(Uint8List bytes) {
@@ -102,10 +114,9 @@ abstract class Phase {
 
       _handleNonce(nonce);
 
-      // remove the nonce
-      bytes.removeRange(0, Nonce.totalLength);
+      final msgBytes = Uint8List.sublistView(bytes, Nonce.totalLength);
 
-      return run(bytes, nonce);
+      return run(msgBytes, nonce);
     } on ValidationError catch (e) {
       if (e.isProtocolError) {
         throw ProtocolError('Invalid incoming message: $e');
@@ -129,7 +140,7 @@ abstract class Phase {
     // messages in these phases can only come from server or peer
     final source = nonce.source;
     if (source != Id.serverAddress) {
-      if (common.role == Role.initiator) {
+      if (role == Role.initiator) {
         validateIdResponder(source.value, 'nonce source');
       } else if (source != Id.initiatorAddress) {
         throw ValidationError(
@@ -178,7 +189,13 @@ abstract class Phase {
 
   /// Send bytes as a message on the websocket channel
   void send(Uint8List bytes) {
-    throw UnimplementedError();
+    // the java implementation takes the bytes and the original message,
+    // if we are in the handover state the message  is sent to the task and it
+    // have to encrypt it before sending it, otherwise the bytes are sent on the
+    // websocket channel. This design allow the task to implement its own chunking
+    // and reduce the overhead of a message but it also move some encryption logic
+    // to the task it self. At the moment I pref to keep the code simpler.
+    common.sink.add(bytes);
   }
 
   /// Validate the nonce and update the values from it in the peer structure.
@@ -241,6 +258,9 @@ mixin InitiatorPhase implements Phase {
   InitiatorData get data;
 
   @override
+  Role get role => Role.initiator;
+
+  @override
   Peer? getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
     if (id.isResponder()) {
@@ -252,7 +272,7 @@ mixin InitiatorPhase implements Phase {
   void dropResponder(Responder responder, CloseCode closeCode) {
     data.responders.remove(responder.id);
     final msg = DropResponder(responder.id, closeCode);
-    final bytes = buildPacket(msg, responder);
+    final bytes = buildPacket(msg, common.server);
     send(bytes);
   }
 }
@@ -260,6 +280,9 @@ mixin InitiatorPhase implements Phase {
 /// Brings in data an common methods for a responder.
 mixin ResponderPhase implements Phase {
   ResponderData get data;
+
+  @override
+  Role get role => Role.responder;
 
   @override
   Peer? getPeerWithId(Id id) {
