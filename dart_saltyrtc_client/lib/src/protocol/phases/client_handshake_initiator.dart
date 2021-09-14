@@ -22,10 +22,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show IgnoreMessageError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError;
+    show IgnoreMessageError, NoSharedTaskError, ProtocolError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedResponder, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -190,6 +188,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
           return IgnoreMessageError(msg);
         });
 
+    //TODO[trusted responder]: We currently do not keep the public key as we
+    //      currently do not need it. But once we want to "trust" responder we
+    //      need to keep it and need report it back to the client in some way.
     responder.setPermanentSharedKey(
         InitialClientAuthMethod.createResponderSharedPermanentKey(
             common.crypto, common.ourKeys, msg.key));
@@ -213,7 +214,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
           return IgnoreMessageError(msg);
         });
 
-    // 1. generate session key
+    // generate session key, we only keep the shared key
     final sessionKey = common.crypto.createKeyStore();
     final sharedSessionKey = common.crypto.createSharedKeyStore(
         ownKeyStore: sessionKey, remotePublicKey: msg.key);
@@ -230,10 +231,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     final responder = responderWithState.responder;
 
     final msg = readEncryptedMessageOfType<AuthResponder>(
-      sharedKey: responder.permanentSharedKey!,
+      sharedKey: responder.sessionSharedKey!,
       msgBytes: msgBytes,
       nonce: nonce,
-      msgType: MessageType.token,
+      msgType: MessageType.auth,
     );
 
     if (msg.yourCookie != responder.cookiePair.ours) {
@@ -284,8 +285,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       // updated client to connect shortly after. If we do so we probably
       // should also "trust" that client at this point so that no auth token
       // is used twice.
-      throw SaltyRtcError(
-          CloseCode.goingAway, 'closing because of no shared task');
+      //
+      // FIXME we also need to signal to the client/application that no shared
+      //       task was found while still closing the web-socket using goingAway.
+      throw NoSharedTaskError();
     }
 
     return task;

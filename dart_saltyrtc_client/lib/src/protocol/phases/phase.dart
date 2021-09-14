@@ -17,9 +17,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart';
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateIdResponder, ValidationError;
+    show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError;
+    show ProtocolError, SaltyRtcError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'

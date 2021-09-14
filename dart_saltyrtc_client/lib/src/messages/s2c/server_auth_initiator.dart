@@ -11,8 +11,9 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateByteArrayType,
         validateByteArray,
         validateListType,
-        ValidationError,
         validateTypeWithNull;
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+    show ValidationError;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 

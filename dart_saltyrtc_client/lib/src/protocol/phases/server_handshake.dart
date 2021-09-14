@@ -20,9 +20,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_responder.dart
 import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError, validateIdResponder;
+    show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull;
+    show ProtocolError, ValidationError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;

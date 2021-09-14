@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ValidationError;
 import 'package:quiver/collection.dart' show HashBiMap;
 

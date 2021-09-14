@@ -21,10 +21,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull, SaltyRtcError;
+    show ProtocolError, SaltyRtcError, ValidationError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Client, Responder, Initiator, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'

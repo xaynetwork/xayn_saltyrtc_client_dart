@@ -4,25 +4,8 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageFields, TaskData, TasksData;
-import 'package:meta/meta.dart' show immutable;
-
-/// Data to instantiate a message is invalid.
-@immutable
-class ValidationError implements Exception {
-  final bool isProtocolError;
-  final String _msg;
-
-  ValidationError(this._msg, {this.isProtocolError = true});
-
-  @override
-  String toString() => _msg;
-}
-
-/// Exception indicating the the message is malformed and should be ignored.
-@immutable
-class IgnoreMessageError extends ValidationError {
-  IgnoreMessageError(String msg) : super(msg, isProtocolError: false);
-}
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+    show ValidationError;
 
 /// Check that `value` represent a `type`.
 void validateType(Object? value, String type) {

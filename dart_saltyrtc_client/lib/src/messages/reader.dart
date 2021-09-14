@@ -37,9 +37,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_responder.dart
 import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError, validateTypeType, validateStringMapType;
+    show validateTypeType, validateStringMapType;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError;
+    show ProtocolError, ValidationError;
 import 'package:messagepack/messagepack.dart' show Unpacker;
 
 /// Decrypts the message then reads it.

@@ -23,6 +23,33 @@ class SaltyRtcError implements Exception {
   String toString() => _msg;
 }
 
+/// Exception used to signal that no shared task was found.
+///
+/// When receiving this any pending message (i.e. `close`) should
+/// still be send before closing the stream.
+@immutable
+class NoSharedTaskError extends SaltyRtcError {
+  NoSharedTaskError() : super(CloseCode.goingAway, 'no shared task found');
+}
+
+/// Data to instantiate a message is invalid.
+@immutable
+class ValidationError implements Exception {
+  final bool isProtocolError;
+  final String _msg;
+
+  ValidationError(this._msg, {this.isProtocolError = true});
+
+  @override
+  String toString() => _msg;
+}
+
+/// Exception indicating the the message is malformed and should be ignored.
+@immutable
+class IgnoreMessageError extends ValidationError {
+  IgnoreMessageError(String msg) : super(msg, isProtocolError: false);
+}
+
 T ensureNotNull<T>(T? o, [String msg = 'Object is null']) {
   if (o == null) {
     throw ProtocolError(msg);
