@@ -278,11 +278,6 @@ mixin InitiatorPhase implements Phase, InitiatorSendDropResponder {
   void dropResponder(Responder responder, CloseCode closeCode) {
     data.responders.remove(responder.id);
     sendDropResponder(responder.id, closeCode);
-    /*
-    final msg = DropResponder(responder.id, closeCode);
-    final bytes = buildPacket(msg, common.server);
-    send(bytes);
-     */
   }
 }
 
