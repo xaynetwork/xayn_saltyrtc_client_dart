@@ -176,15 +176,17 @@ abstract class Phase {
     final nonce =
         Nonce(receiver.cookiePair.ours, common.address, receiver.id, cs);
 
-    // If we don't encrypt is just the concatenation
+    final Uint8List payload;
     if (!encrypt) {
-      final builder = BytesBuilder(copy: false);
-      builder.add(nonce.toBytes());
-      builder.add(msg.toBytes());
-      return builder.takeBytes();
+      payload = msg.toBytes();
+    } else {
+      payload = receiver.encrypt(msg, nonce);
     }
 
-    return receiver.encrypt(msg, nonce);
+    final builder = BytesBuilder(copy: false)
+      ..add(nonce.toBytes())
+      ..add(payload);
+    return builder.takeBytes();
   }
 
   /// Send bytes as a message on the websocket channel

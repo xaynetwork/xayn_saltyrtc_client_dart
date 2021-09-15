@@ -45,7 +45,7 @@ class SetupData {
     final ws = MockWebSocket();
     final outMsgs = StreamQueue<Uint8List>(ws.stream);
     final common = Common(
-      MockCrypto(),
+      crypto,
       clientPermanentKeys,
       server.permanentPublicKey,
       ws,

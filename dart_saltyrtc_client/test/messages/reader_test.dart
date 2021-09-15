@@ -45,7 +45,8 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
 import 'package:test/test.dart';
 
 import '../crypto_mock.dart' show MockCrypto;
-import '../utils.dart';
+import '../logging.dart' show setUpLogging;
+import '../utils.dart' show throwsProtocolError;
 
 void checkRead<T extends Message>(T Function() getMsg) {
   final msg = getMsg();
@@ -53,6 +54,7 @@ void checkRead<T extends Message>(T Function() getMsg) {
 }
 
 void main() {
+  setUpLogging();
   group('readMessage', () {
     final key = Uint8List(Crypto.publicKeyBytes);
     final signedKeys = Uint8List(signedKeysLength);

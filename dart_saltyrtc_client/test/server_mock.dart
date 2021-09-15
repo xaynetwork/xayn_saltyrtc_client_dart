@@ -168,9 +168,7 @@ class MockServer {
     final keys = bytes.takeBytes();
     final sks = crypto.createSharedKeyStore(
         ownKeyStore: permanentKeys, remotePublicKey: clientPermanentPublicKey!);
-    final encrypted = sks.encrypt(message: keys, nonce: nonce.toBytes());
-    // encrypt add the nonce at the beginning of the data but we don't want it here
-    return Uint8List.sublistView(encrypted, Nonce.totalLength);
+    return sks.encrypt(message: keys, nonce: nonce.toBytes());
   }
 
   NonceAndMessage<ServerHello> _serverHello() {
@@ -183,12 +181,11 @@ class MockServer {
 Uint8List prepareMessage(Message msg, Nonce nonce, [CryptoBox? box]) {
   final msgBytes = msg.toBytes();
   final nonceBytes = nonce.toBytes();
+  final bytes = BytesBuilder(copy: false)..add(nonceBytes);
   if (box != null) {
-    return box.encrypt(message: msgBytes, nonce: nonceBytes);
+    bytes.add(box.encrypt(message: msgBytes, nonce: nonceBytes));
+  } else {
+    bytes.add(msgBytes);
   }
-
-  final bytes = BytesBuilder(copy: false);
-  bytes.add(nonceBytes);
-  bytes.add(msgBytes);
   return bytes.takeBytes();
 }

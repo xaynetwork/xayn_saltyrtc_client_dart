@@ -1,11 +1,11 @@
-import 'dart:math' show Random;
+import 'dart:math' show Random, min;
 import 'dart:typed_data' show BytesBuilder, Uint8List;
 
 import 'package:collection/collection.dart' show ListEquality;
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show SharedKeyStore, Crypto, AuthToken, KeyStore;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart';
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:equatable/equatable.dart' show Equatable;
 import 'package:fixnum/fixnum.dart' show Int64;
 
 final listEq = ListEquality<int>();
@@ -68,7 +68,10 @@ class _MockAuthToken extends AuthToken {
   final _KeyId _keyId;
   final MockCrypto crypto;
 
-  _MockAuthToken(this.crypto) : _keyId = crypto._nextKeyId();
+  @override
+  final Uint8List bytes;
+
+  _MockAuthToken(this.bytes, this.crypto) : _keyId = crypto._nextKeyId();
 
   @override
   Uint8List decrypt({
@@ -97,8 +100,23 @@ class EncryptionInfo {
   });
 }
 
+class _TwoKeyIds extends Equatable {
+  @override
+  final List<Object?> props;
+
+  _TwoKeyIds(_KeyId first, _KeyId second)
+      : props = first < second ? [first, second] : [second, first];
+}
+
+class _KeyBytes extends Equatable {
+  @override
+  final List<Object?> props;
+
+  _KeyBytes(Uint8List data) : props = data.sublist(0);
+}
+
 class MockCrypto extends Crypto {
-  static const int magicByte = 120;
+  static const List<int> magicNumber = [123, 249, 27, 55];
 
   final _random = Random();
 
@@ -106,19 +124,21 @@ class MockCrypto extends Crypto {
   Map<_MessageId, EncryptionInfo> encryptedMessages = {};
 
   /// Public/Private key => Key
-  Map<Uint8List, _MockKeyStore> keyStoreLookUp = {};
+  Map<_KeyBytes, _MockKeyStore> keyStoreLookUp = {};
 
   /// AuthToken lookup
-  Map<Uint8List, _MockAuthToken> authTokenLookUp = {};
+  Map<_KeyBytes, _MockAuthToken> authTokenLookUp = {};
 
-  /// KeyId => SharedKeyStore
-  Map<Set<_KeyId>, SharedKeyStore> sharedKeyStoreLookUp = {};
+  /// TowKeyIds(keyIdOfA, keyIdOfB) => SharedKeyStore
+  Map<_TwoKeyIds, SharedKeyStore> sharedKeyStoreLookUp = {};
 
   _KeyId _nextKeyIdState = 0;
   _MessageId _nextMessageIdState = Int64(0);
 
   _KeyId _nextKeyId() => _nextKeyIdState++;
   _MessageId _nextMessageId() => _nextMessageIdState++;
+
+  MockCrypto();
 
   @override
   AuthToken createAuthToken() {
@@ -127,7 +147,8 @@ class MockCrypto extends Crypto {
 
   @override
   AuthToken createAuthTokenFromToken({required Uint8List token}) {
-    return authTokenLookUp.putIfAbsent(token, () => _MockAuthToken(this));
+    return authTokenLookUp.putIfAbsent(
+        _KeyBytes(token), () => _MockAuthToken(token, this));
   }
 
   @override
@@ -140,11 +161,17 @@ class MockCrypto extends Crypto {
   @override
   KeyStore createKeyStoreFromKeys(
       {required Uint8List privateKey, required Uint8List publicKey}) {
-    var keyStore = keyStoreLookUp[privateKey];
+    final keyOfPrivateKey = _KeyBytes(privateKey);
+    final keyOfPublicKey = _KeyBytes(publicKey);
+
+    var keyStore = keyStoreLookUp[keyOfPrivateKey];
     if (keyStore == null) {
       keyStore = _MockKeyStore(
           crypto: this, publicKey: publicKey, privateKey: privateKey);
-      _addNewKeyStore(keyStore);
+      assert(!keyStoreLookUp.containsKey(keyOfPublicKey));
+      assert(!keyStoreLookUp.containsKey(keyOfPublicKey));
+      keyStoreLookUp[keyOfPrivateKey] = keyStore;
+      keyStoreLookUp[keyOfPublicKey] = keyStore;
     }
     return keyStore;
   }
@@ -152,10 +179,11 @@ class MockCrypto extends Crypto {
   @override
   SharedKeyStore createSharedKeyStore(
       {required KeyStore ownKeyStore, required Uint8List remotePublicKey}) {
-    final leftKeyId = keyStoreLookUp[ownKeyStore.privateKey]!._keyId;
-    final rightKeyId = keyStoreLookUp[remotePublicKey]!._keyId;
+    final firstKeyId =
+        keyStoreLookUp[_KeyBytes(ownKeyStore.privateKey)]!._keyId;
+    final secondKeyId = keyStoreLookUp[_KeyBytes(remotePublicKey)]!._keyId;
     return sharedKeyStoreLookUp.putIfAbsent(
-        {leftKeyId, rightKeyId},
+        _TwoKeyIds(firstKeyId, secondKeyId),
         () => _MockSharedKeyStore(
               crypto: this,
               ownPrivateKey: ownKeyStore.privateKey,
@@ -166,13 +194,6 @@ class MockCrypto extends Crypto {
   @override
   Uint8List randomBytes(int size) {
     return Uint8List.fromList(List.generate(size, (_) => _random.nextInt(255)));
-  }
-
-  void _addNewKeyStore(_MockKeyStore keyStore) {
-    assert(!keyStoreLookUp.containsKey(keyStore.publicKey));
-    assert(!keyStoreLookUp.containsKey(keyStore.privateKey));
-    keyStoreLookUp[keyStore.privateKey] = keyStore;
-    keyStoreLookUp[keyStore.publicKey] = keyStore;
   }
 
   Uint8List _encryptWith({
@@ -186,12 +207,14 @@ class MockCrypto extends Crypto {
       nonce: nonce,
       keyId: keyId,
     );
-
-    final bytes = BytesBuilder(copy: false);
-    bytes
-      ..add(
-          Uint8List.fromList(List.generate(Crypto.boxOverhead, (index) => magicByte)))
-      ..add(messageId.toBytes());
+    final messageIdBytes = messageId.toBytes();
+    final expectedLength = message.length + Crypto.boxOverhead;
+    final currentLength = magicNumber.length + messageIdBytes.length;
+    assert(currentLength <= expectedLength);
+    final bytes = BytesBuilder(copy: false)
+      ..add(magicNumber)
+      ..add(messageIdBytes)
+      ..add(Uint8List(expectedLength - currentLength));
     return bytes.takeBytes();
   }
 
@@ -201,17 +224,16 @@ class MockCrypto extends Crypto {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    //ignore: omit_local_variable_types
-    bool validMagicCookie =
-        ciphertext.length > Crypto.boxOverhead &&
-        Uint8List.sublistView(ciphertext, 0, Crypto.boxOverhead)
-            .fold(true, (valid, element) => valid & (element == magicByte));
-    if (!validMagicCookie) {
+    final foundMagicNumber =
+        Uint8List.sublistView(ciphertext, 0, magicNumber.length);
+    if (!listEq.equals(foundMagicNumber, magicNumber)) {
       throw Exception(
           "Can't decrypt something which wasn't encrypted with the mock.");
     }
-    final messageId =
-        Int64.fromBytes(Uint8List.sublistView(ciphertext, Crypto.boxOverhead));
+
+    final messageId = Int64.fromBytes(Uint8List.sublistView(ciphertext,
+        magicNumber.length, min(magicNumber.length + 8, ciphertext.length)));
+
     final info = encryptedMessages[messageId]!;
     if (info.keyId != keyId) {
       throw AssertionError('Message was encrypted with different key.');

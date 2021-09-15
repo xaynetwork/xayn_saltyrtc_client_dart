@@ -45,7 +45,9 @@ abstract class SharedKeyStore implements CryptoBox {
 }
 
 /// Token that is used to authenticate a responder if it is not trusted
-abstract class AuthToken implements CryptoBox {}
+abstract class AuthToken implements CryptoBox {
+  Uint8List get bytes;
+}
 
 abstract class Crypto {
   // specified by NaCl.
