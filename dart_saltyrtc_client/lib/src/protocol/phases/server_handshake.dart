@@ -39,6 +39,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         Phase,
         InitiatorData,
         InitiatorPhase,
+        InitiatorSendDropResponder,
         ResponderData,
         ResponderPhase,
         ClientHandshakeInput;
@@ -233,7 +234,7 @@ abstract class ServerHandshakePhase extends Phase {
 }
 
 class InitiatorServerHandshakePhase extends ServerHandshakePhase
-    with InitiatorPhase {
+    with InitiatorPhase, InitiatorSendDropResponder {
   @override
   final InitiatorData data;
 

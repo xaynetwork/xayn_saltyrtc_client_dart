@@ -114,7 +114,15 @@ class AuthenticatedServer extends Server {
   }
 }
 
-class Responder extends Peer {
+/// Only needed to avoid to get a Server when we only want a Responder or an Initiator.
+abstract class Client extends Peer {
+  Client(CombinedSequencePair csPair, CookiePair cookiePair)
+      : super(csPair, cookiePair);
+
+  Client.fromRandom(Crypto crypto) : super.fromRandom(crypto);
+}
+
+class Responder extends Client {
   @override
   final IdResponder id;
 
@@ -135,7 +143,7 @@ class Responder extends Peer {
   }
 }
 
-class Initiator extends Peer {
+class Initiator extends Client {
   @override
   final IdInitiator id = Id.initiatorAddress;
 
