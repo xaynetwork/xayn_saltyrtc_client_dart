@@ -74,7 +74,7 @@ void main() {
         Cookie(Uint8List.fromList(List.filled(Cookie.cookieLength, 255)));
     final csZero = CombinedSequence(Int64.ZERO);
     final csOne =
-        CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
+        CombinedSequence(CombinedSequence.combinedSequenceNumberMax);
 
     expect(
         Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes().length,
@@ -108,7 +108,7 @@ void main() {
         Cookie(Uint8List.fromList(List.filled(Cookie.cookieLength, 255)));
     final csZero = CombinedSequence(Int64.ZERO);
     final csOne =
-        CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
+        CombinedSequence(CombinedSequence.combinedSequenceNumberMax);
 
     final nonces = [
       Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero),
