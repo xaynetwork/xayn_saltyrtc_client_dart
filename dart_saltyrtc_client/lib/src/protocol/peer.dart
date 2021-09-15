@@ -248,7 +248,8 @@ class AuthenticatedResponder extends Responder with AuthenticatedPeer {
         ) {
     if (unauthenticated.sessionSharedKey == null ||
         unauthenticated.permanentSharedKey == null ||
-        unauthenticated.cookiePair.theirs == null) {
+        unauthenticated.cookiePair.theirs == null ||
+        unauthenticated.csPair.theirs == null) {
       throw StateError('Responder is not authenticated');
     }
   }
@@ -270,6 +271,7 @@ class AuthenticatedInitiator extends Initiator with AuthenticatedPeer {
     if (unauthenticated.sessionSharedKey == null ||
         unauthenticated.permanentSharedKey == null ||
         unauthenticated.cookiePair.theirs == null ||
+        unauthenticated.csPair.theirs == null ||
         connected == true) {
       throw StateError('Initiator is not authenticated');
     }

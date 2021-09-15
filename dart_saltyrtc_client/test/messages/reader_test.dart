@@ -45,77 +45,92 @@ void checkRead<T extends Message>(T Function() getMsg) {
 }
 
 void main() {
-  final key = Uint8List(Crypto.publicKeyBytes);
-  final signedKeys = Uint8List(signedKeysLength);
-  final yourCookie = Cookie(Uint8List(Cookie.cookieLength));
-  final taskData = {
-    'task': {
-      'task_data': [1, 2, 3]
-    }
-  };
+  group('readMessage', () {
+    final key = Uint8List(Crypto.publicKeyBytes);
+    final signedKeys = Uint8List(signedKeysLength);
+    final yourCookie = Cookie(Uint8List(Cookie.cookieLength));
+    final taskData = {
+      'task': {
+        'task_data': [1, 2, 3]
+      }
+    };
 
-  test('Read server hello', () {
-    checkRead(() => ServerHello(key));
+    test('Read server hello', () {
+      checkRead(() => ServerHello(key));
+    });
+
+    test('Read client hello', () {
+      checkRead(() => ClientHello(key));
+    });
+
+    test('Read server auth initiator', () {
+      checkRead(() =>
+          ServerAuthInitiator(yourCookie, signedKeys, [Id.responderId(2)]));
+    });
+
+    test('Read server auth responder', () {
+      checkRead(() => ServerAuthResponder(yourCookie, signedKeys, true));
+    });
+
+    test('Read client auth', () {
+      checkRead(() => ClientAuth(yourCookie, key, ['custom.proto'], 60));
+    });
+
+    test('Read client auth', () {
+      checkRead(() => ClientAuth(yourCookie, key, ['custom.proto'], 60));
+    });
+
+    test('Read new initiator', () {
+      checkRead(() => NewInitiator());
+    });
+
+    test('Read new responder', () {
+      checkRead(() => NewResponder(Id.responderId(2)));
+    });
+
+    test('Read drop responder', () {
+      checkRead(
+          () => DropResponder(Id.responderId(2), CloseCode.protocolError));
+    });
+
+    test('Read send error', () {
+      checkRead(() => SendError(Uint8List(SendError.idLength)));
+    });
+
+    test('Read token', () {
+      checkRead(() => Token(key));
+    });
+
+    test('Read key', () {
+      checkRead(() => Key(key));
+    });
+
+    test('Read auth initiator', () {
+      checkRead(() => AuthInitiator(yourCookie, 'task', taskData));
+    });
+
+    test('Read auth responder', () {
+      checkRead(() => AuthResponder(yourCookie, ['task'], taskData));
+    });
+
+    test('Read close', () {
+      checkRead(() => Close(CloseCode.closingNormal));
+    });
+
+    test('Read application', () {
+      checkRead(() => Application(Uint8List(10)));
+    });
   });
 
-  test('Read client hello', () {
-    checkRead(() => ClientHello(key));
-  });
-
-  test('Read server auth initiator', () {
-    checkRead(
-        () => ServerAuthInitiator(yourCookie, signedKeys, [Id.responderId(2)]));
-  });
-
-  test('Read server auth responder', () {
-    checkRead(() => ServerAuthResponder(yourCookie, signedKeys, true));
-  });
-
-  test('Read client auth', () {
-    checkRead(() => ClientAuth(yourCookie, key, ['custom.proto'], 60));
-  });
-
-  test('Read client auth', () {
-    checkRead(() => ClientAuth(yourCookie, key, ['custom.proto'], 60));
-  });
-
-  test('Read new initiator', () {
-    checkRead(() => NewInitiator());
-  });
-
-  test('Read new responder', () {
-    checkRead(() => NewResponder(Id.responderId(2)));
-  });
-
-  test('Read drop responder', () {
-    checkRead(() => DropResponder(Id.responderId(2), CloseCode.protocolError));
-  });
-
-  test('Read send error', () {
-    checkRead(() => SendError(Uint8List(SendError.idLength)));
-  });
-
-  test('Read token', () {
-    checkRead(() => Token(key));
-  });
-
-  test('Read key', () {
-    checkRead(() => Key(key));
-  });
-
-  test('Read auth initiator', () {
-    checkRead(() => AuthInitiator(yourCookie, 'task', taskData));
-  });
-
-  test('Read auth responder', () {
-    checkRead(() => AuthResponder(yourCookie, ['task'], taskData));
-  });
-
-  test('Read close', () {
-    checkRead(() => Close(CloseCode.closingNormal));
-  });
-
-  test('Read application', () {
-    checkRead(() => Application(Uint8List(10)));
+  group('readEncryptedMessage', () {
+    test('decrypts and reads the message', () {
+      throw UnimplementedError();
+    });
+    test('throws a protocol error', () {
+      throw UnimplementedError();
+    });
+    test('throws calls onDecryptionError', () {
+      throw UnimplementedError();
+    });
   });
 }

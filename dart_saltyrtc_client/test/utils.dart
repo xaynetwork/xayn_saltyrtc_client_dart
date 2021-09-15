@@ -4,12 +4,14 @@ import 'package:async/async.dart' show StreamQueue;
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, InitialClientAuthMethod, KeyStore;
+import 'package:dart_saltyrtc_client/src/protocol/error.dart';
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Phase, Common, InitiatorData, ResponderData, ClientHandshakeInput;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:test/expect.dart';
 
 import 'crypto_mock.dart' show MockCrypto;
 import 'network_mock.dart' show MockWebSocket;
@@ -84,4 +86,20 @@ ResponderServerHandshakePhase makeResponderServerHandshakePhase(
     pingInterval,
     data ?? ResponderData(Initiator(common.crypto)),
   );
+}
+
+Matcher throwsValidationError({bool isProtocolError = true}) {
+  final ifValidationErrorHasExpectedState = (Object? error) {
+    if (error is! ValidationError) {
+      return true;
+    } else {
+      return error.isProtocolError == isProtocolError;
+    }
+  };
+  return throwsA(allOf(
+      isA<ValidationError>(), predicate(ifValidationErrorHasExpectedState)));
+}
+
+Matcher throwsProtocolError() {
+  return throwsA(isA<ProtocolError>());
 }
