@@ -10,7 +10,7 @@ abstract class Task {
 
   /// Data that is sent to the other client during the task negotiation phase.
   ///
-  /// For a initiator this is only called after `init` was called with the
+  /// For an initiator this is only called after `initialize` was called with the
   /// task data of the responder.
   ///
   /// For a responder this is called *before* init was called.
@@ -18,7 +18,7 @@ abstract class Task {
 
   /// Initialize the task for usage.
   ///
-  //FIXME It MUST be a optional PARSED msgpack map instead, which also can have ANY form.
+  //FIXME It MUST be an optional PARSED msgpack map instead, which also can have ANY form.
   void initialize(Map<String, List<int>?>? data) {
     //FIXME remove default impl
     throw UnimplementedError();

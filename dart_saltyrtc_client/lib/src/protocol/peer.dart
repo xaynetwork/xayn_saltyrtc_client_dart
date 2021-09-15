@@ -234,9 +234,9 @@ mixin AuthenticatedPeer implements Peer {
 }
 
 class AuthenticatedResponder extends Responder with AuthenticatedPeer {
-  /// Creates a AuthenticatedResponder (throw an exception if it's not possible).
+  /// Creates an AuthenticatedResponder (throw an exception if it's not possible).
   ///
-  /// To create a `AuthenticatedResponder` a *shallow* copy of the passed in
+  /// To create an `AuthenticatedResponder` a *shallow* copy of the passed in
   /// `Responder` is made.
   AuthenticatedResponder._fromUnauthenticated(Responder unauthenticated)
       : super._fromParts(
@@ -255,9 +255,9 @@ class AuthenticatedResponder extends Responder with AuthenticatedPeer {
 }
 
 class AuthenticatedInitiator extends Initiator with AuthenticatedPeer {
-  /// Creates a AuthenticatedInitiator (throw an exception if it's not possible).
+  /// Creates an AuthenticatedInitiator (throw an exception if it's not possible).
   ///
-  /// To create a `AuthenticatedInitiator` a *shallow* copy of the passed in
+  /// To create an `AuthenticatedInitiator` a *shallow* copy of the passed in
   /// `Initiator` is made.
   AuthenticatedInitiator._fromUnauthenticated(Initiator unauthenticated)
       : super._fromParts(
