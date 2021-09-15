@@ -26,16 +26,13 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Client, Responder, Initiator, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show
-        Phase,
-        CommonAfterServerHandshake,
-        AfterServerHandshakePhase,
-        InitiatorSendDropResponder;
+    show AfterServerHandshakePhase, CommonAfterServerHandshake, InitiatorSendDropResponder, Phase, WithPeer;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
 
-abstract class TaskPhase extends AfterServerHandshakePhase {
+abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
+  @override
   final Client pairedClient;
 
   final Task task;
@@ -69,22 +66,6 @@ abstract class TaskPhase extends AfterServerHandshakePhase {
 
     // the phase does not change anymore
     return this;
-  }
-
-  @override
-  Peer getPeerWithId(Id id) {
-    if (id.isServer()) {
-      return common.server;
-    } else if (id == pairedClient.id) {
-      return pairedClient;
-    } else if (role == Role.initiator && id.isResponder()) {
-      // see getPeerWithId of InitiatorPhase
-      throw ValidationError(
-        'Invalid responder id: $id',
-        isProtocolError: false,
-      );
-    }
-    throw ProtocolError('Invalid responder id: $id');
   }
 
   @protected

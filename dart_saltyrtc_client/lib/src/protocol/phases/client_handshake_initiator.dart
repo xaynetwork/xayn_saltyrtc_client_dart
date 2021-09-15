@@ -305,7 +305,6 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
   void dropResponder(Responder responder, CloseCode closeCode) {
     responders.remove(responder.id);
-    logger.d('Dropping responder ${responder.id}');
-    sendMessage(DropResponder(responder.id, closeCode), to: common.server);
+    sendDropResponder(responder.id, closeCode);
   }
 }

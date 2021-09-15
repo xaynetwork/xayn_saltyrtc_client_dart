@@ -35,7 +35,6 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         CommonAfterServerHandshake,
         Phase,
         InitiatorData,
-        InitiatorSendDropResponder,
         InitiatorIdentity,
         ResponderData,
         ResponderPhase,
@@ -218,7 +217,7 @@ abstract class ServerHandshakePhase extends Phase {
 }
 
 class InitiatorServerHandshakePhase extends ServerHandshakePhase
-    with InitiatorIdentity, InitiatorSendDropResponder {
+    with InitiatorIdentity {
   final InitiatorData data;
 
   InitiatorServerHandshakePhase(

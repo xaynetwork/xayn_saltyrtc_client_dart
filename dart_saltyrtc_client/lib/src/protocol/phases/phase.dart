@@ -23,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show AuthenticatedServer, Initiator, Peer, Server;
+    show AuthenticatedServer, Client, Initiator, Peer, Server;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
@@ -220,14 +220,21 @@ mixin InitiatorIdentity implements Phase {
 /// A mixin for anything which only expects messages
 /// from the server or a known peer.
 mixin WithPeer implements Phase {
-  Peer get peer;
+  Client get pairedClient;
 
   @override
   Peer getPeerWithId(Id id) {
     if (id.isServer()) {
       return common.server;
-    } else if (id == peer.id) {
-      return peer;
+    } else if (id == pairedClient.id) {
+      return pairedClient;
+    } else if (role == Role.initiator && id.isResponder()) {
+      // Initiators might receive "in-transit" messages of
+      // recently dropped responders.
+      throw ValidationError(
+        'Invalid responder id: $id',
+        isProtocolError: false,
+      );
     }
     throw ProtocolError('Invalid peer id: $id');
   }
@@ -235,6 +242,7 @@ mixin WithPeer implements Phase {
 
 mixin InitiatorSendDropResponder on Phase {
   void sendDropResponder(IdResponder id, CloseCode closeCode) {
+    logger.d('Dropping responder $id');
     sendMessage(DropResponder(id, closeCode), to: common.server);
   }
 }
