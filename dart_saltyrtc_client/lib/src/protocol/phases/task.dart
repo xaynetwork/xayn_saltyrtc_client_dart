@@ -99,6 +99,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase {
       handleClose(msg);
     } else if (msg is Application) {
       handleApplicationMessage(msg);
+    } else {
+      throw ProtocolError(
+        'Invalid message during task phase. Message type: ${msg.type}',
+      );
     }
   }
 
@@ -162,6 +166,7 @@ class ResponderTaskPhase extends TaskPhase {
     if (msg is NewInitiator) {
       // if a new initiator connected the current session is not valid anymore
       logger.d('A new initiator connected');
+      // we could also go back to `ResponderClientHandshakePhase`, but we also need to notify the Task
       throw SaltyRtcError(
         CloseCode.closingNormal,
         'Another initiator connected',
