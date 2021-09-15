@@ -62,10 +62,10 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
     handleUnexpectedMessage(msg);
   }
 
-  @protected
-  Phase handleClientMessage(Uint8List msgBytes, Nonce nonce);
-
   void handleUnexpectedMessage(Message msg) {
     throw ProtocolError('Unexpected message of type ${msg.type}');
   }
+
+  @protected
+  Phase handleClientMessage(Uint8List msgBytes, Nonce nonce);
 }

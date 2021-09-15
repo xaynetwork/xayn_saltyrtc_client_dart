@@ -217,6 +217,8 @@ mixin InitiatorIdentity implements Phase {
   Role get role => Role.initiator;
 }
 
+/// A mixin for anything which only expects messages
+/// from the server or a known peer.
 mixin WithPeer implements Phase {
   Peer get peer;
 
