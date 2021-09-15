@@ -17,7 +17,7 @@ import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
-    show readEncryptedMessageOfType;
+    show MessageDecryptionExt;
 import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
@@ -178,8 +178,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     assert(data.authMethod.presetResponderSharedKey() == null);
 
     final responder = responderWithState.responder;
-    final msg = readEncryptedMessageOfType<Token>(
-        sharedKey: data.authMethod.authToken()!,
+    final authToken = data.authMethod.authToken()!;
+    final msg = authToken.readEncryptedMessageOfType<Token>(
         msgBytes: msgBytes,
         nonce: nonce,
         msgType: MessageType.token,
@@ -204,8 +204,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       _ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
     final responder = responderWithState.responder;
 
-    final msg = readEncryptedMessageOfType<Key>(
-        sharedKey: responder.permanentSharedKey!,
+    final sharedKey = responder.permanentSharedKey!;
+    final msg = sharedKey.readEncryptedMessageOfType<Key>(
         msgBytes: msgBytes,
         nonce: nonce,
         msgType: MessageType.key,
@@ -230,8 +230,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       _ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
     final responder = responderWithState.responder;
 
-    final msg = readEncryptedMessageOfType<AuthResponder>(
-      sharedKey: responder.sessionSharedKey!,
+    final sharedKey = responder.sessionSharedKey!;
+    final msg = sharedKey.readEncryptedMessageOfType<AuthResponder>(
       msgBytes: msgBytes,
       nonce: nonce,
       msgType: MessageType.auth,

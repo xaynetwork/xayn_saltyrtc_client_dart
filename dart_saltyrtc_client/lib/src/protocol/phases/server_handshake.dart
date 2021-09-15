@@ -8,7 +8,8 @@ import 'package:dart_saltyrtc_client/src/messages/message.dart'
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/reader.dart' show readMessage;
+import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+    show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/messages/s2c/client_auth.dart'
     show ClientAuth;
 import 'package:dart_saltyrtc_client/src/messages/s2c/client_hello.dart'
@@ -127,12 +128,17 @@ abstract class ServerHandshakePhase extends Phase {
   @override
   Phase run(Uint8List msgBytes, Nonce nonce) {
     // the first message is not encrypted
-    if (handshakeState != ServerHandshakeState.start) {
-      final sks = ensureNotNull(common.server.sessionSharedKey);
-      msgBytes = sks.decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
+    final Message msg;
+    if (handshakeState == ServerHandshakeState.start) {
+      msg = readMessage(msgBytes);
+    } else {
+      msg = ensureNotNull(common.server.sessionSharedKey).readEncryptedMessage(
+        msgBytes: msgBytes,
+        nonce: nonce,
+        debugHint: 'from server',
+      );
     }
 
-    final msg = readMessage(msgBytes);
     switch (handshakeState) {
       case ServerHandshakeState.start:
         {

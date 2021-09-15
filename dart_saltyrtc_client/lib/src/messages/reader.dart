@@ -42,39 +42,57 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ValidationError;
 import 'package:messagepack/messagepack.dart' show Unpacker;
 
-/// Decrypts the message then reads it.
-///
-/// If decryption fails `onDecryptionError` is called which can be used to
-/// do some logging/error handling and create the exception which will be
-/// throw. If `onDecryptionError` is not provided `ProtocolError` is used.
-///
-/// If the read message is not of the right dart type (A `is!` check) then
-/// a `ProtocolError` is thrown.
-T readEncryptedMessageOfType<T>({
-  required CryptoBox sharedKey,
-  required Uint8List msgBytes,
-  required Nonce nonce,
-  required String msgType,
-  Exception Function(String)? onDecryptionError,
-}) {
-  final Uint8List decryptedBytes;
-  try {
-    decryptedBytes =
-        sharedKey.decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
-  } on Error {
-    final mkError = onDecryptionError ?? (s) => ProtocolError(s);
-    throw mkError('Could not decrypt $msgType message');
+extension MessageDecryptionExt on CryptoBox {
+  /// Decrypts the message and reads it.
+  ///
+  /// If decryption fails `onDecryptionError` is called which can be used to
+  /// do some logging/error handling and create the exception which will be
+  /// throw. If `onDecryptionError` is not provided `ProtocolError` is used.
+  ///
+  Message readEncryptedMessage({
+    required Uint8List msgBytes,
+    required Nonce nonce,
+    required String debugHint,
+    Exception Function(String)? onDecryptionError,
+  }) {
+    final Uint8List decryptedBytes;
+    try {
+      decryptedBytes = decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
+    } on Error {
+      final mkError = onDecryptionError ?? (s) => ProtocolError(s);
+      throw mkError('Could not decrypt message ($debugHint)');
+    }
+
+    final msg = readMessage(decryptedBytes);
+    logger.d('Received ${msg.type}');
+    return msg;
   }
 
-  final msg = readMessage(decryptedBytes);
-  if (msg is! T) {
-    throw ProtocolError(
-        'Unexpected message of type ${msg.type}, expected $msgType');
+  /// Decrypts the message, reads it and (checked) casts it.
+  ///
+  /// If decryption fails `onDecryptionError` is called which can be used to
+  /// do some logging/error handling and create the exception which will be
+  /// throw. If `onDecryptionError` is not provided `ProtocolError` is used.
+  ///
+  /// If the read message is not of the right dart type (A `is!` check) then
+  /// a `ProtocolError` is thrown.
+  T readEncryptedMessageOfType<T>({
+    required Uint8List msgBytes,
+    required Nonce nonce,
+    required String msgType,
+    Exception Function(String)? onDecryptionError,
+  }) {
+    final msg = readEncryptedMessage(
+      msgBytes: msgBytes,
+      nonce: nonce,
+      debugHint: msgType,
+    );
+    if (msg is! T) {
+      throw ProtocolError(
+          'Unexpected message of type ${msg.type}, expected $msgType');
+    }
+    return msg as T;
   }
-
-  logger.d('Received $msgType');
-
-  return msg as T;
 }
 
 /// Parse message from bytes. If the type is not one of types defined by the protocol
