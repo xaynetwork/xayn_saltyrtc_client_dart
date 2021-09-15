@@ -58,7 +58,9 @@ extension MessageDecryptionExt on CryptoBox {
     final Uint8List decryptedBytes;
     try {
       decryptedBytes = decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
-    } on Error {
+    } on Object {
+      // Until we wrap all platform specific crypto exceptions we can
+      // use `on Exception`, `on Error` or similar.
       final mkError = onDecryptionError ?? (s) => ProtocolError(s);
       throw mkError('Could not decrypt message ($debugHint)');
     }

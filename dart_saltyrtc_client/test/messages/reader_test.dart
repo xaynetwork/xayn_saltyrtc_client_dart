@@ -14,15 +14,19 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart';
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show signedKeysLength;
+    show MessageType, signedKeysLength;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
-import 'package:dart_saltyrtc_client/src/messages/reader.dart' show readMessage;
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart';
+import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+    show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/messages/s2c/client_auth.dart'
     show ClientAuth;
 import 'package:dart_saltyrtc_client/src/messages/s2c/client_hello.dart'
     show ClientHello;
+import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
@@ -37,7 +41,11 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_responder.dart
     show ServerAuthResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
 import 'package:test/test.dart';
+
+import '../crypto_mock.dart' show MockCrypto;
+import '../utils.dart';
 
 void checkRead<T extends Message>(T Function() getMsg) {
   final msg = getMsg();
@@ -122,15 +130,80 @@ void main() {
     });
   });
 
-  group('readEncryptedMessage', () {
-    test('decrypts and reads the message', () {
-      throw UnimplementedError();
+  group('MessageDecryptionExt', () {
+    final crypto = MockCrypto();
+    final keyFrom = crypto.createKeyStore();
+    final keyTo = crypto.createKeyStore();
+    final receiver = Responder(Id.responderId(12), crypto);
+    final sharedKey = crypto.createSharedKeyStore(
+        ownKeyStore: keyTo, remotePublicKey: keyFrom.publicKey);
+    receiver.setSessionSharedKey(sharedKey);
+    final message = Close(CloseCode.noSharedTask);
+    final nonce = Nonce.fromRandom(
+      source: Id.initiatorAddress,
+      destination: receiver.id,
+      randomBytes: crypto.randomBytes,
+    );
+    final encryptedMessage = receiver.encrypt(message, nonce);
+
+    group('readEncryptedMessage', () {
+      test('decrypts and reads the message', () {
+        final msg = sharedKey.readEncryptedMessage(
+          msgBytes: encryptedMessage,
+          nonce: nonce,
+          debugHint: 'foobar',
+        );
+        expect(msg, equals(message));
+      });
+
+      test('throws a protocol error if decryption fails', () {
+        expect(() {
+          sharedKey.readEncryptedMessage(
+            msgBytes: Uint8List(Nonce.totalLength + 10),
+            nonce: nonce,
+            debugHint: 'foobar',
+          );
+        }, throwsProtocolError());
+      });
+
+      test('calls onDecryptionError if decryption fails', () {
+        var wasCalled = false;
+        expect(() {
+          sharedKey.readEncryptedMessage(
+              msgBytes: Uint8List(Nonce.totalLength + 10),
+              nonce: nonce,
+              debugHint: 'foobar',
+              onDecryptionError: (msg) {
+                wasCalled = true;
+                //arbitrary alternate Expection subclass
+                return FormatException(msg);
+              });
+        }, throwsFormatException);
+        expect(wasCalled, isTrue);
+      });
     });
-    test('throws a protocol error', () {
-      throw UnimplementedError();
-    });
-    test('throws calls onDecryptionError', () {
-      throw UnimplementedError();
+    group('readEncryptedMessageOfType', () {
+      // Test expected readEncryptedMessage to be used internally and
+      // hence doesn't test the decryption.
+      test('casts the type', () {
+        final msg = sharedKey.readEncryptedMessageOfType<Close>(
+          msgBytes: encryptedMessage,
+          nonce: nonce,
+          msgType: MessageType.close,
+        );
+        expect(msg, equals(message));
+        expect(msg, isA<Close>());
+      });
+
+      test('throws a ProtocolError if the type mismatches', () {
+        expect(() {
+          sharedKey.readEncryptedMessageOfType<Disconnected>(
+            msgBytes: encryptedMessage,
+            nonce: nonce,
+            msgType: MessageType.disconnected,
+          );
+        }, throwsProtocolError());
+      });
     });
   });
 }

@@ -8,7 +8,6 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show TaskData, Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -22,11 +21,16 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError, ValidationError, ensureNotNull;
+    show ProtocolError, SaltyRtcError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Client, Responder, Initiator, Peer;
+    show Client, Responder, Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show AfterServerHandshakePhase, CommonAfterServerHandshake, InitiatorSendDropResponder, Phase, WithPeer;
+    show
+        AfterServerHandshakePhase,
+        CommonAfterServerHandshake,
+        InitiatorSendDropResponder,
+        Phase,
+        WithPeer;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;

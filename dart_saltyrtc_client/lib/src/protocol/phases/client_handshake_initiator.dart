@@ -18,8 +18,6 @@ import 'package:dart_saltyrtc_client/src/messages/message.dart'
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt;
-import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
-    show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'

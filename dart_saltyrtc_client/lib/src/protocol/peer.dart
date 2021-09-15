@@ -49,6 +49,7 @@ abstract class Peer {
   // type of `sks`. We don't want to be able to set null here.
   void setSessionSharedKey(SharedKeyStore sks) {
     // we need to check that permanent and session are different
+    //FIXME we need to compare the public keys not the shared keys!!
     if (sks == permanentSharedKey) {
       throw ProtocolError(
           'Server session key is the same as the permanent key');
@@ -266,13 +267,13 @@ class AuthenticatedInitiator extends Initiator with AuthenticatedPeer {
           permanentSharedKey: unauthenticated.permanentSharedKey,
           cookiePair: unauthenticated.cookiePair,
           csPair: unauthenticated.csPair,
-          connected: true,
+          connected: unauthenticated.connected,
         ) {
     if (unauthenticated.sessionSharedKey == null ||
         unauthenticated.permanentSharedKey == null ||
         unauthenticated.cookiePair.theirs == null ||
         unauthenticated.csPair.theirs == null ||
-        connected == true) {
+        !unauthenticated.connected) {
       throw StateError('Initiator is not authenticated');
     }
   }
@@ -298,7 +299,7 @@ class CombinedSequencePair {
       if (!csnFromMessage.isOverflowZero) {
         throw ValidationError('First message from $source with overflow');
       }
-      _theirs = csnFromMessage;
+      _theirs = csnFromMessage.copy();
     } else {
       theirs!.next();
       if (theirs != csnFromMessage) {
