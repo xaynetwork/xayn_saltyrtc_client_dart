@@ -34,7 +34,6 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         Common,
         CommonAfterServerHandshake,
         Phase,
-        InitiatorData,
         InitiatorIdentity,
         ResponderData,
         ResponderPhase,
@@ -218,13 +217,10 @@ abstract class ServerHandshakePhase extends Phase {
 
 class InitiatorServerHandshakePhase extends ServerHandshakePhase
     with InitiatorIdentity {
-  final InitiatorData data;
-
   InitiatorServerHandshakePhase(
     Common common,
     ClientHandshakeInput clientHandshakeInput,
     int pingInterval,
-    this.data,
   ) : super(common, clientHandshakeInput, pingInterval);
 
   @override
@@ -257,7 +253,6 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     final nextPhase = InitiatorClientHandshakePhase(
       CommonAfterServerHandshake(common),
       clientHandshakeInput,
-      data,
     );
     msg.responders.forEach(nextPhase.addNewResponder);
     return nextPhase;

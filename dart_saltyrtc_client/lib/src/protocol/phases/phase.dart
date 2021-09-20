@@ -68,15 +68,11 @@ class ClientHandshakeInput {
   /// Tasks that the user support
   final List<Task> tasks;
 
-  ClientHandshakeInput(this.tasks);
-}
-
-/// Additional data for an initiator.
-class InitiatorData {
+  /// Method to initially authenticate the responder
   /// Trusted public key of the responder we expect to peer with.
   final InitialClientAuthMethod authMethod;
 
-  InitiatorData(this.authMethod);
+  ClientHandshakeInput({required this.tasks, required this.authMethod});
 }
 
 /// Additional data for a responder.

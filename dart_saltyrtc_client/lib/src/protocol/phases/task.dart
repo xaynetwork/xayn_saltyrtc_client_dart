@@ -40,10 +40,8 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   final Client pairedClient;
 
   final Task task;
-  final TaskData taskData;
 
-  TaskPhase(CommonAfterServerHandshake common, this.pairedClient, this.task,
-      this.taskData)
+  TaskPhase(CommonAfterServerHandshake common, this.pairedClient, this.task)
       : super(common);
 
   @protected
@@ -117,7 +115,7 @@ class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
     this.pairedClient,
     Task task,
     TaskData taskData,
-  ) : super(common, pairedClient, task, taskData);
+  ) : super(common, pairedClient, task);
 
   @override
   void handleServerMessage(Message msg) {
@@ -141,8 +139,7 @@ class ResponderTaskPhase extends TaskPhase {
     CommonAfterServerHandshake common,
     this.pairedClient,
     Task task,
-    TaskData taskData,
-  ) : super(common, pairedClient, task, taskData);
+  ) : super(common, pairedClient, task);
 
   @override
   void handleServerMessage(Message msg) {

@@ -196,6 +196,10 @@ class MockCrypto extends Crypto {
     return Uint8List.fromList(List.generate(size, (_) => _random.nextInt(255)));
   }
 
+  KeyStore? getKeyStoreForKey(Uint8List key) {
+    return keyStoreLookUp[_KeyBytes(key)];
+  }
+
   Uint8List _encryptWith({
     required _KeyId keyId,
     required Uint8List message,

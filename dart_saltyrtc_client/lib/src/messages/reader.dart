@@ -66,7 +66,6 @@ extension MessageDecryptionExt on CryptoBox {
     }
 
     final msg = readMessage(decryptedBytes);
-    logger.d('Received ${msg.type}');
     return msg;
   }
 
@@ -88,6 +87,7 @@ extension MessageDecryptionExt on CryptoBox {
       msgBytes: msgBytes,
       nonce: nonce,
       debugHint: msgType,
+      onDecryptionError: onDecryptionError,
     );
     if (msg is! T) {
       throw ProtocolError(
@@ -104,6 +104,8 @@ Message readMessage(Uint8List bytes, {List<String> taskTypes = const []}) {
   final msgUnpacker = Unpacker(bytes);
   final map = validateStringMapType(msgUnpacker.unpackMap(), 'message');
   final type = validateTypeType(map[MessageFields.type]);
+
+  logger.d('Received $type');
 
   switch (type) {
     case MessageType.clientHello:

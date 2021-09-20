@@ -15,6 +15,7 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType;
+import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt;
@@ -23,20 +24,21 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show IgnoreMessageError, NoSharedTaskError, ProtocolError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show AuthenticatedResponder, Peer, Responder;
+    show Client, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
-        InitiatorData,
         InitiatorSendDropResponder,
         Phase,
         CommonAfterServerHandshake,
         ClientHandshakeInput,
         InitiatorIdentity;
+import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
+    show TaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 
-class _ResponderWithState {
+class ResponderWithState {
   final Responder responder;
 
   /// Used to identify the oldest responder during the path cleaning procedure.
@@ -48,28 +50,31 @@ class _ResponderWithState {
   ///
   /// If this is not set it meas we have not yet received any messages from the
   /// given responder and as such didn't yet setup the state.
-  _State? state;
+  State? state;
 
-  _ResponderWithState(this.responder, {required this.counter});
+  ResponderWithState(this.responder, {required this.counter});
 
   /// Returns the state for given responder, or creates it if necessary.
   ///
   /// Depending on the auth method the initial state is either `waitForTokenMsg`
   /// or `waitForKeyMsg`. In case of the later the responders permanent shared
   /// key is also set to the preset shared key.
-  _State getOrCreateState(InitialClientAuthMethod authMethod) {
-    final presetKey = authMethod.presetResponderSharedKey();
-    if (presetKey == null) {
-      return _State.waitForTokenMsg;
-    } else {
-      responder.setPermanentSharedKey(presetKey);
-      return _State.waitForKeyMsg;
+  State getOrCreateState(InitialClientAuthMethod authMethod) {
+    if (state == null) {
+      final presetKey = authMethod.presetResponderSharedKey();
+      if (presetKey == null) {
+        state = State.waitForTokenMsg;
+      } else {
+        responder.setPermanentSharedKey(presetKey);
+        state = State.waitForKeyMsg;
+      }
     }
+    return state!;
   }
 }
 
 /// State of the handshake with a specific responder.
-enum _State {
+enum State {
   waitForTokenMsg,
   waitForKeyMsg,
   waitForAuth,
@@ -77,8 +82,7 @@ enum _State {
 
 class InitiatorClientHandshakePhase extends ClientHandshakePhase
     with InitiatorIdentity, InitiatorSendDropResponder {
-  final InitiatorData data;
-  final Map<IdResponder, _ResponderWithState> responders = {};
+  final Map<IdResponder, ResponderWithState> responders = {};
 
   /// Continuous incremental counter, used to track the oldest responder.
   ///
@@ -89,7 +93,6 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   InitiatorClientHandshakePhase(
     CommonAfterServerHandshake common,
     ClientHandshakeInput input,
-    this.data,
   ) : super(common, input);
 
   @override
@@ -120,7 +123,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   /// Adds a new responder the the container of known responders.
   void addNewResponder(IdResponder id) {
     // This will automatically override any previously set state.
-    responders[id] = _ResponderWithState(
+    responders[id] = ResponderWithState(
       Responder(id, common.crypto),
       counter: responderCounter++,
     );
@@ -136,7 +139,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   void _dropOldestInactiveResponder() {
     final responder = responders.entries
         .where((entry) => entry.value.state == null)
-        .fold<_ResponderWithState?>(null, (min, entry) {
+        .fold<ResponderWithState?>(null, (min, entry) {
       final v = entry.value;
       if (min == null) {
         return v;
@@ -159,24 +162,24 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     // Forced not null is ok as We know it's a known responder
     // or else the nonce validation would have failed.
     final responderWithState = responders[nonce.source.asIdResponder()]!;
-    final state = responderWithState.getOrCreateState(data.authMethod);
+    final state = responderWithState.getOrCreateState(input.authMethod);
 
     switch (state) {
-      case _State.waitForTokenMsg:
+      case State.waitForTokenMsg:
         return _handleWaitForToken(responderWithState, msgBytes, nonce);
-      case _State.waitForKeyMsg:
+      case State.waitForKeyMsg:
         return _handleWaitForKey(responderWithState, msgBytes, nonce);
-      case _State.waitForAuth:
+      case State.waitForAuth:
         return _handleWaitForAuth(responderWithState, msgBytes, nonce);
     }
   }
 
   Phase _handleWaitForToken(
-      _ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
-    assert(data.authMethod.presetResponderSharedKey() == null);
+      ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
+    assert(input.authMethod.presetResponderSharedKey() == null);
 
     final responder = responderWithState.responder;
-    final authToken = data.authMethod.authToken()!;
+    final authToken = input.authMethod.authToken()!;
     final msg = authToken.readEncryptedMessageOfType<Token>(
         msgBytes: msgBytes,
         nonce: nonce,
@@ -193,13 +196,13 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
         InitialClientAuthMethod.createResponderSharedPermanentKey(
             common.crypto, common.ourKeys, msg.key));
 
-    responderWithState.state = _State.waitForKeyMsg;
+    responderWithState.state = State.waitForKeyMsg;
 
     return this;
   }
 
   Phase _handleWaitForKey(
-      _ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
+      ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
     final responder = responderWithState.responder;
 
     final sharedKey = responder.permanentSharedKey!;
@@ -220,12 +223,12 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
     sendMessage(Key(sessionKey.publicKey), to: responder);
 
-    responderWithState.state = _State.waitForAuth;
+    responderWithState.state = State.waitForAuth;
     return this;
   }
 
   Phase _handleWaitForAuth(
-      _ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
+      ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
     final responder = responderWithState.responder;
 
     final sharedKey = responder.sessionSharedKey!;
@@ -259,11 +262,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder, CloseCode.droppedByInitiator);
     }
 
-    return _createTaskPhase(
-      common: common,
-      pairedWith: responder.assertAuthenticated(),
-      task: task,
-    );
+    return TmpTaskPhaseImpl(common, responder.assertAuthenticated(), task);
   }
 
   /// Selects a task if possible, initiates connection termination if not.
@@ -292,17 +291,19 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     return task;
   }
 
-  static Phase _createTaskPhase({
-    required CommonAfterServerHandshake common,
-    required AuthenticatedResponder pairedWith,
-    required Task task,
-    //maybe bool wasTrusted
-  }) {
-    throw UnimplementedError();
-  }
-
   void dropResponder(Responder responder, CloseCode closeCode) {
     responders.remove(responder.id);
     sendDropResponder(responder.id, closeCode);
+  }
+}
+
+class TmpTaskPhaseImpl extends TaskPhase with InitiatorIdentity {
+  TmpTaskPhaseImpl(
+      CommonAfterServerHandshake common, Client pairedClient, Task task)
+      : super(common, pairedClient, task);
+
+  @override
+  void handleServerMessage(Message msg) {
+    throw UnimplementedError();
   }
 }

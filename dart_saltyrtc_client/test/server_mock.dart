@@ -106,8 +106,13 @@ class MockServer {
     bool encrypt = true,
     bool expectSame = true,
   }) {
+    CryptoBox? encryptWith;
+    if (encrypt) {
+      encryptWith = crypto.createSharedKeyStore(
+          ownKeyStore: sessionKeys, remotePublicKey: clientPermanentPublicKey!);
+    }
     final messageBytes =
-        encrypt ? _encryptMessage(nam) : _unencryptedMessage(nam);
+        nam.message.buildPackage(nam.nonce, encryptWith: encryptWith);
     final nextPhase = phase.handleMessage(messageBytes);
     if (expectSame) {
       expect(nextPhase, equals(phase));
@@ -147,18 +152,6 @@ class MockServer {
     return NonceAndMessage(nonce, msg);
   }
 
-  /// Encode the message to be sent
-  Uint8List _unencryptedMessage<M extends Message>(NonceAndMessage<M> nam) {
-    return prepareMessage(nam.message, nam.nonce);
-  }
-
-  /// Encode the message to be sent and encrypt it with the session key
-  Uint8List _encryptMessage<M extends Message>(NonceAndMessage<M> nam) {
-    final sks = crypto.createSharedKeyStore(
-        ownKeyStore: sessionKeys, remotePublicKey: clientPermanentPublicKey!);
-    return prepareMessage(nam.message, nam.nonce, sks);
-  }
-
   /// Concatenate the server's public session key and the client's public permanent key.
   /// The resulting data is encrypted using the permanent key of the server and the client's public permanent key.
   Uint8List _genSignedKeys() {
@@ -176,16 +169,4 @@ class MockServer {
 
     return NonceAndMessage(nonce, msg);
   }
-}
-
-Uint8List prepareMessage(Message msg, Nonce nonce, [CryptoBox? box]) {
-  final msgBytes = msg.toBytes();
-  final nonceBytes = nonce.toBytes();
-  final bytes = BytesBuilder(copy: false)..add(nonceBytes);
-  if (box != null) {
-    bytes.add(box.encrypt(message: msgBytes, nonce: nonceBytes));
-  } else {
-    bytes.add(msgBytes);
-  }
-  return bytes.takeBytes();
 }

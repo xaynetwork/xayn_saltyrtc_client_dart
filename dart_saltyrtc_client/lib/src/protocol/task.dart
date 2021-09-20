@@ -17,10 +17,5 @@ abstract class Task {
   TaskData? get data;
 
   /// Initialize the task for usage.
-  ///
-  //FIXME It MUST be an optional PARSED msgpack map instead, which also can have ANY form.
-  void initialize(Map<String, List<int>?>? data) {
-    //FIXME remove default impl
-    throw UnimplementedError();
-  }
+  void initialize(TaskData? data);
 }

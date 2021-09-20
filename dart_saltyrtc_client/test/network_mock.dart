@@ -1,8 +1,44 @@
 import 'dart:async' show StreamController, FutureOr, StreamSink;
+import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List, Endian;
 
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink, WebSocketStream;
+
+import 'package:test/test.dart';
+
+class MockWebSocket2 implements WebSocketSink {
+  final PackageQueue queue = PackageQueue();
+  int? closeCode;
+  String? closeReason;
+
+  @override
+  void add(Uint8List package) {
+    queue.sendPackage(package);
+  }
+
+  @override
+  Future<void> close([int? closeCode, String? closeReason]) {
+    closeCode = closeCode;
+    closeReason = closeReason;
+    return Future.value(null);
+  }
+}
+
+class PackageQueue {
+  final Queue<Uint8List> queue = Queue();
+
+  void sendPackage(Uint8List package) {
+    queue.add(package);
+  }
+
+  Uint8List takeNextPackage() {
+    expect(queue, isNotEmpty);
+    return queue.removeFirst();
+  }
+
+  bool get isEmpty => queue.isEmpty;
+}
 
 class MockWebSocket implements StreamController<Uint8List>, WebSocketSink {
   final StreamController<Uint8List> _controller = StreamController<Uint8List>();
