@@ -61,7 +61,7 @@ class ResponderWithState {
   /// key is also set to the preset shared key.
   State getOrCreateState(InitialClientAuthMethod authMethod) {
     if (state == null) {
-      final presetKey = authMethod.presetResponderSharedKey();
+      final presetKey = authMethod.trustedResponderSharedKey;
       if (presetKey == null) {
         state = State.waitForTokenMsg;
       } else {
@@ -176,10 +176,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
   Phase _handleWaitForToken(
       ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
-    assert(input.authMethod.presetResponderSharedKey() == null);
+    assert(input.authMethod.trustedResponderSharedKey == null);
 
     final responder = responderWithState.responder;
-    final authToken = input.authMethod.authToken()!;
+    final authToken = input.authMethod.authToken!;
     final msg = authToken.readEncryptedMessageOfType<Token>(
         msgBytes: msgBytes,
         nonce: nonce,

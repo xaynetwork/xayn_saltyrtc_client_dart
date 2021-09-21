@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show Crypto;
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+    show Crypto, InitialClientAuthMethod;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
     show AuthInitiator;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
@@ -9,7 +9,8 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
 import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
@@ -20,8 +21,9 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initia
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show ClientHandshakeInput, Common, CommonAfterServerHandshake, Phase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart';
-import 'package:dart_saltyrtc_client/src/protocol/task.dart';
+import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
+    show TaskPhase;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show MockCrypto;
@@ -221,17 +223,13 @@ class _Setup {
     ));
     common.address = Id.initiatorAddress;
 
-    final InitialClientAuthMethod authMethod;
-    if (usePresetTrust) {
-      authMethod =
-          InitialClientAuthMethod.fromTrustedResponderPublicPermanentKey(
-              crypto,
-              common.ourKeys,
-              responders[goodResponderAt].permanentKey.publicKey);
-    } else {
-      //TODO move into ClientHandshakeInput, remove InitiatorData
-      authMethod = InitialClientAuthMethod.fromAuthToken(goodAuthToken);
-    }
+    final authMethod = InitialClientAuthMethod.fromEither(
+        authToken: usePresetTrust ? null : goodAuthToken,
+        trustedResponderPermanentPublicKey: usePresetTrust
+            ? responders[goodResponderAt].permanentKey.publicKey
+            : null,
+        crypto: crypto,
+        initiatorPermanentKeys: common.ourKeys);
 
     final phase = InitiatorClientHandshakePhase(
         CommonAfterServerHandshake(common),

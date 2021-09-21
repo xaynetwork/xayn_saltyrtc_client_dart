@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:meta/meta.dart' show immutable;
 
 /// Something that can encrypt and decrypt data.
 abstract class CryptoBox {
@@ -95,49 +96,56 @@ void _checkLength(Uint8List data, int expected, String name) {
   }
 }
 
+@immutable
 class InitialClientAuthMethod {
-  final SharedKeyStore? _trustedRespondersSharedPermanentKey;
-  final AuthToken? _authToken;
-
-  InitialClientAuthMethod.fromTrustedResponderPublicPermanentKey(Crypto crypto,
-      KeyStore initiatorKeys, Uint8List responderPublicPermanentKey)
-      : _trustedRespondersSharedPermanentKey =
-            createResponderSharedPermanentKey(
-                crypto, initiatorKeys, responderPublicPermanentKey),
-        _authToken = null;
-
-  InitialClientAuthMethod.fromAuthToken(this._authToken)
-      : _trustedRespondersSharedPermanentKey = null;
-
-  // /// Trust the given responder (which gained trust by using a token message).
-  // ///
-  // /// This does only set the trust for this protocol instance, the
-  // /// "trusted responder permanent key" still needs to be passed to the
-  // /// application using SaltyRTC for permanent or at least "longer" storage.
-  // void trustResponder(Crypto crypto, KeyStore initiatorKeys,
-  //     Uint8List responderPublicPermanentKey) {
-  //   if (responderIsTrusted()) {
-  //     throw StateError('Responder already trusted');
-  //   }
-  //   _authToken = null;
-  //   _trustedResponderSharedPermanentKey = createResponderSharedPermanentKey(
-  //       crypto, initiatorKeys, responderPublicPermanentKey);
-  // }
-
-  AuthToken? authToken() => _authToken;
-
-  /// A preset responder shared permanent key.
+  /// A preset trusted responder shared permanent key.
   ///
   /// This key is a shared key based on the initiators permanent key and the
   /// responders permanent key.
-  SharedKeyStore? presetResponderSharedKey() =>
-      _trustedRespondersSharedPermanentKey;
+  final SharedKeyStore? trustedResponderSharedKey;
+  final AuthToken? authToken;
 
-  static SharedKeyStore createResponderSharedPermanentKey(Crypto crypto,
-      KeyStore initiatorKeys, Uint8List responderPublicPermanentKey) {
-    Crypto.checkPublicKey(responderPublicPermanentKey);
+  InitialClientAuthMethod._({this.authToken, this.trustedResponderSharedKey}) {
+    if ((trustedResponderSharedKey == null) == (authToken == null)) {
+      throw ArgumentError(
+          'Expects either a authToken OR a trustedResponderSharedKey');
+    }
+  }
+
+  /// Create a instance from either an `AuthToken` or the public key
+  /// of the trusted responder.
+  ///
+  /// The `crypto` and `initiatorPermanentKeys` are required if the trusted
+  /// responders permanent public key is used.
+  factory InitialClientAuthMethod.fromEither({
+    AuthToken? authToken,
+    Uint8List? trustedResponderPermanentPublicKey,
+    Crypto? crypto,
+    KeyStore? initiatorPermanentKeys,
+  }) {
+    SharedKeyStore? trustedResponderSharedKey;
+    if (trustedResponderPermanentPublicKey != null) {
+      if (crypto == null || initiatorPermanentKeys == null) {
+        throw ArgumentError(
+            'crypto & initiatorPermanentPublicKey required for trusted responder');
+      }
+      trustedResponderSharedKey = createResponderSharedPermanentKey(
+          crypto, initiatorPermanentKeys, trustedResponderPermanentPublicKey);
+    }
+
+    return InitialClientAuthMethod._(
+      authToken: authToken,
+      trustedResponderSharedKey: trustedResponderSharedKey,
+    );
+  }
+
+  static SharedKeyStore createResponderSharedPermanentKey(
+      Crypto crypto,
+      KeyStore initiatorPermanentKeys,
+      Uint8List trustedResponderPublicPermanentKey) {
+    Crypto.checkPublicKey(trustedResponderPublicPermanentKey);
     return crypto.createSharedKeyStore(
-        ownKeyStore: initiatorKeys,
-        remotePublicKey: responderPublicPermanentKey);
+        ownKeyStore: initiatorPermanentKeys,
+        remotePublicKey: trustedResponderPublicPermanentKey);
   }
 }

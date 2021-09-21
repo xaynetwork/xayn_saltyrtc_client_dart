@@ -59,8 +59,8 @@ class SetupData {
     );
     final clientHandshakeInput = ClientHandshakeInput(
         tasks: tasks,
-        authMethod:
-            InitialClientAuthMethod.fromAuthToken(crypto.createAuthToken()));
+        authMethod: InitialClientAuthMethod.fromEither(
+            authToken: crypto.createAuthToken()));
     final phase = initPhase(common, clientHandshakeInput, pingInterval);
 
     return SetupData._(
