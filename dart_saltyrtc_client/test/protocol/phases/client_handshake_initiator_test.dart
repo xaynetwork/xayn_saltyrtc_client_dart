@@ -238,7 +238,7 @@ class _Setup {
     for (final responder in responders) {
       // we know the initiators public key as it's in the path
       responder.testedPeer.permanentKey = phase.common.ourKeys;
-      phase.addNewResponder(responder.address.asIdResponder());
+      phase.addNewResponder(responder.address.asResponder());
     }
 
     return _Setup(

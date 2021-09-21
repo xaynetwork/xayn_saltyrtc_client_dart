@@ -161,7 +161,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   Phase handleClientMessage(Uint8List msgBytes, Nonce nonce) {
     // Forced not null is ok as We know it's a known responder
     // or else the nonce validation would have failed.
-    final responderWithState = responders[nonce.source.asIdResponder()]!;
+    final responderWithState = responders[nonce.source.asResponder()]!;
     final state = responderWithState.getOrCreateState(input.authMethod);
 
     switch (state) {

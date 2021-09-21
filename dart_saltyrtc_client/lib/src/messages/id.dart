@@ -35,7 +35,7 @@ abstract class Id with EquatableMixin {
   IdClient asClient();
 
   /// Return the current Id as a responder id or throw exception.
-  IdResponder asIdResponder();
+  IdResponder asResponder();
 
   static Id peerId(int value) {
     validateId(value, 'id');
@@ -105,7 +105,7 @@ class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   }
 
   @override
-  IdResponder asIdResponder() {
+  IdResponder asResponder() {
     if (!isResponder()) {
       ProtocolError('Id must represent a responder id but is $value');
     }
