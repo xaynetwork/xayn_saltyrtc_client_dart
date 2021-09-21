@@ -44,12 +44,6 @@ class ValidationError implements Exception {
   String toString() => _msg;
 }
 
-/// Exception indicating the the message is malformed and should be ignored.
-@immutable
-class IgnoreMessageError extends ValidationError {
-  IgnoreMessageError(String msg) : super(msg, isProtocolError: false);
-}
-
 T ensureNotNull<T>(T? o, [String msg = 'Object is null']) {
   if (o == null) {
     throw ProtocolError(msg);

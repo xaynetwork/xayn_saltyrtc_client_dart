@@ -178,7 +178,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
         msgType: MessageType.token,
         onDecryptionError: (msg) {
           dropResponder(responder, CloseCode.initiatorCouldNotDecrypt);
-          return IgnoreMessageError(msg);
+          return ValidationError(msg, isProtocolError: false);
         });
 
     //TODO[trusted responder]: But once we want to "trust" responder we
@@ -203,7 +203,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
         msgType: MessageType.key,
         onDecryptionError: (msg) {
           dropResponder(responder, CloseCode.initiatorCouldNotDecrypt);
-          return IgnoreMessageError(msg);
+          return ValidationError(msg, isProtocolError: false);
         });
 
     // generate session key, we only keep the shared key
