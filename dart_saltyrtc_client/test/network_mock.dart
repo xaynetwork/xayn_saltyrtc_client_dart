@@ -32,7 +32,7 @@ class PackageQueue {
     queue.add(package);
   }
 
-  Uint8List takeNextPackage() {
+  Uint8List nextPackage() {
     expect(queue, isNotEmpty);
     return queue.removeFirst();
   }

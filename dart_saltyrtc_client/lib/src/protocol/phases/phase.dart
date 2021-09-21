@@ -13,7 +13,8 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart';
+import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
+    show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -215,8 +216,7 @@ mixin InitiatorIdentity implements Phase {
   Role get role => Role.initiator;
 }
 
-/// A mixin for anything which only expects messages
-/// from the server or a known peer.
+/// A mixin for anything that expects messages from the server or a known peer.
 mixin WithPeer implements Phase {
   Client get pairedClient;
 

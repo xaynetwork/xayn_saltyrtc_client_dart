@@ -1,6 +1,5 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show Crypto;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;

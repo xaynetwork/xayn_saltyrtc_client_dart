@@ -1,6 +1,7 @@
 import 'dart:typed_data' show BytesBuilder, Uint8List;
 
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show Crypto, CryptoBox;
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+    show Crypto, CryptoBox;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:messagepack/messagepack.dart' show Packer;
@@ -93,7 +94,7 @@ class MessageFields {
 ///
 /// SlatyRtc is meant to support arbitrary maps, but for now this implementation
 /// is limited to `Map<String, List<int>?>`.
-//The library we use makes it complex to encode `Object?`, and we don't need it.
+// The library we use makes it complex to encode `Object?`, and we don't need it.
 // We use List<int> and not Uint8List so we don't have to create a new map where
 // we replace List<int> with Uint8List. `unpackBinary` returns List<int>.
 typedef TaskData = Map<String, List<int>?>;

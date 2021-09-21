@@ -181,9 +181,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
           return IgnoreMessageError(msg);
         });
 
-    //TODO[trusted responder]: We currently do not keep the public key as we
-    //      currently do not need it. But once we want to "trust" responder we
-    //      need to keep it and need report it back to the client in some way.
+    //TODO[trusted responder]: But once we want to "trust" responder we
+    //      need to report it back to the client in some way.
     responder.setPermanentSharedKey(
         InitialClientAuthMethod.createResponderSharedPermanentKey(
             common.crypto, common.ourKeys, msg.key));
@@ -249,7 +248,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     responders.remove(responder.id);
 
     // Drop all remaining responder.
-    // (To list is needed or we modify the map while iterating over it.)
+    // (toList is needed because we modify the map while iterating over it)
     for (final badResponder in responders.values.toList(growable: false)) {
       dropResponder(badResponder.responder, CloseCode.droppedByInitiator);
     }

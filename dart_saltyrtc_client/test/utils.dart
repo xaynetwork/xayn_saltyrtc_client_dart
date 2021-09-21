@@ -173,8 +173,8 @@ class PeerData {
   }
 
   T expectMessageOfType<T extends Message>(PackageQueue packages,
-      {required CryptoBox? decryptWith}) {
-    final package = packages.takeNextPackage();
+      {CryptoBox? decryptWith}) {
+    final package = packages.nextPackage();
     final nonce = Nonce.fromBytes(package);
     expect(nonce.source, equals(testedPeer.address));
     expect(nonce.destination, equals(address));
@@ -198,11 +198,10 @@ class PeerData {
 
 T messageAs<T extends Message>(Message? msg) {
   if (msg == null) {
-    throw AssertionError('Message expected but non was send.');
+    throw AssertionError('Message expected but none was send.');
   }
   if (msg is! T) {
-    throw AssertionError(
-        'Message of type ${msg.type}, not of expected type $T');
+    throw AssertionError('Message of type ${msg.type}, expected type $T');
   }
   return msg;
 }
@@ -210,7 +209,7 @@ T messageAs<T extends Message>(Message? msg) {
 T phaseAs<T extends Phase>(Phase phase) {
   if (phase is! T) {
     throw AssertionError(
-        'Phase of type ${phase.runtimeType}, not of expected type $T');
+        'Phase of type ${phase.runtimeType}, expected type $T');
   }
   return phase;
 }
