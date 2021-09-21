@@ -1,11 +1,8 @@
-import 'dart:ffi';
-import 'dart:typed_data';
-
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+    show InitialClientAuthMethod;
 import 'package:test/test.dart';
 
-import 'crypto_mock.dart';
-import 'utils.dart';
+import 'crypto_mock.dart' show MockCrypto;
 
 void main() {
   final crypto = MockCrypto();
