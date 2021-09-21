@@ -49,8 +49,7 @@ abstract class Peer {
   // type of `sks`. We don't want to be able to set null here.
   void setSessionSharedKey(SharedKeyStore sks) {
     // we need to check that permanent and session are different
-    //FIXME we need to compare the public keys not the shared keys!!
-    if (sks == permanentSharedKey) {
+    if (sks.remotePublicKey == permanentSharedKey?.remotePublicKey) {
       throw ProtocolError(
           'Server session key is the same as the permanent key');
     }

@@ -7,8 +7,10 @@ import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart';
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart';
+import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
+    show NewInitiator;
+import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
+    show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'

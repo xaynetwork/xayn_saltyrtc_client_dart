@@ -2,7 +2,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod;
-import 'package:dart_saltyrtc_client/src/logger.dart';
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
     show AuthInitiator;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
@@ -46,30 +46,22 @@ class ResponderWithState {
   /// This is the value of that counter when this responder connected.
   final int counter;
 
+  /// True if we have received a message from this client.
+  bool receivedAnyMessage = false;
+
   /// State of the handshake with a specific responder.
-  ///
-  /// If this is not set it meas we have not yet received any messages from the
-  /// given responder and as such didn't yet setup the state.
-  State? state;
+  State state;
 
-  ResponderWithState(this.responder, {required this.counter});
-
-  /// Returns the state for given responder, or creates it if necessary.
-  ///
-  /// Depending on the auth method the initial state is either `waitForTokenMsg`
-  /// or `waitForKeyMsg`. In case of the later the responders permanent shared
-  /// key is also set to the preset shared key.
-  State getOrCreateState(InitialClientAuthMethod authMethod) {
-    if (state == null) {
-      final presetKey = authMethod.trustedResponderSharedKey;
-      if (presetKey == null) {
-        state = State.waitForTokenMsg;
-      } else {
-        responder.setPermanentSharedKey(presetKey);
-        state = State.waitForKeyMsg;
-      }
+  ResponderWithState(
+    this.responder, {
+    required this.counter,
+    required InitialClientAuthMethod authMethod,
+  }) : state = State.waitForTokenMsg {
+    final key = authMethod.trustedResponderSharedKey;
+    if (key != null) {
+      responder.setPermanentSharedKey(key);
+      state = State.waitForKeyMsg;
     }
-    return state!;
   }
 }
 
@@ -126,6 +118,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     responders[id] = ResponderWithState(
       Responder(id, common.crypto),
       counter: responderCounter++,
+      authMethod: input.authMethod,
     );
 
     // If we have more then this number of responders we drop the oldest.
@@ -138,7 +131,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
   void _dropOldestInactiveResponder() {
     final responder = responders.entries
-        .where((entry) => entry.value.state == null)
+        .where((entry) => !entry.value.receivedAnyMessage)
         .fold<ResponderWithState?>(null, (min, entry) {
       final v = entry.value;
       if (min == null) {
@@ -162,9 +155,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     // Forced not null is ok as We know it's a known responder
     // or else the nonce validation would have failed.
     final responderWithState = responders[nonce.source.asResponder()]!;
-    final state = responderWithState.getOrCreateState(input.authMethod);
-
-    switch (state) {
+    responderWithState.receivedAnyMessage = true;
+    switch (responderWithState.state) {
       case State.waitForTokenMsg:
         return _handleWaitForToken(responderWithState, msgBytes, nonce);
       case State.waitForKeyMsg:
