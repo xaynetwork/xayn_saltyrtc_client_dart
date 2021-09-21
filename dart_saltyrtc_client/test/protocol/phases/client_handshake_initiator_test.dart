@@ -15,6 +15,8 @@ import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
+import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
+    show NewResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show IgnoreMessageError, NoSharedTaskError, ProtocolError;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
@@ -171,6 +173,36 @@ void main() {
       mkSendKeyTest(crypto, mockPeer),
       mkSendAuthTest(crypto,
           responder: mockPeer, server: setup.server, tasks: tasks),
+    ]);
+  });
+
+  test('path cleaning is done', () {
+    final setup = _Setup.create(
+      crypto: crypto,
+      responderIds: List.generate(252, (index) => index + 2),
+      goodResponderAt: 1,
+    );
+    final server = setup.server;
+    runTest(setup.initialPhase, [
+      mkSendTokenTest(crypto, setup.responders[1]),
+      mkDropOldOnNewReceiverTest(
+        newResponderId: 255,
+        droppedResponderId: 2,
+        crypto: crypto,
+        server: server,
+      ),
+      mkDropOldOnNewReceiverTest(
+        newResponderId: 2,
+        droppedResponderId: 4,
+        crypto: crypto,
+        server: server,
+      ),
+      mkDropOldOnNewReceiverTest(
+        newResponderId: 4,
+        droppedResponderId: 5,
+        crypto: crypto,
+        server: server,
+      ),
     ]);
   });
 }
@@ -463,6 +495,40 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest(
     expect(dropMsg.id, equals(Id.responderId(4)));
     expect(dropMsg.reason, equals(CloseCode.droppedByInitiator));
 
+    return phase;
+  };
+}
+
+Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
+  required int newResponderId,
+  required int droppedResponderId,
+  required PeerData server,
+  required Crypto crypto,
+}) {
+  return (initialPhase, packages) {
+    final nrOfResponders =
+        phaseAs<InitiatorClientHandshakePhase>(initialPhase).responders.length;
+    expect(nrOfResponders, equals(252));
+    final newId = Id.responderId(newResponderId);
+    final droppedId = Id.responderId(droppedResponderId);
+    final phase = server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+        message: NewResponder(newId),
+        to: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.theirSessionKey!,
+          remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
+        ));
+
+    final dropMsg = server.expectMessageOfType<DropResponder>(packages,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+        ));
+
+    expect(dropMsg.id, equals(droppedId));
+    expect(phase.responders.keys, contains(newId));
+    phase.responders[droppedId];
+    expect(phase.responders.length, equals(252));
     return phase;
   };
 }
