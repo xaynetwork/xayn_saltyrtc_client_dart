@@ -30,7 +30,7 @@ import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show MockCrypto;
 import '../../logging.dart' show setUpLogging;
-import '../../network_mock.dart' show MockWebSocket2, PackageQueue;
+import '../../network_mock.dart' show MockWebSocket, PackageQueue;
 import '../../utils.dart' show PeerData, TestTask, phaseAs, runTest;
 
 void main() {
@@ -246,7 +246,7 @@ class _Setup {
       testedPeerId: Id.initiatorAddress,
     );
     final common = Common(crypto, crypto.createKeyStore(),
-        server.permanentKey.publicKey, MockWebSocket2());
+        server.permanentKey.publicKey, MockWebSocket());
     server.testedPeer.ourSessionKey = crypto.createKeyStore();
     server.testedPeer.theirSessionKey = crypto.createKeyStore();
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
@@ -427,7 +427,7 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest(
 
     expect(msg.reason, CloseCode.noSharedTask);
 
-    final channel = (phase.common.sink as MockWebSocket2);
+    final channel = (phase.common.sink as MockWebSocket);
     expect(channel.closeCode, equals(CloseCode.goingAway));
 
     return phase;

@@ -1,6 +1,5 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:async/async.dart' show StreamQueue;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, CryptoBox, InitialClientAuthMethod, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -21,14 +20,14 @@ import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/expect.dart';
 
 import 'crypto_mock.dart' show MockCrypto;
-import 'network_mock.dart' show MockWebSocket, MockWebSocket2, PackageQueue;
+import 'network_mock.dart' show MockWebSocket, PackageQueue;
 import 'server_mock.dart' show MockServer;
 
 class SetupData {
   final Crypto crypto;
   final KeyStore clientPermanentKeys;
   final MockServer server;
-  final StreamQueue<Uint8List> outMsgs;
+  final PackageQueue outMsgs;
   final int pingInterval;
   Phase phase;
 
@@ -50,7 +49,7 @@ class SetupData {
     final clientPermanentKeys = crypto.createKeyStore();
     final server = MockServer(crypto);
     final ws = MockWebSocket();
-    final outMsgs = StreamQueue<Uint8List>(ws.stream);
+    final outMsgs = ws.queue;
     final common = Common(
       crypto,
       clientPermanentKeys,
@@ -218,7 +217,7 @@ T noChange<T>(T v) => v;
 
 void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
   final sink = phase.common.sink;
-  var packageQueue = (sink as MockWebSocket2).queue;
+  var packageQueue = (sink as MockWebSocket).queue;
   for (final step in steps) {
     phase = step(phase, packageQueue);
     expect(packageQueue, isEmpty);
