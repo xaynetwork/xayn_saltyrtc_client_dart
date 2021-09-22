@@ -9,8 +9,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show TaskData, Message;
+import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt;
@@ -22,10 +21,11 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
+import 'package:dart_saltyrtc_client/src/messages/validation.dart';
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Client, Initiator, Peer, Responder;
+    show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakePhase,
@@ -116,7 +116,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
 class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
   @override
-  final Responder pairedClient;
+  final AuthenticatedResponder pairedClient;
 
   @override
   Role get role => Role.initiator;
@@ -125,8 +125,14 @@ class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
     CommonAfterServerHandshake common,
     this.pairedClient,
     Task task,
-    TaskData taskData,
   ) : super(common, pairedClient, task);
+
+  @override
+  void handleDisconnected(Disconnected msg) {
+    final id = msg.id;
+    validateIdResponder(id.value);
+    throw UnimplementedError();
+  }
 
   @override
   void handleServerMessage(Message msg) {
@@ -141,7 +147,7 @@ class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
 
 class ResponderTaskPhase extends TaskPhase {
   @override
-  final Initiator pairedClient;
+  final AuthenticatedInitiator pairedClient;
 
   @override
   Role get role => Role.responder;
@@ -151,6 +157,13 @@ class ResponderTaskPhase extends TaskPhase {
     this.pairedClient,
     Task task,
   ) : super(common, pairedClient, task);
+
+  @override
+  void handleDisconnected(Disconnected msg) {
+    final id = msg.id;
+    validateIdInitiator(id.value);
+    throw UnimplementedError();
+  }
 
   @override
   void handleServerMessage(Message msg) {

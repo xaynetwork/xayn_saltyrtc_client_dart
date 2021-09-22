@@ -15,16 +15,18 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType;
-import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt;
+import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
+import 'package:dart_saltyrtc_client/src/messages/validation.dart';
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show NoSharedTaskError, ProtocolError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Client, Peer, Responder;
+    show Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -35,7 +37,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         ClientHandshakeInput,
         InitiatorIdentity;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
-    show TaskPhase;
+    show InitiatorTaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 
 class ResponderWithState {
@@ -103,6 +105,13 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     } else {
       super.onProtocolError(e, source);
     }
+  }
+
+  @override
+  void handleDisconnected(Disconnected msg) {
+    final id = msg.id;
+    validateIdResponder(id.value);
+    responders.remove(id);
   }
 
   @override
@@ -247,7 +256,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    return TmpTaskPhaseImpl(common, responder.assertAuthenticated(), task);
+    return InitiatorTaskPhase(common, responder.assertAuthenticated(), task);
   }
 
   /// Selects a task if possible, initiates connection termination if not.
@@ -271,16 +280,5 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   void dropResponder(IdResponder responder, CloseCode closeCode) {
     responders.remove(responder);
     sendDropResponder(responder, closeCode);
-  }
-}
-
-class TmpTaskPhaseImpl extends TaskPhase with InitiatorIdentity {
-  TmpTaskPhaseImpl(
-      CommonAfterServerHandshake common, Client pairedClient, Task task)
-      : super(common, pairedClient, task);
-
-  @override
-  void handleServerMessage(Message msg) {
-    throw UnimplementedError();
   }
 }
