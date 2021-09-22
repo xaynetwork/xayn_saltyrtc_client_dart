@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show SharedKeyStore, KeyStore, AuthToken, Crypto;
+    show SharedKeyStore, KeyStore, AuthToken, Crypto, DecryptionFailedException;
 import 'package:libsodium/libsodium.dart' as _sodium;
 
 Crypto? _instance;
@@ -12,6 +12,14 @@ Crypto get cryptoInstance {
   _instance ??= _DartSodiumCrypto();
 
   return _instance!;
+}
+
+T _wrapDecryptionFailure<T>(T Function() code) {
+  try {
+    return code();
+  } on _sodium.SodiumException catch (cause) {
+    throw DecryptionFailedException(cause);
+  }
 }
 
 class _DartSodiumKeyStore extends KeyStore {
@@ -47,7 +55,8 @@ class _DartSodiumSharedKeyStore extends SharedKeyStore {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey);
+    return _wrapDecryptionFailure(
+        () => _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey));
   }
 
   @override
@@ -74,7 +83,8 @@ class _DartSodiumAuthToken implements AuthToken {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.Sodium.cryptoSecretboxOpenEasy(ciphertext, nonce, bytes);
+    return _wrapDecryptionFailure(
+        () => _sodium.Sodium.cryptoSecretboxOpenEasy(ciphertext, nonce, bytes));
   }
 
   @override

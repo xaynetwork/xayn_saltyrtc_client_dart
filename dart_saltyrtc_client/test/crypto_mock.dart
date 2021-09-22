@@ -3,7 +3,7 @@ import 'dart:typed_data' show BytesBuilder, Uint8List;
 
 import 'package:collection/collection.dart' show ListEquality;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show SharedKeyStore, Crypto, AuthToken, KeyStore;
+    show SharedKeyStore, Crypto, AuthToken, KeyStore, DecryptionFailedException;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'package:fixnum/fixnum.dart' show Int64;
@@ -231,7 +231,7 @@ class MockCrypto extends Crypto {
     final foundMagicNumber =
         Uint8List.sublistView(ciphertext, 0, magicNumber.length);
     if (!listEq.equals(foundMagicNumber, magicNumber)) {
-      throw Exception(
+      throw DecryptionFailedException(
           "Can't decrypt something which wasn't encrypted with the mock.");
     }
 
@@ -240,12 +240,13 @@ class MockCrypto extends Crypto {
 
     final info = encryptedMessages[messageId]!;
     if (info.keyId != keyId) {
-      throw AssertionError('Message was encrypted with different key.');
+      throw DecryptionFailedException(
+          'Message was encrypted with different key.');
     }
     if (!listEq.equals(info.nonce, nonce)) {
       final expectedNonce = Nonce.fromBytes(info.nonce);
       final receivedNonce = Nonce.fromBytes(nonce);
-      throw AssertionError(
+      throw DecryptionFailedException(
           'Message was encrypted with different nonce:\nexpected = $expectedNonce\nreceived = $receivedNonce');
     }
     return info.decryptedData;

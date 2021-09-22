@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show CryptoBox;
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+    show CryptoBox, DecryptionFailedException;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/c2c/application.dart'
     show Application;
@@ -58,7 +59,7 @@ extension MessageDecryptionExt on CryptoBox {
     final Uint8List decryptedBytes;
     try {
       decryptedBytes = decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
-    } catch (exception) {
+    } on DecryptionFailedException {
       // Until we wrap all platform specific crypto exceptions we can
       // use `on Exception`, `on Error` or similar.
       final mkError = onDecryptionError ?? (s) => ProtocolError(s);
