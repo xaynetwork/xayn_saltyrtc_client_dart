@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/reader.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show IgnoreMessageError, NoSharedTaskError, ProtocolError, ValidationError;
+    show NoSharedTaskError, ProtocolError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Client, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'

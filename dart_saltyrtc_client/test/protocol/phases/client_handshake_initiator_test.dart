@@ -18,7 +18,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show IgnoreMessageError, NoSharedTaskError, ProtocolError;
+    show NoSharedTaskError, ProtocolError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -316,8 +316,11 @@ Phase Function(Phase, PackageQueue) mkSendBadTokenTest(Crypto crypto,
         to: initialPhase,
         encryptWith: responder.authToken,
       );
-      // ignore: empty_catches
-    } on IgnoreMessageError {}
+    } on ValidationError catch (e) {
+      if (e.isProtocolError) {
+        rethrow;
+      }
+    }
     expect(phase.responders.containsKey(responder.address), isFalse);
     final dropMsg = server.expectMessageOfType<DropResponder>(packages,
         decryptWith: crypto.createSharedKeyStore(
