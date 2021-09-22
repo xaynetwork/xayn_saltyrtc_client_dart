@@ -76,7 +76,7 @@ class ClientHandshakeInput {
 
 /// Additional data for a responder.
 class ResponderData {
-  final Initiator initiator;
+  Initiator initiator;
   AuthToken? authToken;
 
   ResponderData(this.initiator);

@@ -23,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart';
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError;
+    show AuthenticatedPeerDisconnected, ProtocolError, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -131,7 +131,7 @@ class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
   void handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdResponder(id.value);
-    throw UnimplementedError();
+    throw AuthenticatedPeerDisconnected();
   }
 
   @override
@@ -162,7 +162,7 @@ class ResponderTaskPhase extends TaskPhase {
   void handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdInitiator(id.value);
-    throw UnimplementedError();
+    throw AuthenticatedPeerDisconnected();
   }
 
   @override

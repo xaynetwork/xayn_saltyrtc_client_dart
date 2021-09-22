@@ -45,3 +45,10 @@ class NoSharedTaskError extends SaltyRtcError {
 class ValidationError extends ProtocolError {
   ValidationError(String msg) : super(msg);
 }
+
+/// The authenticated peer disconnected during the task phase
+@immutable
+class AuthenticatedPeerDisconnected extends SaltyRtcError {
+  AuthenticatedPeerDisconnected()
+      : super(CloseCode.closingNormal, 'authenticated peer disconnected');
+}

@@ -112,6 +112,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     final id = msg.id;
     validateIdResponder(id.value);
     responders.remove(id);
+    //TODO potentially inform client
   }
 
   @override
