@@ -99,12 +99,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   @override
   void onProtocolError(ProtocolError e, Id? source) {
     if (source != null && source.isResponder()) {
-      // This can be false if we receive a message which was send before
-      // a responder was dropped but received after.
-      if (responders.containsKey(source)) {
-        logger.w('c2c protocol error: $e');
-        dropResponder(source.asResponder(), e.c2cCloseCode);
-      }
+      logger.w('c2c protocol error: $e');
+      dropResponder(source.asResponder(), e.c2cCloseCode);
       return;
     }
     super.onProtocolError(e, source);
