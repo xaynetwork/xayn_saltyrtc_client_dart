@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/reader.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError, ValidationError;
+    show NoSharedTaskError, ProtocolError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Client, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -88,23 +88,26 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   ) : super(common, input);
 
   @override
-  Peer getPeerWithId(Id id) {
+  Peer? getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
     if (id.isResponder()) {
-      final responder = responders[id];
-      if (responder != null) {
-        return responder.responder;
-      } else {
-        // this can happen when a responder has been dropped
-        // but a message was still in flight.
-        // we want to ignore this message but not to terminate the connection
-        throw ValidationError(
-          'Invalid responder id: $id',
-          isProtocolError: false,
-        );
-      }
+      return responders[id]?.responder;
     }
-    throw ProtocolError('Invalid peer id: $id');
+    return null;
+  }
+
+  @override
+  void onProtocolError(ProtocolError e, Id? source) {
+    if (source != null && source.isResponder()) {
+      // This can be false if we receive a message which was send before
+      // a responder was dropped but received after.
+      if (responders.containsKey(source)) {
+        logger.w('c2c protocol error: $e');
+        dropResponder(source.asResponder(), e.c2cCloseCode);
+      }
+      return;
+    }
+    super.onProtocolError(e, source);
   }
 
   @override
@@ -142,7 +145,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     });
 
     if (responder != null) {
-      dropResponder(responder.responder, CloseCode.droppedByInitiator);
+      dropResponder(responder.responder.id, CloseCode.droppedByInitiator);
     } else {
       // Can not be reached as at least the "just added" responder
       // can always be dropped.
@@ -173,13 +176,11 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     final responder = responderWithState.responder;
     final authToken = input.authMethod.authToken!;
     final msg = authToken.readEncryptedMessageOfType<Token>(
-        msgBytes: msgBytes,
-        nonce: nonce,
-        msgType: MessageType.token,
-        onDecryptionError: (msg) {
-          dropResponder(responder, CloseCode.initiatorCouldNotDecrypt);
-          return ValidationError(msg, isProtocolError: false);
-        });
+      msgBytes: msgBytes,
+      nonce: nonce,
+      msgType: MessageType.token,
+      decryptionC2CCloseCode: CloseCode.initiatorCouldNotDecrypt,
+    );
 
     //TODO[trusted responder]: But once we want to "trust" responder we
     //      need to report it back to the client in some way.
@@ -198,13 +199,11 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
     final sharedKey = responder.permanentSharedKey!;
     final msg = sharedKey.readEncryptedMessageOfType<Key>(
-        msgBytes: msgBytes,
-        nonce: nonce,
-        msgType: MessageType.key,
-        onDecryptionError: (msg) {
-          dropResponder(responder, CloseCode.initiatorCouldNotDecrypt);
-          return ValidationError(msg, isProtocolError: false);
-        });
+      msgBytes: msgBytes,
+      nonce: nonce,
+      msgType: MessageType.key,
+      decryptionC2CCloseCode: CloseCode.initiatorCouldNotDecrypt,
+    );
 
     // generate session key, we only keep the shared key
     final sessionKey = common.crypto.createKeyStore();
@@ -250,7 +249,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     // Drop all remaining responder.
     // (toList is needed because we modify the map while iterating over it)
     for (final badResponder in responders.values.toList(growable: false)) {
-      dropResponder(badResponder.responder, CloseCode.droppedByInitiator);
+      dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
     return TmpTaskPhaseImpl(common, responder.assertAuthenticated(), task);
@@ -274,9 +273,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     return task;
   }
 
-  void dropResponder(Responder responder, CloseCode closeCode) {
-    responders.remove(responder.id);
-    sendDropResponder(responder.id, closeCode);
+  void dropResponder(IdResponder responder, CloseCode closeCode) {
+    responders.remove(responder);
+    sendDropResponder(responder, closeCode);
   }
 }
 

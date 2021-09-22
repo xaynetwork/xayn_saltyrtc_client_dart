@@ -168,20 +168,15 @@ void main() {
         }, throwsProtocolError());
       });
 
-      test('calls onDecryptionError if decryption fails', () {
-        var wasCalled = false;
+      test('allows setting custom c2c close code', () {
         expect(() {
           sharedKey.readEncryptedMessage(
-              msgBytes: Uint8List(Nonce.totalLength + 10),
-              nonce: nonce,
-              debugHint: 'foobar',
-              onDecryptionError: (msg) {
-                wasCalled = true;
-                //arbitrary alternate Expection subclass
-                return FormatException(msg);
-              });
-        }, throwsFormatException);
-        expect(wasCalled, isTrue);
+            msgBytes: Uint8List(Nonce.totalLength + 10),
+            nonce: nonce,
+            debugHint: 'foobar',
+            decryptionC2CCloseCode: CloseCode.handover,
+          );
+        }, throwsProtocolError(c2cCloseCode: CloseCode.handover));
       });
     });
     group('readEncryptedMessageOfType', () {
