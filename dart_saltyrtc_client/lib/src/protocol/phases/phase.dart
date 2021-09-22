@@ -17,8 +17,6 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
@@ -97,21 +95,27 @@ abstract class Phase {
   /// Handle a message directly from the WebSocket,
   /// bytes will contains <nonce><message>.
   Phase handleMessage(Uint8List bytes) {
+    Nonce? nonce;
     try {
-      final nonce = Nonce.fromBytes(bytes);
+      nonce = Nonce.fromBytes(bytes);
 
-      _handleNonce(nonce);
+      final peer = getPeerWithId(nonce.source);
+      if (peer == null) {
+        // We only handle messages from "known" peers
+        // this is in line with the specification.
+        logger.w('unexpected package from $nonce');
+        return this;
+      }
+
+      _handleNonce(peer, nonce);
 
       final msgBytes = Uint8List.sublistView(bytes, Nonce.totalLength);
 
-      return run(msgBytes, nonce);
-    } on ValidationError catch (e) {
-      if (e.isProtocolError) {
-        throw ProtocolError('Invalid incoming message: $e');
-      } else {
-        logger.w('Dropping message: $e');
-        return this;
-      }
+      return run(peer, msgBytes, nonce);
+    } on ProtocolError catch (e) {
+      onProtocolError(e, nonce?.source);
+      logger.w('Dropping message(protocol error): $e');
+      return this;
     } on StateError catch (e) {
       throw SaltyRtcError(CloseCode.internalError, e.message);
     }
@@ -120,28 +124,17 @@ abstract class Phase {
   }
 
   @protected
-  Phase run(Uint8List msgBytes, Nonce nonce);
+  void onProtocolError(ProtocolError e, Id? source) {
+    throw SaltyRtcError(
+        CloseCode.protocolError, 'ProtocolError(with $source): $e');
+  }
+
+  @protected
+  Phase run(Peer source, Uint8List msgBytes, Nonce nonce);
 
   /// Returns a peer with a given id, if it is not possible it throw a ValidationError.
   @protected
-  Peer getPeerWithId(Id id);
-
-  @protected
-  void validateNonceSource(Nonce nonce) {
-    // this is only valid for ClientHandshake and Handover phases
-    // messages in these phases can only come from server or peer
-    final source = nonce.source;
-    if (source != Id.serverAddress) {
-      if (role == Role.initiator) {
-        validateIdResponder(source.value, 'nonce source');
-      } else if (source != Id.initiatorAddress) {
-        throw ValidationError(
-          'Responder peer message does not come from initiator. Found $source',
-          isProtocolError: false,
-        );
-      }
-    }
-  }
+  Peer? getPeerWithId(Id id);
 
   @protected
   void validateNonceDestination(Nonce nonce) {
@@ -200,14 +193,9 @@ abstract class Phase {
   }
 
   /// Validate the nonce and update the values from it in the peer structure.
-  void _handleNonce(Nonce nonce) {
-    validateNonceSource(nonce);
+  void _handleNonce(Peer peer, Nonce nonce) {
     validateNonceDestination(nonce);
-
     final source = nonce.source;
-    // to validate the combined sequence and the cookie we need the associated peer
-    final peer = getPeerWithId(source);
-
     peer.csPair.updateAndCheck(nonce.combinedSequence, source);
     peer.cookiePair.updateAndCheck(nonce.cookie, source);
   }
@@ -218,25 +206,18 @@ mixin InitiatorIdentity implements Phase {
   Role get role => Role.initiator;
 }
 
-/// A mixin for anything that expects messages from the server or a known peer.
+/// A mixin for anything that expects messages from either the server or a known peer.
 mixin WithPeer implements Phase {
   Client get pairedClient;
 
   @override
-  Peer getPeerWithId(Id id) {
+  Peer? getPeerWithId(Id id) {
     if (id.isServer()) {
       return common.server;
     } else if (id == pairedClient.id) {
       return pairedClient;
-    } else if (role == Role.initiator && id.isResponder()) {
-      // Initiators might receive "in-transit" messages of
-      // recently dropped responders.
-      throw ValidationError(
-        'Invalid responder id: $id',
-        isProtocolError: false,
-      );
     }
-    throw ProtocolError('Invalid peer id: $id');
+    return null;
   }
 }
 
@@ -255,12 +236,12 @@ mixin ResponderPhase implements Phase {
   Role get role => Role.responder;
 
   @override
-  Peer getPeerWithId(Id id) {
+  Peer? getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
     if (id.isInitiator()) {
       return data.initiator;
     }
-    throw ProtocolError('Invalid peer id: $id');
+    return null;
   }
 }
 

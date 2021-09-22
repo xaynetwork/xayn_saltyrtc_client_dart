@@ -14,6 +14,8 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageFields, MessageType;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -54,16 +56,17 @@ extension MessageDecryptionExt on CryptoBox {
     required Uint8List msgBytes,
     required Nonce nonce,
     required String debugHint,
-    Exception Function(String)? onDecryptionError,
+    CloseCode? decryptionC2CCloseCode,
   }) {
     final Uint8List decryptedBytes;
     try {
       decryptedBytes = decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
-    } on DecryptionFailedException {
-      // Until we wrap all platform specific crypto exceptions we can
-      // use `on Exception`, `on Error` or similar.
-      final mkError = onDecryptionError ?? (s) => ProtocolError(s);
-      throw mkError('Could not decrypt message ($debugHint)');
+    } on DecryptionFailedException catch (e) {
+      if (decryptionC2CCloseCode != null) {
+        throw e.withC2CCloseCode(decryptionC2CCloseCode);
+      } else {
+        rethrow;
+      }
     }
 
     final msg = readMessage(decryptedBytes);
@@ -82,13 +85,13 @@ extension MessageDecryptionExt on CryptoBox {
     required Uint8List msgBytes,
     required Nonce nonce,
     required String msgType,
-    Exception Function(String)? onDecryptionError,
+    CloseCode? decryptionC2CCloseCode,
   }) {
     final msg = readEncryptedMessage(
       msgBytes: msgBytes,
       nonce: nonce,
       debugHint: msgType,
-      onDecryptionError: onDecryptionError,
+      decryptionC2CCloseCode: decryptionC2CCloseCode,
     );
     if (msg is! T) {
       throw ProtocolError(

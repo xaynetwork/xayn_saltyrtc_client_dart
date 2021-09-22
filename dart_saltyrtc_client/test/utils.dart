@@ -2,6 +2,8 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, CryptoBox, InitialClientAuthMethod, KeyStore;
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, TaskData;
@@ -93,20 +95,20 @@ ResponderServerHandshakePhase makeResponderServerHandshakePhase(
   );
 }
 
-Matcher throwsValidationError({bool isProtocolError = true}) {
-  final ifValidationErrorHasExpectedState = (Object? error) {
-    if (error is! ValidationError) {
-      return true;
-    } else {
-      return error.isProtocolError == isProtocolError;
-    }
-  };
-  return throwsA(allOf(
-      isA<ValidationError>(), predicate(ifValidationErrorHasExpectedState)));
+Matcher throwsValidationError() {
+  return throwsA(isA<ValidationError>());
 }
 
-Matcher throwsProtocolError() {
-  return throwsA(isA<ProtocolError>());
+Matcher throwsProtocolError(
+    {CloseCode c2cCloseCode = CloseCode.protocolError}) {
+  final errorHasExpectedState = (Object? error) {
+    if (error is! ProtocolError) {
+      return true;
+    } else {
+      return error.c2cCloseCode == c2cCloseCode;
+    }
+  };
+  return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
 }
 
 class MockKnowledgeAboutTestedPeer {

@@ -11,7 +11,8 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show TaskData, Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/reader.dart' show readMessage;
+import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+    show MessageDecryptionExt;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
@@ -23,7 +24,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Client, Responder, Initiator;
+    show Client, Initiator, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakePhase,
@@ -48,12 +49,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   void handleServerMessage(Message msg);
 
   @override
-  Phase run(Uint8List msgBytes, Nonce nonce) {
-    final sks = ensureNotNull(getPeerWithId(nonce.source).sessionSharedKey);
-    final decryptedBytes =
-        sks.decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
+  Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
+    final msg = ensureNotNull(source.sessionSharedKey).readEncryptedMessage(
+        msgBytes: msgBytes, nonce: nonce, debugHint: 'task phase');
 
-    final msg = readMessage(decryptedBytes, taskTypes: task.supportedTypes);
     if (nonce.source.isServer()) {
       if (msg is SendError) {
         handleSendError(msg);

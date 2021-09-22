@@ -18,7 +18,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError, ValidationError;
+    show NoSharedTaskError;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -137,23 +137,28 @@ void main() {
     test('auth -> protocol error', () {
       final setup = _Setup.create(crypto: crypto);
       final mockPeer = setup.responders.first;
+      final server = setup.server;
       runTest(setup.initialPhase, [
         mkSendTokenTest(crypto, mockPeer),
         mkSendKeyTest(crypto, mockPeer),
         (initialPhase, packages) {
-          try {
-            mockPeer.sendAndTransitToPhase<TaskPhase>(
-                message: Close(CloseCode.goingAway),
-                sendTo: initialPhase,
-                encryptWith: crypto.createSharedKeyStore(
-                    ownKeyStore: mockPeer.testedPeer.ourSessionKey!,
-                    remotePublicKey:
-                        mockPeer.testedPeer.theirSessionKey!.publicKey));
-          } on ProtocolError {
-            //TODO[later PR] make sure we got dropped
-            return initialPhase;
-          }
-          throw AssertionError('expected sending wrong message to fail');
+          final phase =
+              mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+                  message: Close(CloseCode.goingAway),
+                  sendTo: initialPhase,
+                  encryptWith: crypto.createSharedKeyStore(
+                      ownKeyStore: mockPeer.testedPeer.ourSessionKey!,
+                      remotePublicKey:
+                          mockPeer.testedPeer.theirSessionKey!.publicKey));
+
+          final dropMsg = server.expectMessageOfType<DropResponder>(packages,
+              decryptWith: crypto.createSharedKeyStore(
+                  ownKeyStore: server.testedPeer.ourSessionKey!,
+                  remotePublicKey:
+                      server.testedPeer.theirSessionKey!.publicKey));
+
+          expect(dropMsg.id, equals(mockPeer.address));
+          return phase;
         }
       ]);
     });
@@ -310,17 +315,11 @@ Phase Function(Phase, PackageQueue) mkSendBadTokenTest(Crypto crypto,
   assert(responder.authToken != null);
   return (initialPhase, packages) {
     var phase = phaseAs<InitiatorClientHandshakePhase>(initialPhase);
-    try {
-      phase = responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
-        message: Token(responder.permanentKey.publicKey),
-        sendTo: initialPhase,
-        encryptWith: responder.authToken,
-      );
-    } on ValidationError catch (e) {
-      if (e.isProtocolError) {
-        rethrow;
-      }
-    }
+    phase = responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+      message: Token(responder.permanentKey.publicKey),
+      sendTo: initialPhase,
+      encryptWith: responder.authToken,
+    );
     expect(phase.responders.containsKey(responder.address), isFalse);
     final dropMsg = server.expectMessageOfType<DropResponder>(packages,
         decryptWith: crypto.createSharedKeyStore(

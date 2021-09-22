@@ -3,12 +3,16 @@ import 'package:meta/meta.dart' show immutable;
 
 @immutable
 class ProtocolError implements Exception {
+  final CloseCode c2cCloseCode;
   final String _msg;
 
-  ProtocolError(this._msg);
+  ProtocolError(this._msg, {this.c2cCloseCode = CloseCode.protocolError});
 
   @override
   String toString() => _msg;
+
+  ProtocolError withC2CCloseCode(CloseCode code) =>
+      ProtocolError(_msg, c2cCloseCode: code);
 }
 
 /// It will result in the connection closing with the specified error code.
@@ -32,14 +36,8 @@ class NoSharedTaskError extends SaltyRtcError {
 
 /// Data to instantiate a message is invalid.
 @immutable
-class ValidationError implements Exception {
-  final bool isProtocolError;
-  final String _msg;
-
-  ValidationError(this._msg, {this.isProtocolError = true});
-
-  @override
-  String toString() => _msg;
+class ValidationError extends ProtocolError {
+  ValidationError(String msg) : super(msg);
 }
 
 T ensureNotNull<T>(T? o, [String msg = 'Object is null']) {
