@@ -23,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError, ensureNotNull;
+    show ProtocolError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
@@ -119,7 +119,7 @@ abstract class ServerHandshakePhase extends Phase {
     if (handshakeState == ServerHandshakeState.start) {
       msg = readMessage(msgBytes);
     } else {
-      msg = ensureNotNull(common.server.sessionSharedKey).readEncryptedMessage(
+      msg = common.server.sessionSharedKey!.readEncryptedMessage(
         msgBytes: msgBytes,
         nonce: nonce,
       );
@@ -154,7 +154,7 @@ abstract class ServerHandshakePhase extends Phase {
   }
 
   void sendClientAuth() {
-    final serverCookie = ensureNotNull(common.server.cookiePair.theirs);
+    final serverCookie = common.server.cookiePair.theirs!;
     final subprotocols = [saltyrtcSubprotocol];
     sendMessage(
       ClientAuth(
@@ -181,7 +181,7 @@ abstract class ServerHandshakePhase extends Phase {
           'Server did not send ${MessageFields.signedKeys} in ${MessageType.serverAuth} message');
     }
 
-    final sks = ensureNotNull(common.server.sessionSharedKey);
+    final sks = common.server.sessionSharedKey!;
     final decrypted = common.ourKeys.decrypt(
         remotePublicKey: expectedServerKey,
         ciphertext: signedKey,

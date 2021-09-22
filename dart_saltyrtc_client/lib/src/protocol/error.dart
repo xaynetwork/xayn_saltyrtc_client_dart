@@ -45,11 +45,3 @@ class NoSharedTaskError extends SaltyRtcError {
 class ValidationError extends ProtocolError {
   ValidationError(String msg) : super(msg);
 }
-
-T ensureNotNull<T>(T? o, [String msg = 'Object is null']) {
-  if (o == null) {
-    throw ProtocolError(msg);
-  }
-
-  return o;
-}
