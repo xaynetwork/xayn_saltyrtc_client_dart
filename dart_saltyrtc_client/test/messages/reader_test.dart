@@ -173,7 +173,7 @@ void main() {
             nonce: nonce,
             decryptionErrorCloseCode: CloseCode.handover,
           );
-        }, throwsProtocolError(c2cCloseCode: CloseCode.handover));
+        }, throwsProtocolError(closeCode: CloseCode.handover));
       });
     });
     group('readEncryptedMessageOfType', () {

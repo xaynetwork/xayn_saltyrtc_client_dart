@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError, ensureNotNull;
+    show ProtocolError, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Client, Initiator, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -50,7 +50,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @override
   Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
-    final msg = ensureNotNull(source.sessionSharedKey)
+    final msg = source.sessionSharedKey!
         .readEncryptedMessage(msgBytes: msgBytes, nonce: nonce);
 
     if (nonce.source.isServer()) {

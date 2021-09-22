@@ -14,7 +14,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError, ensureNotNull;
+    show ProtocolError, ValidationError;
 import 'package:meta/meta.dart' show protected;
 
 /// A peer can be the server, the initiator or a responder
@@ -79,7 +79,7 @@ class Server extends Peer {
 
   @override
   Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? _token]) {
-    return _encrypt(msg, nonce, sessionSharedKey);
+    return _encrypt(msg, nonce, sessionSharedKey!);
   }
 
   /// Return an AuthenticatedServer iff hasSessionSharedKey.
@@ -208,9 +208,8 @@ class Initiator extends Client {
       AuthenticatedInitiator._fromUnauthenticated(this);
 }
 
-Uint8List _encrypt(Message msg, Nonce nonce, CryptoBox? key) {
-  final sks = ensureNotNull(key);
-  return sks.encrypt(message: msg.toBytes(), nonce: nonce.toBytes());
+Uint8List _encrypt(Message msg, Nonce nonce, CryptoBox key) {
+  return key.encrypt(message: msg.toBytes(), nonce: nonce.toBytes());
 }
 
 /// Encrypt a message by selecting which key we need to use depending on the message itself.
@@ -223,7 +222,7 @@ Uint8List _encryptMsg(
   SharedKeyStore? sessionSharedKey,
 ) {
   final sks = msg is Key ? permanentSharedKey : sessionSharedKey;
-  return _encrypt(msg, nonce, sks);
+  return _encrypt(msg, nonce, sks!);
 }
 
 mixin AuthenticatedPeer implements Peer {
