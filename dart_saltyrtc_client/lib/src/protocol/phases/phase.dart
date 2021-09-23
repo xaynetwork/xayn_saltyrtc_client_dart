@@ -101,8 +101,7 @@ abstract class Phase {
 
       final peer = getPeerWithId(nonce.source);
       if (peer == null) {
-        // We only handle messages from "known" peers
-        // this is in line with the specification.
+        // We only handle message from "known" peers as per specification
         logger.w('unexpected package from $nonce');
         return this;
       }
@@ -125,8 +124,7 @@ abstract class Phase {
 
   @protected
   void onProtocolError(ProtocolError e, Id? source) {
-    throw SaltyRtcError(
-        CloseCode.protocolError, 'ProtocolError(with $source): $e');
+    throw SaltyRtcError(e.closeCode, 'ProtocolError(msg from $source): $e');
   }
 
   @protected

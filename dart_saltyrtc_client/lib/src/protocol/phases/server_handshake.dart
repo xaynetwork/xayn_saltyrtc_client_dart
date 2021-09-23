@@ -122,7 +122,6 @@ abstract class ServerHandshakePhase extends Phase {
       msg = ensureNotNull(common.server.sessionSharedKey).readEncryptedMessage(
         msgBytes: msgBytes,
         nonce: nonce,
-        debugHint: 'from server',
       );
     }
 

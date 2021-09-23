@@ -47,7 +47,6 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
     final msg = common.server.sessionSharedKey.readEncryptedMessage(
       msgBytes: msgBytes,
       nonce: nonce,
-      debugHint: 'from server',
     );
 
     if (msg is SendError) {
