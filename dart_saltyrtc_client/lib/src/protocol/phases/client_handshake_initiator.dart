@@ -144,9 +144,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     if (responder != null) {
       dropResponder(responder.responder, CloseCode.droppedByInitiator);
     } else {
-      // This can only happen if we have a bug in the client,
-      // probably multiple bugs.
-      throw AssertionError("Need but can't clean path.");
+      // Can not be reached as at least the "just added" responder
+      // can always be dropped.
+      logger.e("can't clean path");
     }
   }
 
@@ -233,7 +233,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       throw ProtocolError('Bad repeated cookie in ${MessageType.auth} message');
     }
 
-    final task = _selectTask(msg.tasks, forResponder: responder);
+    final task = _selectTask(msg.tasks, responder);
     logger.i('Selected task ${task.name}');
 
     /// AuthResponder parsing already validates integrity.
@@ -257,7 +257,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   /// Selects a task if possible, initiates connection termination if not.
-  Task _selectTask(List<String> tasks, {required Responder forResponder}) {
+  Task _selectTask(List<String> tasks, Responder forResponder) {
     Task? task;
     for (final ourTask in input.tasks) {
       if (tasks.contains(ourTask.name)) {
@@ -268,14 +268,6 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     if (task == null) {
       logger.w('No shared task for ${forResponder.id} found');
       sendMessage(Close(CloseCode.noSharedTask), to: forResponder);
-      // We might diverge here in the future and instead "reset" to the
-      // phase directly after the server handshake was done to allow a
-      // updated client to connect shortly after. If we do so we probably
-      // should also "trust" that client at this point so that no auth token
-      // is used twice.
-      //
-      // FIXME we also need to signal to the client/application that no shared
-      //       task was found while still closing the web-socket using goingAway.
       throw NoSharedTaskError();
     }
 

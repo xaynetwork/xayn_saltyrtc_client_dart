@@ -144,7 +144,7 @@ void main() {
           try {
             mockPeer.sendAndTransitToPhase<TaskPhase>(
                 message: Close(CloseCode.goingAway),
-                to: initialPhase,
+                sendTo: initialPhase,
                 encryptWith: crypto.createSharedKeyStore(
                     ownKeyStore: mockPeer.testedPeer.ourSessionKey!,
                     remotePublicKey:
@@ -288,7 +288,7 @@ Phase Function(Phase, PackageQueue) mkSendTokenTest(
   return (initialPhase, packages) {
     final phase = mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
       message: Token(mockPeer.permanentKey.publicKey),
-      to: initialPhase,
+      sendTo: initialPhase,
       encryptWith: mockPeer.authToken!,
     );
     final responderData = phase.responders[mockPeer.address]!;
@@ -313,7 +313,7 @@ Phase Function(Phase, PackageQueue) mkSendBadTokenTest(Crypto crypto,
     try {
       phase = responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
         message: Token(responder.permanentKey.publicKey),
-        to: initialPhase,
+        sendTo: initialPhase,
         encryptWith: responder.authToken,
       );
     } on ValidationError catch (e) {
@@ -339,7 +339,7 @@ Phase Function(Phase, PackageQueue) mkSendKeyTest(
     final sendPubKey = mockPeer.testedPeer.ourSessionKey!.publicKey;
     final phase = mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
       message: Key(sendPubKey),
-      to: initialPhase,
+      sendTo: initialPhase,
       encryptWith: crypto.createSharedKeyStore(
           ownKeyStore: mockPeer.permanentKey,
           remotePublicKey: mockPeer.testedPeer.permanentKey!.publicKey),
@@ -378,7 +378,7 @@ Phase Function(Phase, PackageQueue) mkSendBadKeyTest(Crypto crypto,
     final phase =
         responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
             message: Key(sendPubKey),
-            to: initialPhase,
+            sendTo: initialPhase,
             encryptWith: crypto.createSharedKeyStore(
                 ownKeyStore: responder.permanentKey,
                 remotePublicKey: responder.testedPeer.permanentKey!.publicKey),
@@ -411,7 +411,7 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest(
         ], {
           'this is not in the list of tasks': null,
         }),
-        to: phase,
+        sendTo: phase,
         encryptWith: crypto.createSharedKeyStore(
             ownKeyStore: responder.testedPeer.ourSessionKey!,
             remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey),
@@ -454,7 +454,7 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest(
           'foobar': null,
           'bar foot': {'dodo': []}
         }),
-        to: initialPhase,
+        sendTo: initialPhase,
         encryptWith: crypto.createSharedKeyStore(
             ownKeyStore: responder.testedPeer.ourSessionKey!,
             remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey));
@@ -516,7 +516,7 @@ Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
     final droppedId = Id.responderId(droppedResponderId);
     final phase = server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
         message: NewResponder(newId),
-        to: initialPhase,
+        sendTo: initialPhase,
         encryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.theirSessionKey!,
           remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,

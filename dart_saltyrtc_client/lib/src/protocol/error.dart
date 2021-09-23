@@ -25,8 +25,6 @@ class SaltyRtcError implements Exception {
 
 /// Exception used to signal that no shared task was found.
 ///
-/// When receiving this any pending message (i.e. `close`) should
-/// still be send before closing the stream.
 @immutable
 class NoSharedTaskError extends SaltyRtcError {
   NoSharedTaskError() : super(CloseCode.goingAway, 'no shared task found');

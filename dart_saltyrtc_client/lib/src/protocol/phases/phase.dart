@@ -115,6 +115,8 @@ abstract class Phase {
     } on StateError catch (e) {
       throw SaltyRtcError(CloseCode.internalError, e.message);
     }
+    //TODO on later PR close stream on SaltryRetcError (including
+    //`internalError` cases and `NoSharedTaskError`).
   }
 
   @protected

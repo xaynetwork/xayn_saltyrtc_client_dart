@@ -145,17 +145,17 @@ class PeerData {
 
   N sendAndTransitToPhase<N extends Phase>({
     required Message message,
-    required Phase to,
+    required Phase sendTo,
     required CryptoBox? encryptWith,
     // use to e.g. create "bad" nonces
     Nonce Function(Nonce) mapNonce = noChange,
     // use to e.g. create "bad" encrypted messages"
     Uint8List Function(Uint8List) mapEncryptedMessage = noChange,
   }) {
-    expect(to.common.address, equals(testedPeer.address));
+    expect(sendTo.common.address, equals(testedPeer.address));
     final rawMessage = mapEncryptedMessage(_createRawMessage(message,
         encryptWith: encryptWith, mapNonce: mapNonce));
-    return phaseAs(to.handleMessage(rawMessage));
+    return phaseAs(sendTo.handleMessage(rawMessage));
   }
 
   Uint8List _createRawMessage(
