@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show AuthenticatedServer, Client, Initiator, Peer, Server;
+    show AuthenticatedServer, Client, Peer, Server;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
@@ -62,8 +62,8 @@ class Common {
   }
 }
 
-/// Data that is needed for the client handshake and is passed by the user.
-class ClientHandshakeInput {
+/// The config for the initiator for the client handshake phase.
+class InitiatorClientHandshakeConfig {
   /// Tasks that the user support
   final List<Task> tasks;
 
@@ -71,15 +71,18 @@ class ClientHandshakeInput {
   /// Trusted public key of the responder we expect to peer with.
   final InitialClientAuthMethod authMethod;
 
-  ClientHandshakeInput({required this.tasks, required this.authMethod});
+  InitiatorClientHandshakeConfig(
+      {required this.tasks, required this.authMethod});
 }
 
-/// Additional data for a responder.
-class ResponderData {
-  Initiator initiator;
-  AuthToken? authToken;
+/// The config for the responder for the client handshake phase.
+class ResponderClientHandshakeConfig {
+  final AuthToken? authToken;
+  final List<Task> tasks;
+  final Uint8List initiatorPermanentPublicKey;
 
-  ResponderData(this.initiator);
+  ResponderClientHandshakeConfig(
+      this.authToken, this.tasks, this.initiatorPermanentPublicKey);
 }
 
 /// A phase can handle a message and returns the next phase.
@@ -149,14 +152,20 @@ abstract class Phase {
   }
 
   /// Short form for `send(buildPacket(msg, to))`
-  void sendMessage(Message msg, {required Peer to, bool encrypted = true}) {
+  void sendMessage(
+    Message msg, {
+    required Peer to,
+    bool encrypt = true,
+    AuthToken? authToken,
+  }) {
     final type = msg.type;
-    send(buildPacket(msg, to, encrypted));
+    send(buildPacket(msg, to, encrypt: encrypt, authToken: authToken));
     logger.d('Send $type');
   }
 
   /// Build binary packet to send.
-  Uint8List buildPacket(Message msg, Peer receiver, [bool encrypt = true]) {
+  Uint8List buildPacket(Message msg, Peer receiver,
+      {bool encrypt = true, AuthToken? authToken}) {
     final cs = receiver.csPair.ours;
     try {
       cs.next();
@@ -171,7 +180,7 @@ abstract class Phase {
     if (!encrypt) {
       payload = msg.toBytes();
     } else {
-      payload = receiver.encrypt(msg, nonce);
+      payload = receiver.encrypt(msg, nonce, authToken);
     }
 
     final builder = BytesBuilder(copy: false)
@@ -205,15 +214,20 @@ mixin InitiatorIdentity implements Phase {
   Role get role => Role.initiator;
 }
 
+mixin ResponderIdentity implements Phase {
+  @override
+  Role get role => Role.responder;
+}
+
 /// A mixin for anything that expects messages from either the server or a known peer.
 mixin WithPeer implements Phase {
-  Client get pairedClient;
+  Client? get pairedClient;
 
   @override
   Peer? getPeerWithId(Id id) {
     if (id.isServer()) {
       return common.server;
-    } else if (id == pairedClient.id) {
+    } else if (id == pairedClient?.id) {
       return pairedClient;
     }
     return null;
@@ -224,23 +238,6 @@ mixin InitiatorSendDropResponder on Phase {
   void sendDropResponder(IdResponder id, CloseCode closeCode) {
     logger.d('Dropping responder $id');
     sendMessage(DropResponder(id, closeCode), to: common.server);
-  }
-}
-
-/// Brings in data an common methods for a responder.
-mixin ResponderPhase implements Phase {
-  ResponderData get data;
-
-  @override
-  Role get role => Role.responder;
-
-  @override
-  Peer? getPeerWithId(Id id) {
-    if (id.isServer()) return common.server;
-    if (id.isInitiator()) {
-      return data.initiator;
-    }
-    return null;
   }
 }
 

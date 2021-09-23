@@ -33,11 +33,11 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         Common,
         CommonAfterServerHandshake,
-        Phase,
+        InitiatorClientHandshakeConfig,
         InitiatorIdentity,
-        ResponderData,
-        ResponderPhase,
-        ClientHandshakeInput;
+        Phase,
+        ResponderClientHandshakeConfig,
+        ResponderIdentity;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:meta/meta.dart' show protected;
 
@@ -61,13 +61,9 @@ enum ServerHandshakeState { start, helloSent, authSent }
 abstract class ServerHandshakePhase extends Phase {
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
 
-  // data that is needed by the client handshake phase
-  final ClientHandshakeInput clientHandshakeInput;
   final int _pingInterval;
 
-  ServerHandshakePhase(
-      Common common, this.clientHandshakeInput, this._pingInterval)
-      : super(common);
+  ServerHandshakePhase(Common common, this._pingInterval) : super(common);
 
   @protected
   Phase handleServerAuth(Message msg, Nonce nonce);
@@ -205,11 +201,13 @@ abstract class ServerHandshakePhase extends Phase {
 
 class InitiatorServerHandshakePhase extends ServerHandshakePhase
     with InitiatorIdentity {
+  final InitiatorClientHandshakeConfig nextPhaseConfig;
+
   InitiatorServerHandshakePhase(
     Common common,
-    ClientHandshakeInput clientHandshakeInput,
+    this.nextPhaseConfig,
     int pingInterval,
-  ) : super(common, clientHandshakeInput, pingInterval);
+  ) : super(common, pingInterval);
 
   @override
   void sendClientHello() {
@@ -240,7 +238,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     logger.d('Switching to initiator client handshake');
     final nextPhase = InitiatorClientHandshakePhase(
       CommonAfterServerHandshake(common),
-      clientHandshakeInput,
+      nextPhaseConfig,
     );
     msg.responders.forEach(nextPhase.addNewResponder);
     return nextPhase;
@@ -248,19 +246,20 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
 }
 
 class ResponderServerHandshakePhase extends ServerHandshakePhase
-    with ResponderPhase {
-  @override
-  final ResponderData data;
+    with ResponderIdentity {
+  final ResponderClientHandshakeConfig nextPhaseConfig;
 
-  ResponderServerHandshakePhase(Common common,
-      ClientHandshakeInput clientHandshakeInput, int pingInterval, this.data)
-      : super(common, clientHandshakeInput, pingInterval);
+  ResponderServerHandshakePhase(
+    Common common,
+    int pingInterval,
+    this.nextPhaseConfig,
+  ) : super(common, pingInterval);
 
   @override
   void sendClientHello() {
     logger.d('Switching to responder client handshake');
     sendMessage(ClientHello(common.ourKeys.publicKey),
-        to: common.server, encrypted: false);
+        to: common.server, encrypt: false);
     handshakeState = ServerHandshakeState.helloSent;
   }
 
@@ -284,13 +283,11 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
         nonce: nonce,
         expectedServerKey: common.expectedServerKey);
 
-    data.initiator.connected = true;
-
     logger.d('Switching to responder client handshake');
     return ResponderClientHandshakePhase(
       CommonAfterServerHandshake(common),
-      clientHandshakeInput,
-      data,
+      nextPhaseConfig,
+      msg.initiatorConnected,
     );
   }
 }

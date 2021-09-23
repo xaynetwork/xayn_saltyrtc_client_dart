@@ -85,7 +85,6 @@ void main() {
       initiator.setSessionSharedKey(sharedKey1f3);
       initiator.cookiePair.updateAndCheck(cookie, responderId1);
       initiator.csPair.updateAndCheck(mkCSN(), responderId1);
-      initiator.connected = true;
       expect(initiator.assertAuthenticated(), isA<AuthenticatedInitiator>());
     });
 
@@ -94,7 +93,6 @@ void main() {
       initiator.setPermanentSharedKey(sharedKey1f2);
       initiator.cookiePair.updateAndCheck(cookie, responderId1);
       initiator.csPair.updateAndCheck(mkCSN(), responderId1);
-      initiator.connected = true;
       expect(() => initiator.assertAuthenticated(), throwsStateError);
     });
 
@@ -103,7 +101,6 @@ void main() {
       initiator.setSessionSharedKey(sharedKey1f3);
       initiator.cookiePair.updateAndCheck(cookie, responderId1);
       initiator.csPair.updateAndCheck(mkCSN(), responderId1);
-      initiator.connected = true;
       expect(() => initiator.assertAuthenticated(), throwsStateError);
     });
 
@@ -112,7 +109,6 @@ void main() {
       initiator.setPermanentSharedKey(sharedKey1f2);
       initiator.setSessionSharedKey(sharedKey1f3);
       initiator.csPair.updateAndCheck(mkCSN(), responderId1);
-      initiator.connected = true;
       expect(() => initiator.assertAuthenticated(), throwsStateError);
     });
 
@@ -121,7 +117,6 @@ void main() {
       initiator.setPermanentSharedKey(sharedKey1f2);
       initiator.setSessionSharedKey(sharedKey1f3);
       initiator.cookiePair.updateAndCheck(cookie, responderId1);
-      initiator.connected = true;
       expect(() => initiator.assertAuthenticated(), throwsStateError);
     });
 
@@ -131,7 +126,6 @@ void main() {
       initiator.setSessionSharedKey(sharedKey1f3);
       initiator.cookiePair.updateAndCheck(cookie, responderId1);
       initiator.csPair.updateAndCheck(mkCSN(), responderId1);
-      initiator.connected = false;
       expect(() => initiator.assertAuthenticated(), throwsStateError);
     });
   });

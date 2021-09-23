@@ -17,18 +17,11 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show
-        Phase,
-        AfterServerHandshakePhase,
-        ClientHandshakeInput,
-        CommonAfterServerHandshake;
+    show Phase, AfterServerHandshakePhase, CommonAfterServerHandshake;
 import 'package:meta/meta.dart' show protected;
 
 abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
-  final ClientHandshakeInput input;
-
-  ClientHandshakePhase(CommonAfterServerHandshake common, this.input)
-      : super(common);
+  ClientHandshakePhase(CommonAfterServerHandshake common) : super(common);
 
   @override
   Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {

@@ -15,7 +15,7 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair, Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, Common, ResponderData, ClientHandshakeInput;
+    show Phase, Common, InitiatorClientHandshakeConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
@@ -43,7 +43,7 @@ class SetupData {
   );
 
   factory SetupData.init(
-    Phase Function(Common, ClientHandshakeInput, int) initPhase, [
+    Phase Function(Common, InitiatorClientHandshakeConfig, int) initPhase, [
     int pingInterval = 13,
     List<Task> tasks = const [],
   ]) {
@@ -58,7 +58,7 @@ class SetupData {
       server.permanentPublicKey,
       ws,
     );
-    final clientHandshakeInput = ClientHandshakeInput(
+    final clientHandshakeInput = InitiatorClientHandshakeConfig(
         tasks: tasks,
         authMethod: InitialClientAuthMethod.fromEither(
             authToken: crypto.createAuthToken()));
@@ -71,7 +71,7 @@ class SetupData {
 
 InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
   Common common,
-  ClientHandshakeInput clientHandshakeInput,
+  InitiatorClientHandshakeConfig clientHandshakeInput,
   int pingInterval,
 ) {
   return InitiatorServerHandshakePhase(
@@ -83,7 +83,7 @@ InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
 
 ResponderServerHandshakePhase makeResponderServerHandshakePhase(
   Common common,
-  ClientHandshakeInput clientHandshakeInput,
+  InitiatorClientHandshakeConfig clientHandshakeInput,
   int pingInterval, [
   ResponderData? data,
 ]) {
