@@ -8,6 +8,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show TaskData, Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -47,6 +48,17 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @protected
   void handleServerMessage(Message msg);
+
+  @override
+  void onProtocolError(ProtocolError e, Id? source) {
+    if (source == pairedClient.id) {
+      sendMessage(Close(e.closeCode), to: pairedClient);
+      throw SaltyRtcError(
+          CloseCode.closingNormal, 'closing after c2c protocol error');
+    } else {
+      super.onProtocolError(e, source);
+    }
+  }
 
   @override
   Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {

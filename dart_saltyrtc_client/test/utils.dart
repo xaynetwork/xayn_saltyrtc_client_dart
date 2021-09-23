@@ -99,8 +99,7 @@ Matcher throwsValidationError() {
   return throwsA(isA<ValidationError>());
 }
 
-Matcher throwsProtocolError(
-    {CloseCode closeCode = CloseCode.protocolError}) {
+Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   final errorHasExpectedState = (Object? error) {
     if (error is! ProtocolError) {
       return true;
