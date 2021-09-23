@@ -105,7 +105,7 @@ Matcher throwsProtocolError(
     if (error is! ProtocolError) {
       return true;
     } else {
-      return error.c2cCloseCode == c2cCloseCode;
+      return error.closeCode == c2cCloseCode;
     }
   };
   return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));

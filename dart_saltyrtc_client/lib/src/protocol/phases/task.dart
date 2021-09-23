@@ -50,8 +50,8 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @override
   Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
-    final msg = ensureNotNull(source.sessionSharedKey).readEncryptedMessage(
-        msgBytes: msgBytes, nonce: nonce, debugHint: 'task phase');
+    final msg = ensureNotNull(source.sessionSharedKey)
+        .readEncryptedMessage(msgBytes: msgBytes, nonce: nonce);
 
     if (nonce.source.isServer()) {
       if (msg is SendError) {

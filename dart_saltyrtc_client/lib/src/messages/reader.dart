@@ -55,15 +55,14 @@ extension MessageDecryptionExt on CryptoBox {
   Message readEncryptedMessage({
     required Uint8List msgBytes,
     required Nonce nonce,
-    required String debugHint,
-    CloseCode? decryptionC2CCloseCode,
+    CloseCode? decryptionErrorCloseCode,
   }) {
     final Uint8List decryptedBytes;
     try {
       decryptedBytes = decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
     } on DecryptionFailedException catch (e) {
-      if (decryptionC2CCloseCode != null) {
-        throw e.withC2CCloseCode(decryptionC2CCloseCode);
+      if (decryptionErrorCloseCode != null) {
+        throw e.withCloseCode(decryptionErrorCloseCode);
       } else {
         rethrow;
       }
@@ -85,13 +84,12 @@ extension MessageDecryptionExt on CryptoBox {
     required Uint8List msgBytes,
     required Nonce nonce,
     required String msgType,
-    CloseCode? decryptionC2CCloseCode,
+    CloseCode? decryptionErrorCloseCode,
   }) {
     final msg = readEncryptedMessage(
       msgBytes: msgBytes,
       nonce: nonce,
-      debugHint: msgType,
-      decryptionC2CCloseCode: decryptionC2CCloseCode,
+      decryptionErrorCloseCode: decryptionErrorCloseCode,
     );
     if (msg is! T) {
       throw ProtocolError(

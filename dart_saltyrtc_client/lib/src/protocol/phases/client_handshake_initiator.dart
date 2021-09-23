@@ -99,11 +99,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   @override
   void onProtocolError(ProtocolError e, Id? source) {
     if (source != null && source.isResponder()) {
-      logger.w('c2c protocol error: $e');
-      dropResponder(source.asResponder(), e.c2cCloseCode);
-      return;
+      dropResponder(source.asResponder(), e.closeCode);
+    } else {
+      super.onProtocolError(e, source);
     }
-    super.onProtocolError(e, source);
   }
 
   @override
@@ -175,7 +174,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       msgBytes: msgBytes,
       nonce: nonce,
       msgType: MessageType.token,
-      decryptionC2CCloseCode: CloseCode.initiatorCouldNotDecrypt,
+      decryptionErrorCloseCode: CloseCode.initiatorCouldNotDecrypt,
     );
 
     //TODO[trusted responder]: But once we want to "trust" responder we
@@ -198,7 +197,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       msgBytes: msgBytes,
       nonce: nonce,
       msgType: MessageType.key,
-      decryptionC2CCloseCode: CloseCode.initiatorCouldNotDecrypt,
+      decryptionErrorCloseCode: CloseCode.initiatorCouldNotDecrypt,
     );
 
     // generate session key, we only keep the shared key

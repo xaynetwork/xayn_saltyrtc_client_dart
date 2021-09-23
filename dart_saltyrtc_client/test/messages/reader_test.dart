@@ -153,7 +153,6 @@ void main() {
         final msg = sharedKey.readEncryptedMessage(
           msgBytes: encryptedMessage,
           nonce: nonce,
-          debugHint: 'foobar',
         );
         expect(msg, equals(message));
       });
@@ -163,7 +162,6 @@ void main() {
           sharedKey.readEncryptedMessage(
             msgBytes: Uint8List(Nonce.totalLength + 10),
             nonce: nonce,
-            debugHint: 'foobar',
           );
         }, throwsProtocolError());
       });
@@ -173,8 +171,7 @@ void main() {
           sharedKey.readEncryptedMessage(
             msgBytes: Uint8List(Nonce.totalLength + 10),
             nonce: nonce,
-            debugHint: 'foobar',
-            decryptionC2CCloseCode: CloseCode.handover,
+            decryptionErrorCloseCode: CloseCode.handover,
           );
         }, throwsProtocolError(c2cCloseCode: CloseCode.handover));
       });

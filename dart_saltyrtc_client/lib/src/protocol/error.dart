@@ -3,16 +3,20 @@ import 'package:meta/meta.dart' show immutable;
 
 @immutable
 class ProtocolError implements Exception {
-  final CloseCode c2cCloseCode;
+  /// Use a different close code.
+  ///
+  /// This is mainly used to communicate decryption failure in the
+  /// client to client handshake.
+  final CloseCode closeCode;
   final String _msg;
 
-  ProtocolError(this._msg, {this.c2cCloseCode = CloseCode.protocolError});
+  ProtocolError(this._msg, {this.closeCode = CloseCode.protocolError});
 
   @override
   String toString() => _msg;
 
-  ProtocolError withC2CCloseCode(CloseCode code) =>
-      ProtocolError(_msg, c2cCloseCode: code);
+  ProtocolError withCloseCode(CloseCode code) =>
+      ProtocolError(_msg, closeCode: code);
 }
 
 /// It will result in the connection closing with the specified error code.
