@@ -153,7 +153,6 @@ void main() {
         final msg = sharedKey.readEncryptedMessage(
           msgBytes: encryptedMessage,
           nonce: nonce,
-          debugHint: 'foobar',
         );
         expect(msg, equals(message));
       });
@@ -163,25 +162,18 @@ void main() {
           sharedKey.readEncryptedMessage(
             msgBytes: Uint8List(Nonce.totalLength + 10),
             nonce: nonce,
-            debugHint: 'foobar',
           );
         }, throwsProtocolError());
       });
 
-      test('calls onDecryptionError if decryption fails', () {
-        var wasCalled = false;
+      test('allows setting custom c2c close code', () {
         expect(() {
           sharedKey.readEncryptedMessage(
-              msgBytes: Uint8List(Nonce.totalLength + 10),
-              nonce: nonce,
-              debugHint: 'foobar',
-              onDecryptionError: (msg) {
-                wasCalled = true;
-                //arbitrary alternate Expection subclass
-                return FormatException(msg);
-              });
-        }, throwsFormatException);
-        expect(wasCalled, isTrue);
+            msgBytes: Uint8List(Nonce.totalLength + 10),
+            nonce: nonce,
+            decryptionErrorCloseCode: CloseCode.handover,
+          );
+        }, throwsProtocolError(closeCode: CloseCode.handover));
       });
     });
     group('readEncryptedMessageOfType', () {

@@ -8,10 +8,12 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show TaskData, Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/reader.dart' show readMessage;
+import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+    show MessageDecryptionExt;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
@@ -23,7 +25,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Client, Responder, Initiator;
+    show Client, Initiator, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakePhase,
@@ -48,12 +50,21 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   void handleServerMessage(Message msg);
 
   @override
-  Phase run(Uint8List msgBytes, Nonce nonce) {
-    final sks = ensureNotNull(getPeerWithId(nonce.source).sessionSharedKey);
-    final decryptedBytes =
-        sks.decrypt(ciphertext: msgBytes, nonce: nonce.toBytes());
+  void onProtocolError(ProtocolError e, Id? source) {
+    if (source == pairedClient.id) {
+      sendMessage(Close(e.closeCode), to: pairedClient);
+      throw SaltyRtcError(
+          CloseCode.closingNormal, 'closing after c2c protocol error');
+    } else {
+      super.onProtocolError(e, source);
+    }
+  }
 
-    final msg = readMessage(decryptedBytes, taskTypes: task.supportedTypes);
+  @override
+  Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
+    final msg = ensureNotNull(source.sessionSharedKey)
+        .readEncryptedMessage(msgBytes: msgBytes, nonce: nonce);
+
     if (nonce.source.isServer()) {
       if (msg is SendError) {
         handleSendError(msg);

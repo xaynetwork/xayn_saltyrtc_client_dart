@@ -76,17 +76,6 @@ abstract class ServerHandshakePhase extends Phase {
   void sendClientHello();
 
   @override
-  void validateNonceSource(Nonce nonce) {
-    final source = nonce.source;
-    if (source != Id.serverAddress) {
-      throw ValidationError(
-        'Received message is not from server. Found $source',
-        isProtocolError: false,
-      );
-    }
-  }
-
-  @override
   void validateNonceDestination(Nonce nonce) {
     final destination = nonce.destination;
     final check = (Id expected) {
@@ -118,13 +107,13 @@ abstract class ServerHandshakePhase extends Phase {
   }
 
   @override
-  Peer getPeerWithId(Id id) {
+  Peer? getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
-    throw ProtocolError('Invalid peer id: $id');
+    return null;
   }
 
   @override
-  Phase run(Uint8List msgBytes, Nonce nonce) {
+  Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
     // the first message is not encrypted
     final Message msg;
     if (handshakeState == ServerHandshakeState.start) {
@@ -133,7 +122,6 @@ abstract class ServerHandshakePhase extends Phase {
       msg = ensureNotNull(common.server.sessionSharedKey).readEncryptedMessage(
         msgBytes: msgBytes,
         nonce: nonce,
-        debugHint: 'from server',
       );
     }
 

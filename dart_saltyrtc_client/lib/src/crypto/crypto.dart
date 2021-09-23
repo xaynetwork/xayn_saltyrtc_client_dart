@@ -9,6 +9,7 @@ import 'package:meta/meta.dart' show immutable;
 ///
 /// Decryption failure is a special case of an protocol error,
 /// in some edge cases we catch decryption failure and handle it differently.
+@immutable
 class DecryptionFailedException extends ProtocolError {
   DecryptionFailedException(Object cause) : super('decryption failed: $cause');
 }

@@ -15,8 +15,13 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart';
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
+import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
+    show
+        Phase,
+        AfterServerHandshakePhase,
+        ClientHandshakeInput,
+        CommonAfterServerHandshake;
 import 'package:meta/meta.dart' show protected;
 
 abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
@@ -26,7 +31,7 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
       : super(common);
 
   @override
-  Phase run(Uint8List msgBytes, Nonce nonce) {
+  Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
     if (nonce.destination != common.address) {
       throw ProtocolError('Message destination does not match our address');
     }
@@ -42,7 +47,6 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
     final msg = common.server.sessionSharedKey.readEncryptedMessage(
       msgBytes: msgBytes,
       nonce: nonce,
-      debugHint: 'from server',
     );
 
     if (msg is SendError) {
