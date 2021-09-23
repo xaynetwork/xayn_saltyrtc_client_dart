@@ -23,6 +23,25 @@ class SaltyRtcError implements Exception {
   String toString() => _msg;
 }
 
+/// Exception used to signal that no shared task was found.
+///
+@immutable
+class NoSharedTaskError extends SaltyRtcError {
+  NoSharedTaskError() : super(CloseCode.goingAway, 'no shared task found');
+}
+
+/// Data to instantiate a message is invalid.
+@immutable
+class ValidationError implements Exception {
+  final bool isProtocolError;
+  final String _msg;
+
+  ValidationError(this._msg, {this.isProtocolError = true});
+
+  @override
+  String toString() => _msg;
+}
+
 T ensureNotNull<T>(T? o, [String msg = 'Object is null']) {
   if (o == null) {
     throw ProtocolError(msg);

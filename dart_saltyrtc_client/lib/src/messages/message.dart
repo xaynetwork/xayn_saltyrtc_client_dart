@@ -1,6 +1,8 @@
-import 'dart:typed_data' show Uint8List;
+import 'dart:typed_data' show BytesBuilder, Uint8List;
 
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show Crypto;
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+    show Crypto, CryptoBox;
+import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show protected;
@@ -44,6 +46,28 @@ abstract class Message with EquatableMixin {
   /// Each message encode itself using MessagePack.
   @protected
   void write(Packer msgPacker);
+
+  /// Builds a SaltyRtc package from this message, nonce and crypto box.
+  ///
+  /// The caller has to make sure the right crypto box and nonce for the
+  /// current current connection state and receiver are used.
+  ///
+  /// Using `encryptWith=null` means no encryption is done.
+  Uint8List buildPackage(Nonce nonce, {required CryptoBox? encryptWith}) {
+    final messageBytes = toBytes();
+    final nonceBytes = nonce.toBytes();
+    final Uint8List payload;
+    if (encryptWith == null) {
+      payload = messageBytes;
+    } else {
+      payload = encryptWith.encrypt(message: messageBytes, nonce: nonceBytes);
+    }
+
+    final builder = BytesBuilder(copy: false)
+      ..add(nonceBytes)
+      ..add(payload);
+    return builder.takeBytes();
+  }
 }
 
 /// Fields of the MessagePack encoded data.
@@ -66,7 +90,11 @@ class MessageFields {
   static const tasks = 'tasks';
 }
 
-// For each task name we take a Map<String, List<int>> to simplify the encoding.
+/// Data which can be transmitted as part of the task negation.
+///
+/// SlatyRtc is meant to support arbitrary maps, but for now this implementation
+/// is limited to `Map<String, List<int>?>`.
+// The library we use makes it complex to encode `Object?`, and we don't need it.
 // We use List<int> and not Uint8List so we don't have to create a new map where
 // we replace List<int> with Uint8List. `unpackBinary` returns List<int>.
 typedef TaskData = Map<String, List<int>?>;

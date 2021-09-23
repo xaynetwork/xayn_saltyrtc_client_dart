@@ -6,7 +6,7 @@ import 'package:fixnum/fixnum.dart' show Int64;
 /// The CombinedSequence class handles the overflow checking of the 48 bit combined sequence number
 /// (CSN) consisting of the overflow number and the sequence number.
 class CombinedSequence with EquatableMixin {
-  static final Int64 combinedSequenceNumberMax = Int64.ONE << 48;
+  static final Int64 combinedSequenceNumberMax = (Int64.ONE << 48) - 1;
   // define a mask 0xffff00000000 to select the overflow part
   static final Int64 _overflowMask = (Int64(1 << 16) - 1) << 32;
   static const numBytes = 6;
@@ -19,7 +19,7 @@ class CombinedSequence with EquatableMixin {
 
   CombinedSequence(this._combinedSequenceNumber) {
     if (_combinedSequenceNumber < 0 ||
-        _combinedSequenceNumber >= combinedSequenceNumberMax) {
+        _combinedSequenceNumber > combinedSequenceNumberMax) {
       throw ArgumentError(
           'combined sequence number must be between 0 and 2**48-1');
     }
@@ -39,12 +39,15 @@ class CombinedSequence with EquatableMixin {
         Int64.fromBytesBigEndian(Uint8List(8)..setAll(2, bytes)));
   }
 
+  /// Creates a (deep) copy of this type.
+  CombinedSequence copy() => CombinedSequence(_combinedSequenceNumber);
+
   bool get isOverflowZero =>
       _combinedSequenceNumber & _overflowMask == Int64.ZERO;
 
   /// Increase this sequence number by 1. Can throw exception if overflow.
   void next() {
-    if (_combinedSequenceNumber + 1 >= combinedSequenceNumberMax) {
+    if (_combinedSequenceNumber + 1 > combinedSequenceNumberMax) {
       throw OverflowException();
     }
 
@@ -58,9 +61,6 @@ class CombinedSequence with EquatableMixin {
         .skip(2)
         .toList(growable: false));
   }
-
-  bool operator <=(CombinedSequence cs) =>
-      _combinedSequenceNumber <= cs._combinedSequenceNumber;
 }
 
 /// This means that the `overflow` field of `CombinedSequence` overflowed.

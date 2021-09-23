@@ -15,14 +15,15 @@ extension ToInt64 on CombinedSequence {
 
 void main() {
   test('Max combined sequence number', () {
-    expect(CombinedSequence.combinedSequenceNumberMax, Int64.ONE << 48);
+    expect(CombinedSequence.combinedSequenceNumberMax, (Int64.ONE << 48) - 1);
   });
 
   test('From random', () {
     final cs = CombinedSequence.fromRandom(
         (size) => Uint8List.fromList(List.filled(size, 255)));
 
-    expect(cs.toInt64(), lessThan(CombinedSequence.combinedSequenceNumberMax));
+    expect(cs.toInt64(),
+        lessThanOrEqualTo(CombinedSequence.combinedSequenceNumberMax));
     expect(cs.isOverflowZero, true);
   });
 
@@ -63,12 +64,12 @@ void main() {
   });
 
   test('next overflow', () {
-    final cs = CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
+    final cs = CombinedSequence(CombinedSequence.combinedSequenceNumberMax);
     expect(() => cs.next(), throwsA(isA<OverflowException>()));
   });
 
   test('toBytes max', () {
-    final cs = CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
+    final cs = CombinedSequence(CombinedSequence.combinedSequenceNumberMax);
     final bytes = cs.toBytes();
     expect(CombinedSequence.numBytes, 6);
     expect(bytes.length, CombinedSequence.numBytes);

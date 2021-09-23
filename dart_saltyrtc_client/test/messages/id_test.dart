@@ -1,6 +1,7 @@
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ValidationError;
+
 import 'package:test/test.dart';
 
 void main() {

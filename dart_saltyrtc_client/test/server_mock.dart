@@ -106,8 +106,13 @@ class MockServer {
     bool encrypt = true,
     bool expectSame = true,
   }) {
+    CryptoBox? encryptWith;
+    if (encrypt) {
+      encryptWith = crypto.createSharedKeyStore(
+          ownKeyStore: sessionKeys, remotePublicKey: clientPermanentPublicKey!);
+    }
     final messageBytes =
-        encrypt ? _encryptMessage(nam) : _unencryptedMessage(nam);
+        nam.message.buildPackage(nam.nonce, encryptWith: encryptWith);
     final nextPhase = phase.handleMessage(messageBytes);
     if (expectSame) {
       expect(nextPhase, equals(phase));
@@ -147,18 +152,6 @@ class MockServer {
     return NonceAndMessage(nonce, msg);
   }
 
-  /// Encode the message to be sent
-  Uint8List _unencryptedMessage<M extends Message>(NonceAndMessage<M> nam) {
-    return prepareMessage(nam.message, nam.nonce);
-  }
-
-  /// Encode the message to be sent and encrypt it with the session key
-  Uint8List _encryptMessage<M extends Message>(NonceAndMessage<M> nam) {
-    final sks = crypto.createSharedKeyStore(
-        ownKeyStore: sessionKeys, remotePublicKey: clientPermanentPublicKey!);
-    return prepareMessage(nam.message, nam.nonce, sks);
-  }
-
   /// Concatenate the server's public session key and the client's public permanent key.
   /// The resulting data is encrypted using the permanent key of the server and the client's public permanent key.
   Uint8List _genSignedKeys() {
@@ -168,9 +161,7 @@ class MockServer {
     final keys = bytes.takeBytes();
     final sks = crypto.createSharedKeyStore(
         ownKeyStore: permanentKeys, remotePublicKey: clientPermanentPublicKey!);
-    final encrypted = sks.encrypt(message: keys, nonce: nonce.toBytes());
-    // encrypt add the nonce at the beginning of the data but we don't want it here
-    return Uint8List.sublistView(encrypted, Nonce.totalLength);
+    return sks.encrypt(message: keys, nonce: nonce.toBytes());
   }
 
   NonceAndMessage<ServerHello> _serverHello() {
@@ -178,17 +169,4 @@ class MockServer {
 
     return NonceAndMessage(nonce, msg);
   }
-}
-
-Uint8List prepareMessage(Message msg, Nonce nonce, [CryptoBox? box]) {
-  final msgBytes = msg.toBytes();
-  final nonceBytes = nonce.toBytes();
-  if (box != null) {
-    return box.encrypt(message: msgBytes, nonce: nonceBytes);
-  }
-
-  final bytes = BytesBuilder(copy: false);
-  bytes.add(nonceBytes);
-  bytes.add(msgBytes);
-  return bytes.takeBytes();
 }

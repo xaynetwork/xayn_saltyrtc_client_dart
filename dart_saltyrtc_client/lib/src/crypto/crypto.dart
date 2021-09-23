@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:meta/meta.dart' show immutable;
 
 /// Something that can encrypt and decrypt data.
 abstract class CryptoBox {
@@ -45,7 +46,9 @@ abstract class SharedKeyStore implements CryptoBox {
 }
 
 /// Token that is used to authenticate a responder if it is not trusted
-abstract class AuthToken implements CryptoBox {}
+abstract class AuthToken implements CryptoBox {
+  Uint8List get bytes;
+}
 
 abstract class Crypto {
   // specified by NaCl.
@@ -90,5 +93,59 @@ void _checkLength(Uint8List data, int expected, String name) {
   final len = data.length;
   if (len != expected) {
     throw ArgumentError('$name must be $expected, found $len');
+  }
+}
+
+@immutable
+class InitialClientAuthMethod {
+  /// A preset trusted responder shared permanent key.
+  ///
+  /// This key is a shared key based on the initiators permanent key and the
+  /// responders permanent key.
+  final SharedKeyStore? trustedResponderSharedKey;
+  final AuthToken? authToken;
+
+  InitialClientAuthMethod._({this.authToken, this.trustedResponderSharedKey}) {
+    if ((trustedResponderSharedKey == null) == (authToken == null)) {
+      throw ArgumentError(
+          'Expects either a authToken OR a trustedResponderSharedKey');
+    }
+  }
+
+  /// Create a instance from either an `AuthToken` or the public key
+  /// of the trusted responder.
+  ///
+  /// The `crypto` and `initiatorPermanentKeys` are required if the trusted
+  /// responders permanent public key is used.
+  factory InitialClientAuthMethod.fromEither({
+    AuthToken? authToken,
+    Uint8List? trustedResponderPermanentPublicKey,
+    Crypto? crypto,
+    KeyStore? initiatorPermanentKeys,
+  }) {
+    SharedKeyStore? trustedResponderSharedKey;
+    if (trustedResponderPermanentPublicKey != null) {
+      if (crypto == null || initiatorPermanentKeys == null) {
+        throw ArgumentError(
+            'crypto & initiatorPermanentPublicKey required for trusted responder');
+      }
+      trustedResponderSharedKey = createResponderSharedPermanentKey(
+          crypto, initiatorPermanentKeys, trustedResponderPermanentPublicKey);
+    }
+
+    return InitialClientAuthMethod._(
+      authToken: authToken,
+      trustedResponderSharedKey: trustedResponderSharedKey,
+    );
+  }
+
+  static SharedKeyStore createResponderSharedPermanentKey(
+      Crypto crypto,
+      KeyStore initiatorPermanentKeys,
+      Uint8List trustedResponderPublicPermanentKey) {
+    Crypto.checkPublicKey(trustedResponderPublicPermanentKey);
+    return crypto.createSharedKeyStore(
+        ownKeyStore: initiatorPermanentKeys,
+        remotePublicKey: trustedResponderPublicPermanentKey);
   }
 }

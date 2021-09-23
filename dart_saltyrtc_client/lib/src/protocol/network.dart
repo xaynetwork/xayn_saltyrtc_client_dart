@@ -13,7 +13,7 @@ abstract class WebSocketSink implements Sink<Uint8List> {
   /// the remote peer, respectively. If they are omitted, the peer will see a
   /// "no status received" code with no reason.
   @override
-  Future close([int? closeCode, String? closeReason]);
+  Future<void> close([int? closeCode, String? closeReason]);
 }
 
 typedef WebSocketStream = Stream<Uint8List>;

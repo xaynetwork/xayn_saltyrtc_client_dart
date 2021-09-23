@@ -5,7 +5,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart';
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ValidationError;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:test/test.dart';
@@ -73,8 +73,7 @@ void main() {
     final cookieOne =
         Cookie(Uint8List.fromList(List.filled(Cookie.cookieLength, 255)));
     final csZero = CombinedSequence(Int64.ZERO);
-    final csOne =
-        CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
+    final csOne = CombinedSequence(CombinedSequence.combinedSequenceNumberMax);
 
     expect(
         Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes().length,
@@ -107,8 +106,7 @@ void main() {
     final cookieOne =
         Cookie(Uint8List.fromList(List.filled(Cookie.cookieLength, 255)));
     final csZero = CombinedSequence(Int64.ZERO);
-    final csOne =
-        CombinedSequence(CombinedSequence.combinedSequenceNumberMax - 1);
+    final csOne = CombinedSequence(CombinedSequence.combinedSequenceNumberMax);
 
     final nonces = [
       Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero),

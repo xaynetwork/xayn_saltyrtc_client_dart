@@ -8,7 +8,6 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show TaskData, Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -21,30 +20,28 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ensureNotNull, SaltyRtcError;
+    show ProtocolError, SaltyRtcError, ensureNotNull;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show Client, Responder, Initiator, Peer;
+    show Client, Responder, Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
-        Phase,
-        CommonAfterServerHandshake,
         AfterServerHandshakePhase,
-        InitiatorSendDropResponder;
+        CommonAfterServerHandshake,
+        InitiatorSendDropResponder,
+        Phase,
+        WithPeer;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
 
-abstract class TaskPhase extends AfterServerHandshakePhase {
+abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
+  @override
   final Client pairedClient;
 
   final Task task;
-  final TaskData taskData;
 
-  TaskPhase(CommonAfterServerHandshake common, this.pairedClient, this.task,
-      this.taskData)
+  TaskPhase(CommonAfterServerHandshake common, this.pairedClient, this.task)
       : super(common);
 
   @protected
@@ -71,22 +68,6 @@ abstract class TaskPhase extends AfterServerHandshakePhase {
 
     // the phase does not change anymore
     return this;
-  }
-
-  @override
-  Peer getPeerWithId(Id id) {
-    if (id.isServer()) {
-      return common.server;
-    } else if (id == pairedClient.id) {
-      return pairedClient;
-    } else if (role == Role.initiator && id.isResponder()) {
-      // see getPeerWithId of InitiatorPhase
-      throw ValidationError(
-        'Invalid responder id: $id',
-        isProtocolError: false,
-      );
-    }
-    throw ProtocolError('Invalid responder id: $id');
   }
 
   @protected
@@ -134,7 +115,7 @@ class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
     this.pairedClient,
     Task task,
     TaskData taskData,
-  ) : super(common, pairedClient, task, taskData);
+  ) : super(common, pairedClient, task);
 
   @override
   void handleServerMessage(Message msg) {
@@ -158,8 +139,7 @@ class ResponderTaskPhase extends TaskPhase {
     CommonAfterServerHandshake common,
     this.pairedClient,
     Task task,
-    TaskData taskData,
-  ) : super(common, pairedClient, task, taskData);
+  ) : super(common, pairedClient, task);
 
   @override
   void handleServerMessage(Message msg) {

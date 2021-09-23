@@ -16,6 +16,7 @@ import 'package:meta/meta.dart' show immutable;
 
 const _type = MessageType.auth;
 
+/// Auth message as send by the responder.
 @immutable
 class AuthResponder extends Message {
   final Cookie yourCookie;

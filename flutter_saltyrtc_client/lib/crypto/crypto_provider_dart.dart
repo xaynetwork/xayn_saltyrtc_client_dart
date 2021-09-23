@@ -61,10 +61,11 @@ class _DartSodiumSharedKeyStore extends SharedKeyStore {
 }
 
 class _DartSodiumAuthToken implements AuthToken {
-  final Uint8List _authToken;
+  @override
+  final Uint8List bytes;
 
-  _DartSodiumAuthToken(this._authToken) {
-    Crypto.checkSymmetricKey(_authToken);
+  _DartSodiumAuthToken(this.bytes) {
+    Crypto.checkSymmetricKey(bytes);
   }
 
   @override
@@ -73,8 +74,7 @@ class _DartSodiumAuthToken implements AuthToken {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.Sodium.cryptoSecretboxOpenEasy(
-        ciphertext, nonce, _authToken);
+    return _sodium.Sodium.cryptoSecretboxOpenEasy(ciphertext, nonce, bytes);
   }
 
   @override
@@ -83,7 +83,7 @@ class _DartSodiumAuthToken implements AuthToken {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.Sodium.cryptoSecretboxEasy(message, nonce, _authToken);
+    return _sodium.Sodium.cryptoSecretboxEasy(message, nonce, bytes);
   }
 }
 

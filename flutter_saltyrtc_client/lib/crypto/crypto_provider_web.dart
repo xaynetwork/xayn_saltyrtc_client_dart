@@ -76,14 +76,15 @@ class _JSSharedKeyStore extends SharedKeyStore {
 
 class _JSAuthToken implements AuthToken {
   final LibSodiumJS _sodium;
-  final Uint8List _authToken;
+  @override
+  final Uint8List bytes;
 
   _JSAuthToken({
     required LibSodiumJS sodium,
     required Uint8List authToken,
   })  : _sodium = sodium,
-        _authToken = authToken {
-    Crypto.checkSymmetricKey(_authToken);
+        bytes = authToken {
+    Crypto.checkSymmetricKey(bytes);
   }
 
   @override
@@ -92,7 +93,7 @@ class _JSAuthToken implements AuthToken {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.crypto_secretbox_open_easy(ciphertext, nonce, _authToken);
+    return _sodium.crypto_secretbox_open_easy(ciphertext, nonce, bytes);
   }
 
   @override
@@ -101,7 +102,7 @@ class _JSAuthToken implements AuthToken {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.crypto_secretbox_easy(message, nonce, _authToken);
+    return _sodium.crypto_secretbox_easy(message, nonce, bytes);
   }
 }
 
