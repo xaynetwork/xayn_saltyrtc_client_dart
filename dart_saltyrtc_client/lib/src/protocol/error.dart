@@ -3,10 +3,12 @@ import 'package:meta/meta.dart' show immutable;
 
 @immutable
 class ProtocolError implements Exception {
-  /// Use a different close code.
+  /// The close code which should be used.
   ///
-  /// This is mainly used to communicate decryption failure in the
-  /// client to client handshake.
+  /// Default to `protocolError`.
+  ///
+  /// This is mainly used to communicate decryption failure in 2 specific
+  /// places of the client to client handshake.
   final CloseCode closeCode;
   final String _msg;
 

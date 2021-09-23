@@ -100,12 +100,12 @@ Matcher throwsValidationError() {
 }
 
 Matcher throwsProtocolError(
-    {CloseCode c2cCloseCode = CloseCode.protocolError}) {
+    {CloseCode closeCode = CloseCode.protocolError}) {
   final errorHasExpectedState = (Object? error) {
     if (error is! ProtocolError) {
       return true;
     } else {
-      return error.closeCode == c2cCloseCode;
+      return error.closeCode == closeCode;
     }
   };
   return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
