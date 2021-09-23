@@ -1,7 +1,8 @@
+import 'dart:js' show JsObject;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show SharedKeyStore, KeyStore, AuthToken, Crypto;
+    show SharedKeyStore, KeyStore, AuthToken, Crypto, DecryptionFailedException;
 import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart'
     show loadSodiumInBrowser;
 import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart' show LibSodiumJS;
@@ -17,6 +18,19 @@ Crypto get cryptoInstance {
   _instance ??= _JSCrypto(_sodiumJS);
 
   return _instance!;
+}
+
+T _wrapDecryptionFailure<T>(T Function() code) {
+  try {
+    return code();
+  } on JsObject catch (cause) {
+    if (cause.hasProperty('message') &&
+        cause['message'] == 'incorrect secret key for the given ciphertext') {
+      throw DecryptionFailedException(cause);
+    } else {
+      rethrow;
+    }
+  }
 }
 
 class _JSKeyStore extends KeyStore {
@@ -61,7 +75,8 @@ class _JSSharedKeyStore extends SharedKeyStore {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.crypto_box_open_easy_afternm(ciphertext, nonce, _sharedKey);
+    return _wrapDecryptionFailure(() =>
+        _sodium.crypto_box_open_easy_afternm(ciphertext, nonce, _sharedKey));
   }
 
   @override
@@ -93,7 +108,8 @@ class _JSAuthToken implements AuthToken {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _sodium.crypto_secretbox_open_easy(ciphertext, nonce, bytes);
+    return _wrapDecryptionFailure(
+        () => _sodium.crypto_secretbox_open_easy(ciphertext, nonce, bytes));
   }
 
   @override
