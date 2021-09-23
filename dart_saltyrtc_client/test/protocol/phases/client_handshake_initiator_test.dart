@@ -13,6 +13,8 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
@@ -210,6 +212,28 @@ void main() {
       ),
     ]);
   });
+
+  test('handleDisconnected', () {
+    final setup = _Setup.create(
+      crypto: crypto,
+      responderIds: [20, 30, 40],
+      goodResponderAt: 2,
+    );
+    final server = setup.server;
+    runTest(setup.initialPhase, [
+      mkSendTokenTest(crypto, setup.responders[2]),
+      mkSendDisconnectedTest(
+        crypto: crypto,
+        server: server,
+        disconnect: 30,
+      ),
+      mkSendDisconnectedTest(
+        crypto: crypto,
+        server: server,
+        disconnect: 20,
+      ),
+    ]);
+  });
 }
 
 class _Setup {
@@ -272,6 +296,7 @@ class _Setup {
         CommonAfterServerHandshake(common),
         ClientHandshakeInput(tasks: tasks ?? [], authMethod: authMethod));
 
+    server.testedPeer.permanentKey = phase.common.ourKeys;
     for (final responder in responders) {
       // we know the initiators public key as it's in the path
       responder.testedPeer.permanentKey = phase.common.ourKeys;
@@ -529,8 +554,28 @@ Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
 
     expect(dropMsg.id, equals(droppedId));
     expect(phase.responders.keys, contains(newId));
-    phase.responders[droppedId];
+    expect(phase.responders[droppedId], isNull);
     expect(phase.responders.length, equals(252));
+    return phase;
+  };
+}
+
+Phase Function(Phase, PackageQueue) mkSendDisconnectedTest({
+  required int disconnect,
+  required PeerData server,
+  required Crypto crypto,
+}) {
+  final disonnectId = Id.responderId(disconnect);
+  return (initialPhase, packages) {
+    final phase = server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+      message: Disconnected(disonnectId),
+      sendTo: initialPhase,
+      encryptWith: crypto.createSharedKeyStore(
+        ownKeyStore: server.testedPeer.ourSessionKey!,
+        remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+      ),
+    );
+    expect(phase.responders[disconnect], isNull);
     return phase;
   };
 }

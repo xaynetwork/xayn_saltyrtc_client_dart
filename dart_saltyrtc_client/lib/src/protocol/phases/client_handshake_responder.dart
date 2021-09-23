@@ -1,8 +1,12 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
+import 'package:dart_saltyrtc_client/src/messages/validation.dart';
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -23,6 +27,14 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     ClientHandshakeInput input,
     this.data,
   ) : super(common, input);
+
+  @override
+  void handleDisconnected(Disconnected msg) {
+    final id = msg.id;
+    validateIdInitiator(id.value);
+    data.initiator = Initiator(common.crypto);
+    //TODO inform client/application
+  }
 
   @override
   Phase handleClientMessage(Uint8List msgBytes, Nonce nonce) {

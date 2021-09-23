@@ -76,7 +76,7 @@ class ClientHandshakeInput {
 
 /// Additional data for a responder.
 class ResponderData {
-  final Initiator initiator;
+  Initiator initiator;
   AuthToken? authToken;
 
   ResponderData(this.initiator);
@@ -124,7 +124,8 @@ abstract class Phase {
 
   @protected
   void onProtocolError(ProtocolError e, Id? source) {
-    throw SaltyRtcError(e.closeCode, 'ProtocolError(msg from $source): $e');
+    throw SaltyRtcError(
+        e.closeCode, 'ProtocolError($source=>${common.address}): $e');
   }
 
   @protected
@@ -255,9 +256,7 @@ abstract class AfterServerHandshakePhase extends Phase {
     throw UnimplementedError();
   }
 
-  void handleDisconnected(Disconnected msg) {
-    throw UnimplementedError();
-  }
+  void handleDisconnected(Disconnected msg);
 }
 
 /// Data that is common to all phases and roles after the server handshake.

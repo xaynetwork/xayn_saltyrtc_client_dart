@@ -46,10 +46,9 @@ class ValidationError extends ProtocolError {
   ValidationError(String msg) : super(msg);
 }
 
-T ensureNotNull<T>(T? o, [String msg = 'Object is null']) {
-  if (o == null) {
-    throw ProtocolError(msg);
-  }
-
-  return o;
+/// The authenticated peer disconnected during the task phase
+@immutable
+class AuthenticatedPeerDisconnected extends SaltyRtcError {
+  AuthenticatedPeerDisconnected()
+      : super(CloseCode.closingNormal, 'authenticated peer disconnected');
 }

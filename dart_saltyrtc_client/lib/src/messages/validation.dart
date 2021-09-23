@@ -87,6 +87,11 @@ void validateIdResponder(int value, [String name = MessageFields.id]) {
   validateInteger(value, 2, 255, name);
 }
 
+/// Check that `value` is a valid id of a responder.
+void validateIdInitiator(int value, [String name = MessageFields.id]) {
+  validateInteger(value, 1, 1, name);
+}
+
 bool checkIdResponder(int value) {
   return checkInteger(value, 2, 255);
 }
