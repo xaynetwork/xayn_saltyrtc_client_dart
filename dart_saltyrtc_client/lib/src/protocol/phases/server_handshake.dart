@@ -33,10 +33,11 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         Common,
         CommonAfterServerHandshake,
-        InitiatorClientHandshakeConfig,
+        Config,
+        InitiatorConfig,
         InitiatorIdentity,
         Phase,
-        ResponderClientHandshakeConfig,
+        ResponderConfig,
         ResponderIdentity;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:meta/meta.dart' show protected;
@@ -61,9 +62,7 @@ enum ServerHandshakeState { start, helloSent, authSent }
 abstract class ServerHandshakePhase extends Phase {
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
 
-  final int _pingInterval;
-
-  ServerHandshakePhase(Common common, this._pingInterval) : super(common);
+  ServerHandshakePhase(Common common, Config config) : super(common, config);
 
   @protected
   Phase handleServerAuth(Message msg, Nonce nonce);
@@ -145,7 +144,7 @@ abstract class ServerHandshakePhase extends Phase {
 
   void handleServerHello(ServerHello msg, Nonce nonce) {
     final sks = common.crypto.createSharedKeyStore(
-        ownKeyStore: common.ourKeys, remotePublicKey: msg.key);
+        ownKeyStore: baseConfig.permanentKeys, remotePublicKey: msg.key);
     common.server.setSessionSharedKey(sks);
   }
 
@@ -155,9 +154,9 @@ abstract class ServerHandshakePhase extends Phase {
     sendMessage(
       ClientAuth(
         serverCookie,
-        common.expectedServerKey,
+        baseConfig.expectedServerPublicKey,
         subprotocols,
-        _pingInterval,
+        baseConfig.pingInterval,
       ),
       to: common.server,
     );
@@ -168,9 +167,9 @@ abstract class ServerHandshakePhase extends Phase {
   void validateSignedKey({
     required Uint8List? signedKey,
     required Nonce nonce,
-    required Uint8List? expectedServerKey,
+    required Uint8List? expectedServerPublicKey,
   }) {
-    if (expectedServerKey == null) return;
+    if (expectedServerPublicKey == null) return;
 
     if (signedKey == null) {
       throw ValidationError(
@@ -178,13 +177,13 @@ abstract class ServerHandshakePhase extends Phase {
     }
 
     final sks = common.server.sessionSharedKey!;
-    final decrypted = common.ourKeys.decrypt(
-        remotePublicKey: expectedServerKey,
+    final decrypted = baseConfig.permanentKeys.decrypt(
+        remotePublicKey: expectedServerPublicKey,
         ciphertext: signedKey,
         nonce: nonce.toBytes());
     final expected = BytesBuilder(copy: false)
       ..add(sks.remotePublicKey)
-      ..add(common.ourKeys.publicKey);
+      ..add(baseConfig.permanentKeys.publicKey);
     if (!ListEquality<int>().equals(decrypted, expected.takeBytes())) {
       throw ValidationError(
           'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid');
@@ -201,13 +200,10 @@ abstract class ServerHandshakePhase extends Phase {
 
 class InitiatorServerHandshakePhase extends ServerHandshakePhase
     with InitiatorIdentity {
-  final InitiatorClientHandshakeConfig nextPhaseConfig;
-
   InitiatorServerHandshakePhase(
     Common common,
-    this.nextPhaseConfig,
-    int pingInterval,
-  ) : super(common, pingInterval);
+    InitiatorConfig config,
+  ) : super(common, config);
 
   @override
   void sendClientHello() {
@@ -233,12 +229,12 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     validateSignedKey(
         signedKey: msg.signedKeys,
         nonce: nonce,
-        expectedServerKey: common.expectedServerKey);
+        expectedServerPublicKey: baseConfig.expectedServerPublicKey);
 
     logger.d('Switching to initiator client handshake');
     final nextPhase = InitiatorClientHandshakePhase(
       CommonAfterServerHandshake(common),
-      nextPhaseConfig,
+      config,
     );
     msg.responders.forEach(nextPhase.addNewResponder);
     return nextPhase;
@@ -247,18 +243,15 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
 
 class ResponderServerHandshakePhase extends ServerHandshakePhase
     with ResponderIdentity {
-  final ResponderClientHandshakeConfig nextPhaseConfig;
-
   ResponderServerHandshakePhase(
     Common common,
-    int pingInterval,
-    this.nextPhaseConfig,
-  ) : super(common, pingInterval);
+    ResponderConfig config,
+  ) : super(common, config);
 
   @override
   void sendClientHello() {
     logger.d('Switching to responder client handshake');
-    sendMessage(ClientHello(common.ourKeys.publicKey),
+    sendMessage(ClientHello(config.permanentKeys.publicKey),
         to: common.server, encrypt: false);
     handshakeState = ServerHandshakeState.helloSent;
   }
@@ -281,12 +274,12 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
     validateSignedKey(
         signedKey: msg.signedKeys,
         nonce: nonce,
-        expectedServerKey: common.expectedServerKey);
+        expectedServerPublicKey: config.expectedServerPublicKey);
 
     logger.d('Switching to responder client handshake');
     return ResponderClientHandshakePhase(
       CommonAfterServerHandshake(common),
-      nextPhaseConfig,
+      config,
       msg.initiatorConnected,
     );
   }

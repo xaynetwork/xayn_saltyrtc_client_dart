@@ -31,11 +31,11 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
-        InitiatorSendDropResponder,
-        Phase,
         CommonAfterServerHandshake,
-        InitiatorClientHandshakeConfig,
-        InitiatorIdentity;
+        InitiatorConfig,
+        InitiatorIdentity,
+        InitiatorSendDropResponder,
+        Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show InitiatorTaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
@@ -76,7 +76,6 @@ enum State {
 
 class InitiatorClientHandshakePhase extends ClientHandshakePhase
     with InitiatorIdentity, InitiatorSendDropResponder {
-  final InitiatorClientHandshakeConfig config;
   final Map<IdResponder, ResponderWithState> responders = {};
 
   /// Continuous incremental counter, used to track the oldest responder.
@@ -87,8 +86,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
   InitiatorClientHandshakePhase(
     CommonAfterServerHandshake common,
-    this.config,
-  ) : super(common);
+    InitiatorConfig config,
+  ) : super(common, config);
 
   @override
   Peer? getPeerWithId(Id id) {
@@ -192,7 +191,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     //      need to report it back to the client in some way.
     responder.setPermanentSharedKey(
         InitialClientAuthMethod.createResponderSharedPermanentKey(
-            common.crypto, common.ourKeys, msg.key));
+            common.crypto, config.permanentKeys, msg.key));
 
     responderWithState.state = State.waitForKeyMsg;
 
@@ -259,7 +258,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     }
 
     //TODO notify application about potentially tursted authenticator
-    return InitiatorTaskPhase(common, responder.assertAuthenticated(), task);
+    return InitiatorTaskPhase(
+        common, config, responder.assertAuthenticated(), task);
   }
 
   /// Selects a task if possible, initiates connection termination if not.

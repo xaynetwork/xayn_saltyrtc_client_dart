@@ -13,11 +13,12 @@ import 'package:dart_saltyrtc_client/src/messages/reader.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show CombinedSequencePair, CookiePair, Initiator;
+    show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, Common, InitiatorClientHandshakeConfig;
+    show Common, Config, InitiatorConfig, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
+import 'package:dart_saltyrtc_client/src/protocol/role.dart';
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/expect.dart';
 
@@ -43,7 +44,8 @@ class SetupData {
   );
 
   factory SetupData.init(
-    Phase Function(Common, InitiatorClientHandshakeConfig, int) initPhase, [
+    Role role,
+    Phase Function(Common, Config) initPhase, [
     int pingInterval = 13,
     List<Task> tasks = const [],
   ]) {
@@ -54,15 +56,29 @@ class SetupData {
     final outMsgs = ws.queue;
     final common = Common(
       crypto,
-      clientPermanentKeys,
-      server.permanentPublicKey,
       ws,
     );
-    final clientHandshakeInput = InitiatorClientHandshakeConfig(
+    final Config config;
+    if (role == Role.initiator) {
+      config = InitiatorConfig(
+        permanentKeys: clientPermanentKeys,
+        expectedServerPublicKey: server.permanentPublicKey,
+        pingInterval: pingInterval,
         tasks: tasks,
         authMethod: InitialClientAuthMethod.fromEither(
-            authToken: crypto.createAuthToken()));
-    final phase = initPhase(common, clientHandshakeInput, pingInterval);
+            authToken: crypto.createAuthToken()),
+      );
+    } else {
+      config = ResponderConfig(
+        permanentKeys: clientPermanentKeys,
+        expectedServerPublicKey: server.permanentPublicKey,
+        pingInterval: pingInterval,
+        tasks: tasks,
+        initiatorPermanentPublicKey: crypto.createKeyStore().publicKey,
+      );
+    }
+
+    final phase = initPhase(common, config);
 
     return SetupData._(
         crypto, clientPermanentKeys, server, outMsgs, phase, pingInterval);
@@ -71,28 +87,19 @@ class SetupData {
 
 InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
   Common common,
-  InitiatorClientHandshakeConfig clientHandshakeInput,
-  int pingInterval,
+  Config config,
 ) {
   return InitiatorServerHandshakePhase(
     common,
-    clientHandshakeInput,
-    pingInterval,
+    config as InitiatorConfig,
   );
 }
 
 ResponderServerHandshakePhase makeResponderServerHandshakePhase(
   Common common,
-  InitiatorClientHandshakeConfig clientHandshakeInput,
-  int pingInterval, [
-  ResponderData? data,
-]) {
-  return ResponderServerHandshakePhase(
-    common,
-    clientHandshakeInput,
-    pingInterval,
-    data ?? ResponderData(Initiator(common.crypto)),
-  );
+  Config config,
+) {
+  return ResponderServerHandshakePhase(common, config as ResponderConfig);
 }
 
 Matcher throwsValidationError() {

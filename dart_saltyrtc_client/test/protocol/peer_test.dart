@@ -119,15 +119,6 @@ void main() {
       initiator.cookiePair.updateAndCheck(cookie, responderId1);
       expect(() => initiator.assertAuthenticated(), throwsStateError);
     });
-
-    test('check connected', () {
-      final initiator = Initiator(crypto);
-      initiator.setPermanentSharedKey(sharedKey1f2);
-      initiator.setSessionSharedKey(sharedKey1f3);
-      initiator.cookiePair.updateAndCheck(cookie, responderId1);
-      initiator.csPair.updateAndCheck(mkCSN(), responderId1);
-      expect(() => initiator.assertAuthenticated(), throwsStateError);
-    });
   });
 
   group('CookiePair.updateAndCheck', () {

@@ -13,6 +13,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initia
     show InitiatorClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase;
+import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:test/test.dart';
 
 import '../../logging.dart' show setUpLogging;
@@ -28,7 +29,8 @@ void main() {
   setUpLogging();
 
   test('responder server handshake', () {
-    final setupData = SetupData.init(makeResponderServerHandshakePhase);
+    final setupData =
+        SetupData.init(Role.responder, makeResponderServerHandshakePhase);
 
     final server = setupData.server;
     final outMsgs = setupData.outMsgs;
@@ -64,7 +66,8 @@ void main() {
   });
 
   test('initiator server handshake', () {
-    final setupData = SetupData.init(makeInitiatorServerHandshakePhase);
+    final setupData =
+        SetupData.init(Role.initiator, makeInitiatorServerHandshakePhase);
 
     final state = initiatorHandShakeTillClientAuth(setupData);
 
@@ -77,7 +80,8 @@ void main() {
   });
 
   test('initiator server handshake drop responders', () {
-    final setupData = SetupData.init(makeInitiatorServerHandshakePhase);
+    final setupData =
+        SetupData.init(Role.initiator, makeInitiatorServerHandshakePhase);
 
     final state = initiatorHandShakeTillClientAuth(setupData);
 
@@ -125,7 +129,7 @@ NonceAndMessage<ClientAuth> checkClientAuth({
   required Decrypt decrypt,
   required int pingInterval,
   required Cookie yourCookie,
-  required Uint8List yourKey,
+  required Uint8List? yourKey,
 }) {
   final data = NonceAndMessage<ClientAuth>.fromBytes(bytes, decrypt);
   final nonce = data.nonce;

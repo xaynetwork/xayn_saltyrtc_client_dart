@@ -29,7 +29,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         CommonAfterServerHandshake,
         Phase,
-        ResponderClientHandshakeConfig,
+        ResponderConfig,
         ResponderIdentity,
         WithPeer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
@@ -56,17 +56,15 @@ class InitiatorWithState {
 
 class ResponderClientHandshakePhase extends ClientHandshakePhase
     with ResponderIdentity, WithPeer {
-  final ResponderClientHandshakeConfig config;
-
   @override
   Initiator? get pairedClient => initiatorWithState?.initiator;
   InitiatorWithState? initiatorWithState;
 
   ResponderClientHandshakePhase(
     CommonAfterServerHandshake common,
-    this.config,
+    ResponderConfig config,
     bool initiatorConnected,
-  ) : super(common) {
+  ) : super(common, config) {
     if (initiatorConnected) {
       startNewHandshake();
     }
@@ -75,11 +73,11 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   void startNewHandshake() {
     final initiator = Initiator(common.crypto);
     if (config.authToken != null) {
-      sendMessage(Token(common.ourKeys.publicKey),
+      sendMessage(Token(config.permanentKeys.publicKey),
           to: initiator, authToken: config.authToken);
     }
     initiator.setPermanentSharedKey(common.crypto.createSharedKeyStore(
-        ownKeyStore: common.ourKeys,
+        ownKeyStore: config.permanentKeys,
         remotePublicKey: config.initiatorPermanentPublicKey));
     final sessionKey = common.crypto.createKeyStore();
     sendMessage(Key(sessionKey.publicKey), to: initiator);
@@ -178,6 +176,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     }
 
     task.initialize(msg.data[task.name]);
-    return ResponderTaskPhase(common, initiator.assertAuthenticated(), task);
+    return ResponderTaskPhase(
+        common, config, initiator.assertAuthenticated(), task);
   }
 }

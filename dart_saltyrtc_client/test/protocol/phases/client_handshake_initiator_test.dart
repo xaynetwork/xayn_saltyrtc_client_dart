@@ -24,7 +24,7 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show ClientHandshakeInput, Common, CommonAfterServerHandshake, Phase;
+    show Common, CommonAfterServerHandshake, InitiatorConfig, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show TaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
@@ -274,8 +274,7 @@ class _Setup {
       address: Id.serverAddress,
       testedPeerId: Id.initiatorAddress,
     );
-    final common = Common(crypto, crypto.createKeyStore(),
-        server.permanentKey.publicKey, MockWebSocket());
+    final common = Common(crypto, MockWebSocket());
     server.testedPeer.ourSessionKey = crypto.createKeyStore();
     server.testedPeer.theirSessionKey = crypto.createKeyStore();
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
@@ -284,22 +283,32 @@ class _Setup {
     ));
     common.address = Id.initiatorAddress;
 
+    final initiatorPermanentKeys = crypto.createKeyStore();
     final authMethod = InitialClientAuthMethod.fromEither(
-        authToken: usePresetTrust ? null : goodAuthToken,
-        trustedResponderPermanentPublicKey: usePresetTrust
-            ? responders[goodResponderAt].permanentKey.publicKey
-            : null,
-        crypto: crypto,
-        initiatorPermanentKeys: common.ourKeys);
+      authToken: usePresetTrust ? null : goodAuthToken,
+      trustedResponderPermanentPublicKey: usePresetTrust
+          ? responders[goodResponderAt].permanentKey.publicKey
+          : null,
+      crypto: crypto,
+      initiatorPermanentKeys: initiatorPermanentKeys,
+    );
+
+    final config = InitiatorConfig(
+      authMethod: authMethod,
+      permanentKeys: initiatorPermanentKeys,
+      tasks: tasks ?? [],
+      expectedServerPublicKey: server.permanentKey.publicKey,
+    );
 
     final phase = InitiatorClientHandshakePhase(
-        CommonAfterServerHandshake(common),
-        ClientHandshakeInput(tasks: tasks ?? [], authMethod: authMethod));
+      CommonAfterServerHandshake(common),
+      config,
+    );
 
-    server.testedPeer.permanentKey = phase.common.ourKeys;
+    server.testedPeer.permanentKey = phase.config.permanentKeys;
     for (final responder in responders) {
       // we know the initiators public key as it's in the path
-      responder.testedPeer.permanentKey = phase.common.ourKeys;
+      responder.testedPeer.permanentKey = phase.config.permanentKeys;
       phase.addNewResponder(responder.address.asResponder());
     }
 
@@ -328,7 +337,7 @@ Phase Function(Phase, PackageQueue) mkSendTokenTest(
     expect(responder.hasSessionSharedKey, isFalse);
     expect(responder.hasPermanentSharedKey, isTrue);
     final expectedKey = crypto.createSharedKeyStore(
-        ownKeyStore: phase.common.ourKeys,
+        ownKeyStore: phase.config.permanentKeys,
         remotePublicKey: mockPeer.permanentKey.publicKey);
     expect(responder.permanentSharedKey, same(expectedKey));
     return phase;
@@ -374,7 +383,7 @@ Phase Function(Phase, PackageQueue) mkSendKeyTest(
     expect(responder.id, equals(mockPeer.address));
     expect(responder.hasPermanentSharedKey, isTrue);
     final expectedSharedPermanentKey = crypto.createSharedKeyStore(
-        ownKeyStore: phase.common.ourKeys,
+        ownKeyStore: phase.config.permanentKeys,
         remotePublicKey: mockPeer.permanentKey.publicKey);
     expect(responder.permanentSharedKey, same(expectedSharedPermanentKey));
     expect(responder.hasSessionSharedKey, isTrue);
