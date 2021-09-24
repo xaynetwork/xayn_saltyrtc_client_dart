@@ -11,7 +11,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolError, SaltyRtcError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -115,6 +115,17 @@ Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
     }
   };
   return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
+}
+
+Matcher throwsSaltyRtcError({CloseCode closeCode = CloseCode.protocolError}) {
+  final errorHasExpectedState = (Object? error) {
+    if (error is! SaltyRtcError) {
+      return true;
+    } else {
+      return error.closeCode == closeCode;
+    }
+  };
+  return throwsA(allOf(isA<SaltyRtcError>(), predicate(errorHasExpectedState)));
 }
 
 class MockKnowledgeAboutTestedPeer {
@@ -233,23 +244,22 @@ void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
   }
 }
 
+//FIXME check older usages of TestTask
 class TestTask extends Task {
   @override
   final String name;
+  @override
+  final TaskData? data;
 
   bool initWasCalled = false;
+  TaskData? initData;
 
-  TestTask(this.name);
-
-  @override
-  TaskData? get data => {
-        'soda': [12, 3, 2]
-      };
+  TestTask(this.name, [this.data]);
 
   @override
   void initialize(TaskData? data) {
-    expect(data, equals(this.data));
     initWasCalled = true;
+    initData = data;
   }
 
   @override
