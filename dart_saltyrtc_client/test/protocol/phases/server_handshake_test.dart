@@ -36,7 +36,7 @@ void main() {
     final outMsgs = setupData.outMsgs;
     var phase = setupData.phase;
 
-    final serverHelloResult = server.sendServerHello(phase);
+    final serverHelloResult = server.sendServerHelloToPhase(phase);
     phase = serverHelloResult.phase;
 
     // after server-hello we expect a client-hello
@@ -57,7 +57,7 @@ void main() {
     );
 
     final clientAddress = Id.responderId(5);
-    final serverAuthResult = server.sendServerAuthResponder(
+    final serverAuthResult = server.sendServerAuthResponderToPhase(
         phase, clientHello.nonce.cookie, false, clientAddress);
     expect(serverAuthResult.phase, isA<ResponderClientHandshakePhase>());
 
@@ -71,7 +71,7 @@ void main() {
 
     final state = initiatorHandShakeTillClientAuth(setupData);
 
-    final serverAuthResult = setupData.server.sendServerAuthInitiator(
+    final serverAuthResult = setupData.server.sendServerAuthInitiatorToPhase(
         state.phase, state.msgSentToClient.nonce.cookie, []);
     expect(serverAuthResult.phase, isA<InitiatorClientHandshakePhase>());
 
@@ -88,7 +88,7 @@ void main() {
     // we generate 254 responder and we expect some of them to be dropped
     final responders = List.generate(254, (id) => Id.responderId(2 + id));
 
-    setupData.server.sendServerAuthInitiator(
+    setupData.server.sendServerAuthInitiatorToPhase(
       state.phase,
       state.msgSentToClient.nonce.cookie,
       responders,
@@ -152,7 +152,7 @@ IntermediateState<ClientAuth> initiatorHandShakeTillClientAuth(
   final outMsgs = setupData.outMsgs;
   var phase = setupData.phase;
 
-  final serverHelloResult = server.sendServerHello(phase);
+  final serverHelloResult = server.sendServerHelloToPhase(phase);
   phase = serverHelloResult.phase;
 
   // set the client key as if the server server knows the path

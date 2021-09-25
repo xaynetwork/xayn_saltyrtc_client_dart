@@ -7,7 +7,7 @@ import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart'
     show loadSodiumInBrowser;
 import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart' show LibSodiumJS;
 
-Future initCrypto() async {
+Future<void> initCrypto() async {
   _sodiumJS = await loadSodiumInBrowser();
 }
 

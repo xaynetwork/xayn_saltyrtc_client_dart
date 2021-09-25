@@ -1,3 +1,4 @@
+import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
@@ -21,6 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show NoSharedTaskError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -32,7 +34,7 @@ import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show MockCrypto;
 import '../../logging.dart' show setUpLogging;
-import '../../network_mock.dart' show MockWebSocket, PackageQueue;
+import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../utils.dart' show PeerData, TestTask, phaseAs, runTest;
 
 void main() {
@@ -269,13 +271,15 @@ class _Setup {
   final PeerData server;
   final List<PeerData> responders;
   final InitiatorClientHandshakePhase initialPhase;
+  final StreamController<Event> events;
 
-  _Setup({
-    required this.crypto,
-    required this.server,
-    required this.responders,
-    required this.initialPhase,
-  });
+  _Setup._(
+    this.crypto,
+    this.server,
+    this.responders,
+    this.initialPhase,
+    this.events,
+  );
 
   factory _Setup.create({
     required Crypto crypto,
@@ -302,7 +306,14 @@ class _Setup {
       address: Id.serverAddress,
       testedPeerId: Id.initiatorAddress,
     );
-    final common = Common(crypto, MockWebSocket());
+
+    final events = StreamController<Event>.broadcast();
+    final common = Common(
+      crypto,
+      MockSyncWebSocketSink(),
+      events,
+    );
+
     server.testedPeer.ourSessionKey = crypto.createKeyStore();
     server.testedPeer.theirSessionKey = crypto.createKeyStore();
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
@@ -340,12 +351,7 @@ class _Setup {
       phase.addNewResponder(responder.address.asResponder());
     }
 
-    return _Setup(
-      crypto: crypto,
-      server: server,
-      responders: responders,
-      initialPhase: phase,
-    );
+    return _Setup._(crypto, server, responders, phase, events);
   }
 }
 

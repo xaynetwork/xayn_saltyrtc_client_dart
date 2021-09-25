@@ -4,6 +4,6 @@ Crypto get cryptoInstance {
   throw UnsupportedError('Cannot create an crypto instance');
 }
 
-Future initCrypto() async {
+Future<void> initCrypto() async {
   throw UnsupportedError('Cannot init a crypto instance');
 }

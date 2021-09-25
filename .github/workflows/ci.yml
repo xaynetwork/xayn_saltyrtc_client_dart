@@ -45,6 +45,32 @@ jobs:
       - name: Install dependencies
         uses: ./.ci/install_deps
 
+  server-cache:
+    name: server-cache
+    runs-on: ubuntu-20.04
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+
+      - name: Generate cache key
+        id: cache-key
+        shell: bash
+        run: echo "::set-output name=key::$(echo ${{ runner.os }}-server)"
+
+      - name: Cache saltyrtc server
+        uses: actions/cache@v2
+        with:
+          path: ./venv
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Install server
+        run: |
+          pip3 install virtualenv
+          python3 -m virtualenv venv
+          venv/bin/pip install "saltyrtc.server[logging]"
+
   flutter-format:
     name: flutter-format
     needs: flutter-cache
@@ -105,7 +131,7 @@ jobs:
 
   flutter-test:
     name: flutter-test
-    needs: [flutter-cache, flutter-analyze]
+    needs: [flutter-cache, flutter-analyze, server-cache]
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     strategy:
@@ -122,6 +148,12 @@ jobs:
           path: ${{ env.UBUNTU_FLUTTER_PATH }}
           key: ${{ needs.flutter-cache.outputs.cache-key }}
 
+      - name: Cache saltyrtc server
+        uses: actions/cache@v2
+        with:
+          path: ./venv
+          key: ${{ needs.server-cache.outputs.cache-key }}
+
       - name: Install flutter
         uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
         with:
@@ -135,6 +167,12 @@ jobs:
 
       - name: Install dependencies
         uses: ./.ci/install_deps
+
+      - name: Start saltyrtc server
+        env:
+          SALTYRTC_SERVER_PERMANENT_KEY: 0919b266ce1855419e4066fc076b39855e728768e3afa773105edd2e37037c20
+          SALTYRTC_SAFETY_OFF: yes-and-i-know-what-im-doing
+        run: ./venv/bin/saltyrtc-server -v 5 serve -p 8765 -k $SALTYRTC_SERVER_PERMANENT_KEY &
 
       - name: Test ${{ matrix.project }} code
         working-directory: ${{ matrix.project }}

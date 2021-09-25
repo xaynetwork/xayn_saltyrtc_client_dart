@@ -19,6 +19,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError, ValidationError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
@@ -46,9 +47,13 @@ class Common {
   /// This should not be used directly, use `send` instead.
   WebSocketSink sink;
 
+  /// Event stream to send to the client.
+  Sink<Event> events;
+
   Common(
     this.crypto,
     this.sink,
+    this.events,
   ) : server = Server.fromRandom(crypto);
 }
 
@@ -167,8 +172,6 @@ abstract class Phase {
     } on StateError catch (e) {
       throw SaltyRtcError(CloseCode.internalError, e.message);
     }
-    //TODO on later PR close stream on SaltryRetcError (including
-    //`internalError` cases and `NoSharedTaskError`).
   }
 
   @protected
@@ -204,9 +207,8 @@ abstract class Phase {
     bool encrypt = true,
     AuthToken? authToken,
   }) {
-    final type = msg.type;
     send(buildPacket(msg, to, encrypt: encrypt, authToken: authToken));
-    logger.d('Send $type');
+    logger.d('Send ${msg.type} to ${to.id}');
   }
 
   /// Build binary packet to send.
@@ -320,5 +322,6 @@ class CommonAfterServerHandshake extends Common {
         super(
           common.crypto,
           common.sink,
+          common.events,
         );
 }

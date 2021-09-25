@@ -71,48 +71,55 @@ class MockServer {
     return sks.decrypt(ciphertext: ciphertext, nonce: nonce);
   }
 
-  IntermediateState<ServerHello> sendServerHello(Phase phase) {
-    return _send(_serverHello(), phase, encrypt: false);
+  IntermediateState<ServerHello> sendServerHelloToPhase(Phase phase) {
+    return _sendToPhase(serverHello(), phase, encrypt: false);
   }
 
-  IntermediateState<ServerAuthInitiator> sendServerAuthInitiator(
+  IntermediateState<ServerAuthInitiator> sendServerAuthInitiatorToPhase(
     Phase phase,
     Cookie yourCookie,
     List<IdResponder> responders,
   ) {
-    return _send(
-      _serverAuthInitiator(yourCookie, responders),
+    return _sendToPhase(
+      serverAuthInitiator(yourCookie, responders),
       phase,
       expectSame: false,
     );
   }
 
-  IntermediateState<ServerAuthResponder> sendServerAuthResponder(
+  IntermediateState<ServerAuthResponder> sendServerAuthResponderToPhase(
     Phase phase,
     Cookie yourCookie,
     bool initiatorConnected,
     IdResponder clientAddress,
   ) {
-    return _send(
-      _serverAuthResponder(yourCookie, initiatorConnected, clientAddress),
+    return _sendToPhase(
+      serverAuthResponder(yourCookie, initiatorConnected, clientAddress),
       phase,
       expectSame: false,
     );
   }
 
-  IntermediateState<M> _send<M extends Message>(
-    NonceAndMessage<M> nam,
-    Phase phase, {
+  Uint8List send<M extends Message>(
+    NonceAndMessage<M> nam, {
     bool encrypt = true,
-    bool expectSame = true,
   }) {
     CryptoBox? encryptWith;
     if (encrypt) {
       encryptWith = crypto.createSharedKeyStore(
           ownKeyStore: sessionKeys, remotePublicKey: clientPermanentPublicKey!);
     }
-    final messageBytes =
-        nam.message.buildPackage(nam.nonce, encryptWith: encryptWith);
+    return nam.message.buildPackage(nam.nonce, encryptWith: encryptWith);
+  }
+
+  IntermediateState<M> _sendToPhase<M extends Message>(
+    NonceAndMessage<M> nam,
+    Phase phase, {
+    bool encrypt = true,
+    bool expectSame = true,
+  }) {
+    final messageBytes = send(nam, encrypt: encrypt);
+
     final nextPhase = phase.handleMessage(messageBytes);
     if (expectSame) {
       expect(nextPhase, equals(phase));
@@ -121,7 +128,7 @@ class MockServer {
     return IntermediateState(nam, nextPhase);
   }
 
-  NonceAndMessage<ServerAuthResponder> _serverAuthResponder(
+  NonceAndMessage<ServerAuthResponder> serverAuthResponder(
     Cookie yourCookie,
     bool initiatorConnected,
     IdResponder clientAddress,
@@ -135,7 +142,7 @@ class MockServer {
     return NonceAndMessage(nonce, msg);
   }
 
-  NonceAndMessage<ServerAuthInitiator> _serverAuthInitiator(
+  NonceAndMessage<ServerAuthInitiator> serverAuthInitiator(
     Cookie yourCookie,
     List<IdResponder> responders,
   ) {
@@ -164,7 +171,7 @@ class MockServer {
     return sks.encrypt(message: keys, nonce: nonce.toBytes());
   }
 
-  NonceAndMessage<ServerHello> _serverHello() {
+  NonceAndMessage<ServerHello> serverHello() {
     final msg = ServerHello(sessionKeys.publicKey);
 
     return NonceAndMessage(nonce, msg);
