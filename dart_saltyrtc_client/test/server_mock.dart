@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, KeyStore, CryptoBox;
+    show KeyStore, CryptoBox;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
@@ -17,6 +17,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 
 import 'package:test/test.dart';
+
+import 'crypto_mock.dart' show crypto;
 
 typedef Decrypt = Uint8List Function(Uint8List);
 
@@ -43,7 +45,6 @@ class IntermediateState<M extends Message> {
 
 /// Provide utils to mock the interaction with the server.
 class MockServer {
-  final Crypto crypto;
   final KeyStore permanentKeys;
   final KeyStore sessionKeys;
   Nonce nonce;
@@ -51,7 +52,7 @@ class MockServer {
 
   Uint8List get permanentPublicKey => permanentKeys.publicKey;
 
-  MockServer(this.crypto)
+  MockServer()
       : permanentKeys = crypto.createKeyStore(),
         sessionKeys = crypto.createKeyStore(),
         nonce = Nonce.fromRandom(

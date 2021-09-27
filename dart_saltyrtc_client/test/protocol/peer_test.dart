@@ -14,11 +14,12 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:test/test.dart';
 
-import '../crypto_mock.dart' show MockCrypto;
-import '../utils.dart' show throwsValidationError;
+import '../crypto_mock.dart' show crypto;
+import '../utils.dart' show setUpTesting, throwsValidationError;
 
 void main() {
-  final crypto = MockCrypto();
+  setUpTesting();
+
   final key1 = crypto.createKeyStore();
   final key2 = crypto.createKeyStore();
   final key3 = crypto.createKeyStore();

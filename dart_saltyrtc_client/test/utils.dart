@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, Crypto, CryptoBox, KeyStore;
+    show AuthToken, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -17,8 +17,17 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/expect.dart';
+import 'package:test/test.dart';
 
+import 'crypto_mock.dart' show crypto, setUpCrypto;
+import 'logging.dart' show setUpLogging;
 import 'network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
+
+// Setups logging and crypto.
+void setUpTesting() {
+  setUpLogging();
+  setUpCrypto();
+}
 
 Matcher throwsValidationError() {
   return throwsA(isA<ValidationError>());
@@ -55,7 +64,6 @@ class MockKnowledgeAboutTestedPeer {
   final CookiePair cookiePair;
 
   MockKnowledgeAboutTestedPeer({
-    required Crypto crypto,
     required this.address,
     this.permanentKey,
     this.theirSessionKey,
@@ -65,20 +73,17 @@ class MockKnowledgeAboutTestedPeer {
 }
 
 class PeerData {
-  final Crypto crypto;
   final AuthToken? authToken;
   final Id address;
   final KeyStore permanentKey;
   MockKnowledgeAboutTestedPeer testedPeer;
 
   PeerData({
-    required this.crypto,
     required this.address,
     required Id testedPeerId,
     this.authToken,
   })  : permanentKey = crypto.createKeyStore(),
-        testedPeer =
-            MockKnowledgeAboutTestedPeer(crypto: crypto, address: testedPeerId);
+        testedPeer = MockKnowledgeAboutTestedPeer(address: testedPeerId);
 
   N sendAndTransitToPhase<N extends Phase>({
     required Message message,
@@ -131,10 +136,9 @@ class PeerData {
     return msg as T;
   }
 
-  void resetTestedClientKnowledge(Crypto crypto) {
+  void resetTestedClientKnowledge() {
     final old = testedPeer;
-    testedPeer =
-        MockKnowledgeAboutTestedPeer(crypto: crypto, address: old.address);
+    testedPeer = MockKnowledgeAboutTestedPeer(address: old.address);
   }
 }
 

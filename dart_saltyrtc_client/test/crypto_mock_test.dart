@@ -2,15 +2,17 @@ import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:test/test.dart';
 
-import 'crypto_mock.dart' show MockCrypto;
+import 'crypto_mock.dart' show crypto;
+import 'utils.dart';
 
 void main() {
+  setUpTesting();
+
   final id1 = Id.serverAddress;
   final id2 = Id.initiatorAddress;
 
   group('crypto using shared key store', () {
     test('lookup KeyStore based on key bytes', () {
-      final crypto = MockCrypto();
       final key1 = crypto.createKeyStore();
       final key2 = crypto.createKeyStoreFromKeys(
           privateKey: key1.publicKey, publicKey: key1.publicKey);
@@ -18,14 +20,12 @@ void main() {
     });
 
     test('lookup AuthToken based on key bytes', () {
-      final crypto = MockCrypto();
       final token1 = crypto.createAuthToken();
       final token2 = crypto.createAuthTokenFromToken(token: token1.bytes);
       expect(token1, same(token2));
     });
 
     test('two KeyStores have the same SahredKeyStore', () {
-      final crypto = MockCrypto();
       final key1 = crypto.createKeyStore();
       final key2 = crypto.createKeyStore();
       final sharedKeyStore1 = crypto.createSharedKeyStore(
@@ -36,7 +36,6 @@ void main() {
     });
 
     test('using KeyStore.decrypt', () {
-      final crypto = MockCrypto();
       final message = crypto.randomBytes(10);
       final nonce = Nonce.fromRandom(
           source: id1, destination: id2, randomBytes: crypto.randomBytes);
@@ -57,7 +56,6 @@ void main() {
     });
 
     test('using a second shared key', () {
-      final crypto = MockCrypto();
       final message = crypto.randomBytes(10);
       final nonce = Nonce.fromRandom(
           source: id1, destination: id2, randomBytes: crypto.randomBytes);

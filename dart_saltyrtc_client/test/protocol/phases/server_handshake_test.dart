@@ -2,7 +2,7 @@ import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, InitialClientAuthMethod, KeyStore;
+    show InitialClientAuthMethod, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
@@ -25,14 +25,14 @@ import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/test.dart';
 
-import '../../crypto_mock.dart' show MockCrypto;
-import '../../logging.dart' show setUpLogging;
+import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../server_mock.dart'
     show Decrypt, IntermediateState, MockServer, NonceAndMessage;
+import '../../utils.dart';
 
 void main() {
-  setUpLogging();
+  setUpTesting();
 
   test('responder server handshake', () {
     final setupData =
@@ -178,7 +178,6 @@ IntermediateState<ClientAuth> initiatorHandShakeTillClientAuth(
 }
 
 class SetupData {
-  final Crypto crypto;
   final KeyStore clientPermanentKeys;
   final MockServer server;
   final PackageQueue outMsgs;
@@ -187,7 +186,6 @@ class SetupData {
   Phase phase;
 
   SetupData._(
-    this.crypto,
     this.clientPermanentKeys,
     this.server,
     this.outMsgs,
@@ -202,9 +200,8 @@ class SetupData {
     int pingInterval = 13,
     List<Task> tasks = const [],
   ]) {
-    final crypto = MockCrypto();
     final clientPermanentKeys = crypto.createKeyStore();
-    final server = MockServer(crypto);
+    final server = MockServer();
     final ws = MockSyncWebSocketSink();
     final outMsgs = ws.queue;
     final events = StreamController<Event>.broadcast();
@@ -236,7 +233,6 @@ class SetupData {
     final phase = initPhase(common, config);
 
     return SetupData._(
-      crypto,
       clientPermanentKeys,
       server,
       outMsgs,

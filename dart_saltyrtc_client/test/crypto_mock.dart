@@ -7,12 +7,15 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'package:fixnum/fixnum.dart' show Int64;
+import 'package:meta/meta.dart' show immutable;
+import 'package:test/test.dart' show setUp, tearDown;
 
 final listEq = ListEquality<int>();
 
 typedef _KeyId = int;
 typedef _MessageId = Int64;
 
+@immutable
 class _MockKeyStore extends KeyStore {
   final _KeyId _keyId;
   final MockCrypto crypto;
@@ -35,6 +38,7 @@ class _MockKeyStore extends KeyStore {
   }
 }
 
+@immutable
 class _MockSharedKeyStore extends SharedKeyStore {
   final _KeyId _keyId;
   final MockCrypto crypto;
@@ -64,6 +68,7 @@ class _MockSharedKeyStore extends SharedKeyStore {
   }
 }
 
+@immutable
 class _MockAuthToken extends AuthToken {
   final _KeyId _keyId;
   final MockCrypto crypto;
@@ -88,6 +93,7 @@ class _MockAuthToken extends AuthToken {
   }
 }
 
+@immutable
 class EncryptionInfo {
   final Uint8List decryptedData;
   final Uint8List nonce;
@@ -100,6 +106,7 @@ class EncryptionInfo {
   });
 }
 
+@immutable
 class _TwoKeyIds extends Equatable {
   @override
   final List<Object?> props;
@@ -108,11 +115,30 @@ class _TwoKeyIds extends Equatable {
       : props = first < second ? [first, second] : [second, first];
 }
 
+@immutable
 class _KeyBytes extends Equatable {
   @override
   final List<Object?> props;
 
   _KeyBytes(Uint8List data) : props = data.sublist(0);
+}
+
+@immutable
+class Snapshot {
+  final Map<_MessageId, EncryptionInfo> encryptedMessages;
+  final Map<_KeyBytes, _MockKeyStore> keyStoreLookUp;
+  final Map<_KeyBytes, _MockAuthToken> authTokenLookUp;
+  final Map<_TwoKeyIds, SharedKeyStore> sharedKeyStoreLookUp;
+
+  Snapshot({
+    required Map<_MessageId, EncryptionInfo> encryptedMessages,
+    required Map<_KeyBytes, _MockKeyStore> keyStoreLookUp,
+    required Map<_KeyBytes, _MockAuthToken> authTokenLookUp,
+    required Map<_TwoKeyIds, SharedKeyStore> sharedKeyStoreLookUp,
+  })  : encryptedMessages = Map.of(encryptedMessages),
+        keyStoreLookUp = Map.of(keyStoreLookUp),
+        authTokenLookUp = Map.of(authTokenLookUp),
+        sharedKeyStoreLookUp = Map.of(sharedKeyStoreLookUp);
 }
 
 class MockCrypto extends Crypto {
@@ -138,19 +164,40 @@ class MockCrypto extends Crypto {
   _KeyId _nextKeyId() => _nextKeyIdState++;
   _MessageId _nextMessageId() => _nextMessageIdState++;
 
+  List<Snapshot> snapshots = [];
+
   MockCrypto();
 
   /// Forgets about all keys/tokens making them implicitly invalid to use.
   ///
   /// Use before/after tests to clean up before running the next test.
+  void pushSnapshot() {
+    snapshots.add(Snapshot(
+      encryptedMessages: encryptedMessages,
+      keyStoreLookUp: keyStoreLookUp,
+      authTokenLookUp: authTokenLookUp,
+      sharedKeyStoreLookUp: sharedKeyStoreLookUp,
+    ));
+  }
+
+  void popSnapshot() {
+    if (snapshots.isEmpty) {
+      encryptedMessages = {};
+      keyStoreLookUp = {};
+      authTokenLookUp = {};
+      sharedKeyStoreLookUp = {};
+    } else {
+      final snapshot = snapshots.removeLast();
+      encryptedMessages = snapshot.encryptedMessages;
+      keyStoreLookUp = snapshot.keyStoreLookUp;
+      authTokenLookUp = snapshot.authTokenLookUp;
+      sharedKeyStoreLookUp = snapshot.sharedKeyStoreLookUp;
+    }
+  }
+
   void reset() {
-    encryptedMessages = {};
-    keyStoreLookUp = {};
-    authTokenLookUp = {};
-    sharedKeyStoreLookUp = {};
-    // Do not reset id gen, to prevent collisions of
-    // "reset removed" and new keys. While this shouldn't
-    // happen it would be a debug nightmare if it did happen.
+    snapshots = [];
+    popSnapshot();
   }
 
   @override
@@ -265,3 +312,17 @@ class MockCrypto extends Crypto {
     return info.decryptedData;
   }
 }
+
+void setUpCrypto() {
+  crypto.reset();
+
+  setUp(() {
+    crypto.pushSnapshot();
+  });
+
+  tearDown(() {
+    crypto.popSnapshot();
+  });
+}
+
+final crypto = MockCrypto();

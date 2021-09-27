@@ -2,10 +2,11 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod;
 import 'package:test/test.dart';
 
-import 'crypto_mock.dart' show MockCrypto;
+import 'crypto_mock.dart' show crypto;
+import 'utils.dart';
 
 void main() {
-  final crypto = MockCrypto();
+  setUpTesting();
 
   group('InitialClientAuthMethod', () {
     final permPubKey1 = crypto.createKeyStore();
