@@ -1,5 +1,3 @@
-import 'dart:typed_data' show Uint8List;
-
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
@@ -19,6 +17,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show NoSharedTaskError;
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -39,7 +38,6 @@ final crypto = MockCrypto();
 void main() {
   setUpLogging();
 
-  final crypto = MockCrypto();
   group('successful transition', () {
     test('key+token are send out on creation', () {
       final setup = _Setup.create(crypto: crypto);
@@ -90,10 +88,11 @@ void main() {
           initiator: initiator,
           tasks: tasks,
         ),
-        mkSendAuthTest(
-            initiator: initiator,
-            task: 'example.v23',
-            data: {'example.v23': null}),
+        mkSendAuthTest(initiator: initiator, task: 'example.v23', data: {
+          'example.v23': {
+            'foo': [1]
+          }
+        }),
       ]);
     });
   });
@@ -106,7 +105,7 @@ void main() {
       (phase, packages) {
         expect(() {
           initiator.sendAndTransitToPhase(
-            message: Key(Uint8List(1)),
+            message: Token(crypto.createAuthToken().bytes),
             sendTo: phase,
             encryptWith: crypto.createSharedKeyStore(
               ownKeyStore: initiator.permanentKey,
@@ -146,7 +145,7 @@ void main() {
   test('initiator override', () {
     final setup = _Setup.create(crypto: crypto);
     runTest(setup.initialPhase, [
-      mkRecvKeyTest(setup.initiator),
+      mkRecvTokenAndKeyTest(setup.initiator),
       mkNewInitiatorTest(initiator: setup.initiator, server: setup.server),
     ]);
   });
@@ -192,14 +191,14 @@ class _Setup {
     final server = PeerData(
       crypto: crypto,
       address: Id.serverAddress,
-      testedPeerId: Id.initiatorAddress,
+      testedPeerId: responderId,
     );
     server.testedPeer.ourSessionKey = crypto.createKeyStore();
-    server.testedPeer.theirSessionKey = crypto.createKeyStore();
+    server.testedPeer.permanentKey = responderPermanentKeys;
 
     final common = Common(crypto, MockWebSocket());
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
-      ownKeyStore: server.testedPeer.theirSessionKey!,
+      ownKeyStore: responderPermanentKeys,
       remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
     ));
     common.address = responderId;
@@ -287,6 +286,9 @@ Phase Function(Phase, PackageQueue) mkNewInitiatorTest({
     expect(initiatorFromResponder.csPair.theirs, isNull);
     expect(initiatorFromResponder.permanentSharedKey, isNotNull);
 
+    initiator.testedPeer.csPair = CombinedSequencePair.fromRandom(crypto);
+    initiator.testedPeer.cookiePair = CookiePair.fromRandom(crypto);
+
     return tokenAndKeyTest(phase, packages);
   };
 }
@@ -309,7 +311,7 @@ Phase Function(Phase, PackageQueue) mkSendKeyRecvAuthTest({
 
     expect(phase.initiatorWithState, isNotNull);
     expect(phase.initiatorWithState!.state, State.waitForAuth);
-
+    initiator.testedPeer.theirSessionKey = phase.initiatorWithState!.sessionKey;
     final sessionSharedKey = crypto.createSharedKeyStore(
       ownKeyStore: phase.initiatorWithState!.sessionKey,
       remotePublicKey: sessionKey.publicKey,
@@ -328,8 +330,6 @@ Phase Function(Phase, PackageQueue) mkSendKeyRecvAuthTest({
   };
 }
 
-//FIXME test: missing entry in data is error not nil
-//FIXME check cookie is checked
 Phase Function(Phase, PackageQueue) mkSendAuthTest({
   required PeerData initiator,
   required String task,
@@ -351,7 +351,7 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
     final taskObject = phase.task as TestTask;
     expect(taskObject.name, equals(task));
     expect(taskObject.initWasCalled, isTrue);
-    expect(taskObject.initData, equals(data));
+    expect(taskObject.initData, equals(data[taskObject.name]));
     return phase;
   };
 }

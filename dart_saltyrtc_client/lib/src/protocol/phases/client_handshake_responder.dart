@@ -135,7 +135,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     final taskNames = [for (final task in config.tasks) task.name];
 
     sendMessage(
-      AuthResponder(initiator.cookiePair.ours, taskNames, taskData),
+      AuthResponder(initiator.cookiePair.theirs!, taskNames, taskData),
       to: initiator,
     );
 

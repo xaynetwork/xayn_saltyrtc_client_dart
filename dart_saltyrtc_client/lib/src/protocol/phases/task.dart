@@ -21,7 +21,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart';
+import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+    show validateIdResponder, validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show AuthenticatedPeerDisconnected, ProtocolError, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'

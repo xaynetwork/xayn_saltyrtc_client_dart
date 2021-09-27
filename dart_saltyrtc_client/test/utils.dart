@@ -18,7 +18,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Common, Config, InitiatorConfig, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/role.dart';
+import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/expect.dart';
 
@@ -133,8 +133,8 @@ class MockKnowledgeAboutTestedPeer {
   KeyStore? theirSessionKey;
   KeyStore? ourSessionKey;
   final Id address;
-  final CombinedSequencePair csPair;
-  final CookiePair cookiePair;
+  CombinedSequencePair csPair;
+  CookiePair cookiePair;
 
   MockKnowledgeAboutTestedPeer({
     required Crypto crypto,
