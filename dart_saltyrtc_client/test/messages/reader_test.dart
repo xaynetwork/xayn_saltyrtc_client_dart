@@ -45,7 +45,8 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
 import 'package:test/test.dart';
 
 import '../crypto_mock.dart' show crypto;
-import '../utils.dart' show setUpTesting, throwsProtocolError;
+import '../utils.dart'
+    show setUpTesting, throwsProtocolError, throwsValidationError;
 
 void checkRead<T extends Message>(T Function() getMsg) {
   final msg = getMsg();
@@ -121,6 +122,14 @@ void main() {
 
     test('Read auth responder', () {
       checkRead(() => AuthResponder(yourCookie, ['task'], taskData));
+    });
+
+    test('Missing entry in task data is error, not null', () {
+      expect(() {
+        AuthResponder(yourCookie, ['task'], {});
+      }, throwsValidationError());
+      //but null is ok
+      AuthResponder(yourCookie, ['task'], {'task': null});
     });
 
     test('Read close', () {

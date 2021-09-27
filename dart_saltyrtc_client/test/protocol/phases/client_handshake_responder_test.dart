@@ -174,6 +174,38 @@ void main() {
       }),
     ]);
   });
+
+  test('auth your_cookie is checked', () {
+    final tasks = [TestTask('example.v23')];
+    final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
+    final initiator = setup.initiator;
+    runTest(setup.initialPhase, [
+      mkRecvKeyTest(initiator),
+      mkSendKeyRecvAuthTest(
+        initiator: initiator,
+        tasks: tasks,
+      ),
+      (initialPhase, packages) {
+        expect(() {
+          initiator.sendAndTransitToPhase<ResponderClientHandshakePhase>(
+            message: AuthInitiator(initiator.testedPeer.cookiePair.ours,
+                'example.v23', {'example.v23': null}),
+            sendTo: initialPhase,
+            encryptWith: crypto.createSharedKeyStore(
+                ownKeyStore: initiator.testedPeer.ourSessionKey!,
+                remotePublicKey:
+                    initiator.testedPeer.theirSessionKey!.publicKey),
+          );
+        }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
+
+        final phase = phaseAs<ResponderClientHandshakePhase>(initialPhase);
+        //TODO closing doesn't clean...
+        // expect(phase.initiatorWithState, isNull);
+
+        return phase;
+      }
+    ]);
+  });
 }
 
 class _Setup {

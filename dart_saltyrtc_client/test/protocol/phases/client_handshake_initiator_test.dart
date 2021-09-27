@@ -37,7 +37,13 @@ import 'package:test/test.dart';
 import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../utils.dart'
-    show PeerData, TestTask, phaseAs, runTest, setUpTesting;
+    show
+        PeerData,
+        TestTask,
+        phaseAs,
+        runTest,
+        setUpTesting,
+        throwsSaltyRtcError;
 
 void main() {
   setUpTesting();
@@ -152,20 +158,20 @@ void main() {
 
     test('auth -> protocol error', () {
       final setup = _Setup.create();
-      final mockPeer = setup.responders.first;
+      final responder = setup.responders.first;
       final server = setup.server;
       runTest(setup.initialPhase, [
-        mkSendTokenTest(mockPeer),
-        mkSendKeyTest(mockPeer),
+        mkSendTokenTest(responder),
+        mkSendKeyTest(responder),
         (initialPhase, packages) {
           final phase =
-              mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+              responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
                   message: Close(CloseCode.goingAway),
                   sendTo: initialPhase,
                   encryptWith: crypto.createSharedKeyStore(
-                      ownKeyStore: mockPeer.testedPeer.ourSessionKey!,
+                      ownKeyStore: responder.testedPeer.ourSessionKey!,
                       remotePublicKey:
-                          mockPeer.testedPeer.theirSessionKey!.publicKey));
+                          responder.testedPeer.theirSessionKey!.publicKey));
 
           final dropMsg = server.expectMessageOfType<DropResponder>(packages,
               decryptWith: crypto.createSharedKeyStore(
@@ -173,10 +179,103 @@ void main() {
                   remotePublicKey:
                       server.testedPeer.theirSessionKey!.publicKey));
 
-          expect(dropMsg.id, equals(mockPeer.address));
+          expect(dropMsg.id, equals(responder.address));
           return phase;
         }
       ]);
+    });
+
+    test('auth your_cookie is checked', () {
+      final responderTasks = [
+        TestTask('fe fe', {
+          'yo': [1, 4, 3]
+        }),
+        TestTask('example.v23', {'xml': []}),
+        TestTask('bar', {
+          'yes': [0, 0, 0]
+        }),
+      ];
+      final supportedTasks = [
+        TestTask('bar foot', {'a': null}),
+        TestTask('bar', {'b': null}),
+        TestTask('example.v23', {'c': null}),
+      ];
+      final setup =
+          _Setup.create(tasks: supportedTasks, responderIds: [2, 3, 4]);
+      final server = setup.server;
+      final responder = setup.responders[0];
+      runTest(setup.initialPhase, [
+        mkSendTokenTest(responder),
+        mkSendKeyTest(responder),
+        (initialPhase, packages) {
+          final tasksData = {
+            for (final task in responderTasks) task.name: task.data
+          };
+
+          final phase =
+              responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+            message: AuthResponder(responder.testedPeer.cookiePair.ours,
+                tasksData.keys.toList(), tasksData),
+            sendTo: initialPhase,
+            encryptWith: crypto.createSharedKeyStore(
+                ownKeyStore: responder.testedPeer.ourSessionKey!,
+                remotePublicKey:
+                    responder.testedPeer.theirSessionKey!.publicKey),
+          );
+
+          expect(phase.responders[responder.address], isNull);
+
+          final dropMsg = server.expectMessageOfType<DropResponder>(
+            packages,
+            decryptWith: crypto.createSharedKeyStore(
+                ownKeyStore: server.testedPeer.theirSessionKey!,
+                remotePublicKey: server.testedPeer.ourSessionKey!.publicKey),
+          );
+
+          expect(dropMsg.id, equals(responder.address));
+          return phase;
+        }
+      ]);
+    });
+
+    group('send-error checks', () {
+      test('send-error source is checked', () {
+        final setup = _Setup.create(
+          responderIds: [12, 21],
+          usePresetTrust: true,
+        );
+        final server = setup.server;
+        final responder0 = setup.responders[0];
+        final responder1 = setup.responders[1];
+
+        runTest(setup.initialPhase, [
+          mkSendKeyTest(responder0),
+          mkSendBadSendErrorTest(
+              server: server,
+              source: Id.peerId(32),
+              destination: responder0.address),
+          // We don't know if we dropped a responder, so
+          // we can't know that we didn't send a message ;)
+          mkSendBadSendErrorTest(
+              server: server,
+              source: Id.peerId(32),
+              destination: responder1.address),
+        ]);
+      });
+
+      test('send-error destination is checked', () {
+        final setup = _Setup.create(usePresetTrust: true);
+        final server = setup.server;
+        final responder0 = setup.responders[0];
+
+        runTest(setup.initialPhase, [
+          mkSendKeyTest(responder0),
+          mkSendBadSendErrorTest(
+              server: server,
+              source: Id.initiatorAddress,
+              destination: Id.initiatorAddress),
+        ]);
+      });
     });
   });
 
@@ -654,6 +753,26 @@ Phase Function(Phase, PackageQueue) mkSendErrorTest({
 
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[responder.address], isNull);
+    return phase;
+  };
+}
+
+Phase Function(Phase, PackageQueue) mkSendBadSendErrorTest({
+  required PeerData server,
+  required Id source,
+  required Id destination,
+}) {
+  return (phase, packages) {
+    expect(() {
+      server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+        message: SendError(Uint8List.fromList(
+            [source.value, destination.value, 0, 0, 1, 2, 3, 4])),
+        sendTo: phase,
+        encryptWith: crypto.createSharedKeyStore(
+            ownKeyStore: server.testedPeer.ourSessionKey!,
+            remotePublicKey: server.testedPeer.theirSessionKey!.publicKey),
+      );
+    }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
     return phase;
   };
 }

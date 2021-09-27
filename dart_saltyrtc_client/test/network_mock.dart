@@ -82,4 +82,7 @@ class PackageQueue {
   }
 
   bool get isEmpty => queue.isEmpty;
+
+  @override
+  String toString() => 'PackageQueue($queue)';
 }
