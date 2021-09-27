@@ -20,8 +20,10 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
+import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
+    show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError;
+    show NoSharedTaskError, SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
@@ -262,6 +264,25 @@ void main() {
         server: server,
         disconnect: 20,
       ),
+    ]);
+  });
+
+  test('handle SendError', () {
+    final setup = _Setup.create(
+      crypto: crypto,
+      responderIds: [20, 30, 40],
+      goodResponderAt: 1,
+    );
+    final server = setup.server;
+
+    runTest(setup.initialPhase, [
+      mkSendErrorTest(
+          crypto: crypto, server: server, responder: setup.responders[0]),
+      mkSendTokenTest(crypto, setup.responders[1]),
+      mkSendErrorTest(
+          crypto: crypto, server: server, responder: setup.responders[1]),
+      mkSendErrorTest(
+          crypto: crypto, server: server, responder: setup.responders[2]),
     ]);
   });
 }
@@ -611,7 +632,12 @@ Phase Function(Phase, PackageQueue) mkSendDisconnectedTest({
   required Crypto crypto,
 }) {
   final disonnectId = Id.responderId(disconnect);
-  return (initialPhase, packages) {
+  return (initialPhaseUntyped, packages) {
+    final initialPhase =
+        phaseAs<InitiatorClientHandshakePhase>(initialPhaseUntyped);
+    final otherResponders = initialPhase.responders.keys
+        .where((id) => id.value != disconnect)
+        .toList();
     final phase = server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
       message: Disconnected(disonnectId),
       sendTo: initialPhase,
@@ -620,7 +646,44 @@ Phase Function(Phase, PackageQueue) mkSendDisconnectedTest({
         remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
       ),
     );
+
+    expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[disconnect], isNull);
+    return phase;
+  };
+}
+
+Phase Function(Phase, PackageQueue) mkSendErrorTest({
+  required Crypto crypto,
+  required PeerData server,
+  required PeerData responder,
+}) {
+  return (initialPhaseUntyped, packages) {
+    final phase = phaseAs<InitiatorClientHandshakePhase>(initialPhaseUntyped);
+    final otherResponders =
+        phase.responders.keys.where((id) => id != responder.address).toList();
+    expect(() {
+      server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+        message: SendError(Uint8List.fromList([
+          phase.common.address.value,
+          responder.address.value,
+          0,
+          0,
+          1,
+          2,
+          3,
+          4
+        ])),
+        sendTo: initialPhaseUntyped,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+    }, throwsA(isA<SendErrorException>()));
+
+    expect(phase.responders.keys, equals(otherResponders));
+    expect(phase.responders[responder.address], isNull);
     return phase;
   };
 }
