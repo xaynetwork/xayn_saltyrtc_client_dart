@@ -298,8 +298,21 @@ abstract class AfterServerHandshakePhase extends Phase {
   AfterServerHandshakePhase(this.common) : super(common);
 
   void handleSendError(SendError msg) {
-    throw UnimplementedError();
+    if (msg.source != common.address) {
+      throw ProtocolError('received send-error for message not send by us');
+    }
+    final destination = msg.destination;
+    final viableDestination = role == Role.initiator
+        ? msg.destination.isResponder()
+        : msg.destination.isInitiator();
+    if (!viableDestination) {
+      throw ProtocolError(
+          'received send-error for unexpected destination $destination');
+    }
+    handleSendErrorByDestination(destination);
   }
+
+  void handleSendErrorByDestination(Id destination);
 
   void handleDisconnected(Disconnected msg);
 }

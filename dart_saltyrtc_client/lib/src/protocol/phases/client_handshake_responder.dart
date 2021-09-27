@@ -10,6 +10,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -22,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError;
+    show NoSharedTaskError, ProtocolError, SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
@@ -99,6 +100,12 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     validateIdInitiator(id.value);
     initiatorWithState = null;
     //TODO notify client/application
+  }
+
+  @override
+  void handleSendErrorByDestination(Id destination) {
+    initiatorWithState = null;
+    throw SendErrorException(destination);
   }
 
   @override
