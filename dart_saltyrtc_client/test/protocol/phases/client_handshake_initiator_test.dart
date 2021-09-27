@@ -43,6 +43,11 @@ void main() {
   setUpLogging();
 
   final crypto = MockCrypto();
+
+  setUp(() {
+    crypto.reset();
+  });
+
   group('successful transition', () {
     test('initial(expect token) -> key', () {
       final setup = _Setup.create(crypto: crypto);

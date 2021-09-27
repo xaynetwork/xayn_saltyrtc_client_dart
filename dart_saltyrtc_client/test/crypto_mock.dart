@@ -140,6 +140,19 @@ class MockCrypto extends Crypto {
 
   MockCrypto();
 
+  /// Forgets about all keys/tokens making them implicitly invalid to use.
+  ///
+  /// Use before/after tests to clean up before running the next test.
+  void reset() {
+    encryptedMessages = {};
+    keyStoreLookUp = {};
+    authTokenLookUp = {};
+    sharedKeyStoreLookUp = {};
+    // Do not reset id gen, to prevent collisions of
+    // "reset removed" and new keys. While this shouldn't
+    // happen it would be a debug nightmare if it did happen.
+  }
+
   @override
   AuthToken createAuthToken() {
     return createAuthTokenFromToken(token: randomBytes(Crypto.symmKeyBytes));
