@@ -33,11 +33,12 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         CommonAfterServerHandshake,
         Config,
         InitiatorConfig,
+        InitiatorIdentity,
         InitiatorSendDropResponder,
         Phase,
         ResponderConfig,
+        ResponderIdentity,
         WithPeer;
-import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:meta/meta.dart' show protected;
 
@@ -119,12 +120,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   }
 }
 
-class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
+class InitiatorTaskPhase extends TaskPhase
+    with InitiatorSendDropResponder, InitiatorIdentity {
   @override
   final AuthenticatedResponder pairedClient;
-
-  @override
-  Role get role => Role.initiator;
 
   InitiatorTaskPhase(
     CommonAfterServerHandshake common,
@@ -137,6 +136,7 @@ class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
   void handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdResponder(id.value);
+    //TODO also return phase which resets to client handhsake
     throw AuthenticatedPeerDisconnected();
   }
 
@@ -151,12 +151,9 @@ class InitiatorTaskPhase extends TaskPhase with InitiatorSendDropResponder {
   }
 }
 
-class ResponderTaskPhase extends TaskPhase {
+class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   @override
   final AuthenticatedInitiator pairedClient;
-
-  @override
-  Role get role => Role.responder;
 
   ResponderTaskPhase(
     CommonAfterServerHandshake common,
