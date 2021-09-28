@@ -135,9 +135,9 @@ abstract class Phase {
   /// Client Config.
   ///
   /// Use `config` provided by `InitiatorIdentity`/`ResponderIdentity` instead.
-  final Config baseConfig;
+  Config get config;
 
-  Phase(this.common, this.baseConfig);
+  Phase(this.common);
 
   Role get role;
 
@@ -258,15 +258,11 @@ abstract class Phase {
 mixin InitiatorIdentity implements Phase {
   @override
   Role get role => Role.initiator;
-
-  InitiatorConfig get config => baseConfig as InitiatorConfig;
 }
 
 mixin ResponderIdentity implements Phase {
   @override
   Role get role => Role.responder;
-
-  ResponderConfig get config => baseConfig as ResponderConfig;
 }
 
 /// A mixin for anything that expects messages from either the server or a known peer.
@@ -297,7 +293,7 @@ abstract class AfterServerHandshakePhase extends Phase {
   @override
   final CommonAfterServerHandshake common;
 
-  AfterServerHandshakePhase(this.common, Config config) : super(common, config);
+  AfterServerHandshakePhase(this.common) : super(common);
 
   void handleSendError(SendError msg) {
     throw UnimplementedError();

@@ -78,6 +78,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     with InitiatorIdentity, InitiatorSendDropResponder {
   final Map<IdResponder, ResponderWithState> responders = {};
 
+  @override
+  final InitiatorConfig config;
+
   /// Continuous incremental counter, used to track the oldest responder.
   ///
   /// Given of at least 2^53 (compiled to JS) id's this is more then enough
@@ -86,8 +89,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
   InitiatorClientHandshakePhase(
     CommonAfterServerHandshake common,
-    InitiatorConfig config,
-  ) : super(common, config);
+    this.config,
+  ) : super(common);
 
   @override
   Peer? getPeerWithId(Id id) {

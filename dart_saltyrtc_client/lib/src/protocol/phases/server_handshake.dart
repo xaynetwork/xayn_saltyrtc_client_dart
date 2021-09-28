@@ -33,7 +33,6 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         Common,
         CommonAfterServerHandshake,
-        Config,
         InitiatorConfig,
         InitiatorIdentity,
         Phase,
@@ -62,7 +61,7 @@ enum ServerHandshakeState { start, helloSent, authSent }
 abstract class ServerHandshakePhase extends Phase {
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
 
-  ServerHandshakePhase(Common common, Config config) : super(common, config);
+  ServerHandshakePhase(Common common) : super(common);
 
   @protected
   Phase handleServerAuth(Message msg, Nonce nonce);
@@ -144,7 +143,7 @@ abstract class ServerHandshakePhase extends Phase {
 
   void handleServerHello(ServerHello msg, Nonce nonce) {
     final sks = common.crypto.createSharedKeyStore(
-        ownKeyStore: baseConfig.permanentKeys, remotePublicKey: msg.key);
+        ownKeyStore: config.permanentKeys, remotePublicKey: msg.key);
     common.server.setSessionSharedKey(sks);
   }
 
@@ -154,9 +153,9 @@ abstract class ServerHandshakePhase extends Phase {
     sendMessage(
       ClientAuth(
         serverCookie,
-        baseConfig.expectedServerPublicKey,
+        config.expectedServerPublicKey,
         subprotocols,
-        baseConfig.pingInterval,
+        config.pingInterval,
       ),
       to: common.server,
     );
@@ -177,13 +176,13 @@ abstract class ServerHandshakePhase extends Phase {
     }
 
     final sks = common.server.sessionSharedKey!;
-    final decrypted = baseConfig.permanentKeys.decrypt(
+    final decrypted = config.permanentKeys.decrypt(
         remotePublicKey: expectedServerPublicKey,
         ciphertext: signedKey,
         nonce: nonce.toBytes());
     final expected = BytesBuilder(copy: false)
       ..add(sks.remotePublicKey)
-      ..add(baseConfig.permanentKeys.publicKey);
+      ..add(config.permanentKeys.publicKey);
     if (!ListEquality<int>().equals(decrypted, expected.takeBytes())) {
       throw ValidationError(
           'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid');
@@ -200,10 +199,13 @@ abstract class ServerHandshakePhase extends Phase {
 
 class InitiatorServerHandshakePhase extends ServerHandshakePhase
     with InitiatorIdentity {
+  @override
+  final InitiatorConfig config;
+
   InitiatorServerHandshakePhase(
     Common common,
-    InitiatorConfig config,
-  ) : super(common, config);
+    this.config,
+  ) : super(common);
 
   @override
   void sendClientHello() {
@@ -229,7 +231,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     validateSignedKey(
         signedKey: msg.signedKeys,
         nonce: nonce,
-        expectedServerPublicKey: baseConfig.expectedServerPublicKey);
+        expectedServerPublicKey: config.expectedServerPublicKey);
 
     logger.d('Switching to initiator client handshake');
     final nextPhase = InitiatorClientHandshakePhase(
@@ -243,10 +245,13 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
 
 class ResponderServerHandshakePhase extends ServerHandshakePhase
     with ResponderIdentity {
+  @override
+  final ResponderConfig config;
+
   ResponderServerHandshakePhase(
     Common common,
-    ResponderConfig config,
-  ) : super(common, config);
+    this.config,
+  ) : super(common);
 
   @override
   void sendClientHello() {

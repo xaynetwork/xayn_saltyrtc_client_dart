@@ -8,7 +8,8 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
 import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -57,14 +58,17 @@ class InitiatorWithState {
 class ResponderClientHandshakePhase extends ClientHandshakePhase
     with ResponderIdentity, WithPeer {
   @override
+  ResponderConfig config;
+
+  @override
   Initiator? get pairedClient => initiatorWithState?.initiator;
   InitiatorWithState? initiatorWithState;
 
   ResponderClientHandshakePhase(
     CommonAfterServerHandshake common,
-    ResponderConfig config,
+    this.config,
     bool initiatorConnected,
-  ) : super(common, config) {
+  ) : super(common) {
     if (initiatorConnected) {
       startNewHandshake();
     }
