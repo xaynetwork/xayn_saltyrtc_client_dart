@@ -28,7 +28,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Common, CommonAfterServerHandshake, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show ResponderTaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
@@ -37,6 +37,7 @@ import '../../utils.dart'
     show
         PeerData,
         TestTask,
+        TestTaskBuilder,
         phaseAs,
         runTest,
         setUpTesting,
@@ -68,9 +69,9 @@ void main() {
 
     test('initiator sends key', () {
       final tasks = [
-        TestTask('bar foot'),
-        TestTask('bar'),
-        TestTask('example.v23')
+        TestTaskBuilder('bar foot'),
+        TestTaskBuilder('bar'),
+        TestTaskBuilder('example.v23')
       ];
       final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
       final initiator = setup.initiator;
@@ -84,7 +85,7 @@ void main() {
     });
 
     test('initiator sends auth', () {
-      final tasks = [TestTask('example.v23')];
+      final tasks = [TestTaskBuilder('example.v23')];
       final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
       final initiator = setup.initiator;
       runTest(setup.initialPhase, [
@@ -125,7 +126,7 @@ void main() {
   });
 
   test('auth -> no task found', () {
-    final tasks = [TestTask('example.v23', null)];
+    final tasks = [TestTaskBuilder('example.v23')];
     final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
     final initiator = setup.initiator;
     runTest(setup.initialPhase, [
@@ -155,7 +156,7 @@ void main() {
   });
 
   test('handle SendError', () {
-    final tasks = [TestTask('example.v23')];
+    final tasks = [TestTaskBuilder('example.v23')];
     final setup = _Setup.create(tasks: tasks);
     final initiator = setup.initiator;
     final server = setup.server;
@@ -176,7 +177,7 @@ void main() {
   });
 
   test('auth your_cookie is checked', () {
-    final tasks = [TestTask('example.v23')];
+    final tasks = [TestTaskBuilder('example.v23')];
     final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
     final initiator = setup.initiator;
     runTest(setup.initialPhase, [
@@ -225,7 +226,7 @@ class _Setup {
     bool usePresetTrust = false,
     bool badInitialAuth = false,
     bool initiatorIsKnown = true,
-    List<Task>? tasks,
+    List<TaskBuilder>? tasks,
   }) {
     final responderId = Id.responderId(32);
     final responderPermanentKeys = crypto.createKeyStore();
@@ -348,7 +349,7 @@ Phase Function(Phase, PackageQueue) mkNewInitiatorTest({
 
 Phase Function(Phase, PackageQueue) mkSendKeyRecvAuthTest({
   required PeerData initiator,
-  required List<Task> tasks,
+  required List<TaskBuilder> tasks,
 }) {
   return (initialPhase, packages) {
     final sessionKey = crypto.createKeyStore();
@@ -376,7 +377,9 @@ Phase Function(Phase, PackageQueue) mkSendKeyRecvAuthTest({
         decryptWith: sessionSharedKey);
 
     expect(authMsg.yourCookie, equals(initiator.testedPeer.cookiePair.ours));
-    final taskData = {for (final task in tasks) task.name: task.data};
+    final taskData = {
+      for (final task in tasks) task.name: task.getInitialResponderData()
+    };
     expect(authMsg.tasks, equals(taskData.keys));
     expect(authMsg.data, equals(taskData));
     return phase;
@@ -403,7 +406,7 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
 
     final taskObject = phase.task as TestTask;
     expect(taskObject.name, equals(task));
-    expect(taskObject.initWasCalled, isTrue);
+    ;
     expect(taskObject.initData, equals(data[taskObject.name]));
     return phase;
   };

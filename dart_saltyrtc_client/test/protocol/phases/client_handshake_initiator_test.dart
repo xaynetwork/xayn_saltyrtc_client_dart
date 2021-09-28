@@ -31,7 +31,6 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Common, CommonAfterServerHandshake, InitiatorConfig, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show TaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
@@ -39,7 +38,7 @@ import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../utils.dart'
     show
         PeerData,
-        TestTask,
+        TestTaskBuilder,
         phaseAs,
         runTest,
         setUpTesting,
@@ -71,18 +70,18 @@ void main() {
 
     test('auth -> next phase', () {
       final responderTasks = [
-        TestTask('fe fe', {
+        TestTaskBuilder('fe fe', initialResponderData: {
           'yo': [1, 4, 3]
         }),
-        TestTask('example.v23', {'xml': []}),
-        TestTask('bar', {
+        TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+        TestTaskBuilder('bar', initialResponderData: {
           'yes': [0, 0, 0]
         }),
       ];
       final supportedTasks = [
-        TestTask('bar foot', {'a': null}),
-        TestTask('bar', {'b': null}),
-        TestTask('example.v23', {'c': null}),
+        TestTaskBuilder('bar foot', initialResponderData: {'a': null}),
+        TestTaskBuilder('bar', initialResponderData: {'b': null}),
+        TestTaskBuilder('example.v23', initialResponderData: {'c': null}),
       ];
       final setup =
           _Setup.create(tasks: supportedTasks, responderIds: [2, 3, 4]);
@@ -183,18 +182,18 @@ void main() {
 
     test('auth your_cookie is checked', () {
       final responderTasks = [
-        TestTask('fe fe', {
+        TestTaskBuilder('fe fe', initialResponderData: {
           'yo': [1, 4, 3]
         }),
-        TestTask('example.v23', {'xml': []}),
-        TestTask('bar', {
+        TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+        TestTaskBuilder('bar', initialResponderData: {
           'yes': [0, 0, 0]
         }),
       ];
       final supportedTasks = [
-        TestTask('bar foot', {'a': null}),
-        TestTask('bar', {'b': null}),
-        TestTask('example.v23', {'c': null}),
+        TestTaskBuilder('bar foot', initialResponderData: {'a': null}),
+        TestTaskBuilder('bar', initialResponderData: {'b': null}),
+        TestTaskBuilder('example.v23', initialResponderData: {'c': null}),
       ];
       final setup =
           _Setup.create(tasks: supportedTasks, responderIds: [2, 3, 4]);
@@ -205,7 +204,8 @@ void main() {
         mkSendKeyTest(responder),
         (initialPhase, packages) {
           final tasksData = {
-            for (final task in responderTasks) task.name: task.data
+            for (final task in responderTasks)
+              task.name: task.getInitialResponderData()
           };
 
           final phase =
@@ -277,18 +277,18 @@ void main() {
 
   test('auth -> no task found', () {
     final responderTasks = [
-      TestTask('fe fe', {
+      TestTaskBuilder('fe fe', initialResponderData: {
         'yo': [1, 4, 3]
       }),
-      TestTask('example.v23', {'xml': []}),
-      TestTask('bar', {
+      TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+      TestTaskBuilder('bar', initialResponderData: {
         'yes': [0, 0, 0]
       }),
     ];
     final supportedTasks = [
-      TestTask('bar foot'),
-      TestTask('bor'),
-      TestTask('duck')
+      TestTaskBuilder('bar foot'),
+      TestTaskBuilder('bor'),
+      TestTaskBuilder('duck')
     ];
     final setup = _Setup.create(tasks: supportedTasks, responderIds: [2, 3, 4]);
     final responder = setup.responders[0];
@@ -381,7 +381,7 @@ class _Setup {
     int goodResponderAt = 0,
     bool usePresetTrust = false,
     List<int>? responderIds,
-    List<Task>? tasks,
+    List<TestTaskBuilder>? tasks,
   }) {
     responderIds ??= [12];
     final goodResponder = responderIds[goodResponderAt];
@@ -558,13 +558,14 @@ Phase Function(Phase, PackageQueue) mkSendBadKeyTest(
 
 Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
   required PeerData responder,
-  required List<TestTask> supportedTasks,
-  required List<TestTask> responderTasks,
+  required List<TestTaskBuilder> supportedTasks,
+  required List<TestTaskBuilder> responderTasks,
 }) {
   return (phase, packages) {
     try {
       final tasksData = {
-        for (final task in responderTasks) task.name: task.data
+        for (final task in responderTasks)
+          task.name: task.getInitialResponderData()
       };
       phase = responder.sendAndTransitToPhase<TaskPhase>(
         message: AuthResponder(responder.testedPeer.cookiePair.theirs!,
@@ -579,7 +580,8 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
     }
 
     for (final task in supportedTasks) {
-      expect(task.initWasCalled, isFalse);
+      expect(task.lastInitiatorTask, isNull);
+      expect(task.lastResponderTask, isNull);
     }
 
     final msg = responder.expectMessageOfType<Close>(packages,
@@ -600,12 +602,15 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
 Phase Function(Phase, PackageQueue) mkSendAuthTest({
   required PeerData responder,
   required PeerData server,
-  required List<TestTask> supportedTasks,
-  required List<TestTask> responderTasks,
+  required List<TestTaskBuilder> supportedTasks,
+  required List<TestTaskBuilder> responderTasks,
   required String matchingTask,
 }) {
   return (initialPhase, packages) {
-    final tasksData = {for (final task in responderTasks) task.name: task.data};
+    final tasksData = {
+      for (final task in responderTasks)
+        task.name: task.getInitialResponderData()
+    };
     final phase = responder.sendAndTransitToPhase<TaskPhase>(
         message: AuthResponder(responder.testedPeer.cookiePair.theirs!,
             tasksData.keys.toList(), tasksData),
@@ -616,11 +621,16 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
 
     for (final task in supportedTasks) {
       if (task.name == matchingTask) {
-        expect(task.initWasCalled, isTrue);
-        expect(phase.task, same(task));
-        expect(task.initData, equals(tasksData[matchingTask]));
+        expect(task.lastInitiatorTask, isNotNull);
+        expect(task.lastResponderTask, isNull);
+        final data = tasksData[matchingTask]!;
+        // when passing though the initiator creation we add a field
+        data['initWasCalled'] = [1, 0, 12];
+        expect(
+            task.lastInitiatorTask!.initData, equals(tasksData[matchingTask]));
       } else {
-        expect(task.initWasCalled, isFalse);
+        expect(task.lastInitiatorTask, isNull);
+        expect(task.lastResponderTask, isNull);
       }
     }
 
@@ -637,7 +647,8 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
         equals({
           matchingTask: supportedTasks
               .firstWhere((task) => task.name == matchingTask)
-              .data
+              .buildInitiatorTask(tasksData[matchingTask])
+              .second
         }));
 
     var dropMsg = server.expectMessageOfType<DropResponder>(packages,

@@ -25,7 +25,7 @@ import 'package:dart_saltyrtc_client/src/protocol/network.dart'
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedServer, Client, Peer, Server;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:meta/meta.dart' show immutable, protected;
 
 /// The protocol goes through 3 different phases
@@ -66,7 +66,7 @@ abstract class Config {
 
   /// The expected server permanent public key.
   final Uint8List? expectedServerPublicKey;
-  final List<Task> tasks;
+  final List<TaskBuilder> tasks;
 
   Config({
     required this.permanentKeys,
@@ -89,7 +89,7 @@ class InitiatorConfig extends Config {
   InitiatorConfig({
     required this.authMethod,
     required KeyStore permanentKeys,
-    required List<Task> tasks,
+    required List<TaskBuilder> tasks,
     Uint8List? expectedServerPublicKey,
     int pingInterval = 0,
   }) : super(
@@ -116,7 +116,7 @@ class ResponderConfig extends Config {
 
   ResponderConfig({
     required KeyStore permanentKeys,
-    required List<Task> tasks,
+    required List<TaskBuilder> tasks,
     required this.initiatorPermanentPublicKey,
     this.authToken,
     Uint8List? expectedServerPublicKey,

@@ -15,7 +15,9 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart'
+    show Task, TaskBuilder;
+import 'package:dart_saltyrtc_client/src/utils.dart';
 import 'package:test/expect.dart';
 import 'package:test/test.dart';
 
@@ -172,24 +174,53 @@ void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
   }
 }
 
+class TestTaskBuilder extends TaskBuilder {
+  @override
+  final String name;
+
+  final TaskData initialResponderData;
+
+  TestTask? lastInitiatorTask;
+  TestTask? lastResponderTask;
+
+  TestTaskBuilder(this.name, {this.initialResponderData});
+
+  @override
+  Pair<Task, TaskData?> buildInitiatorTask(TaskData initialResponderData) {
+    TaskData data;
+    if (initialResponderData == null) {
+      data = {
+        'initWasCalled': [2, 0, 12]
+      };
+    } else {
+      data = Map.of(initialResponderData);
+      data['initWasCalled'] = [1, 0, 12];
+    }
+    final task = TestTask(name, initData: data);
+    lastInitiatorTask = task;
+    return Pair(task, data);
+  }
+
+  @override
+  Task buildResponderTask(TaskData? initiatorData) {
+    final task = TestTask(name, initData: initiatorData);
+    lastResponderTask = task;
+    return task;
+  }
+
+  @override
+  TaskData getInitialResponderData() => initialResponderData;
+}
+
 //FIXME check older usages of TestTask
 class TestTask extends Task {
   @override
   final String name;
-  @override
-  final TaskData? data;
 
-  bool initWasCalled = false;
-  TaskData? initData;
-
-  TestTask(this.name, [this.data]);
+  final TaskData initData;
 
   @override
-  void initialize(TaskData? data) {
-    initWasCalled = true;
-    initData = data;
-  }
+  final List<String> supportedTypes;
 
-  @override
-  List<String> get supportedTypes => ['magic'];
+  TestTask(this.name, {this.initData, this.supportedTypes = const ['magic']});
 }

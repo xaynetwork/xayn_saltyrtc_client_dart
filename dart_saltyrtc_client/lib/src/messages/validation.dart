@@ -205,6 +205,10 @@ Map<String, Object?> validateStringMapType(Object? value, String name) {
 
 /// Check that `value` is a Map<String, List<int>>
 TaskData validateTaskDataType(Object? value, String name) {
+  if (value == null) {
+    return null;
+  }
+
   if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
   }
@@ -223,7 +227,7 @@ TaskData validateTaskDataType(Object? value, String name) {
 
 /// Check that `value` is a Map<String, Map<String, List<int>?>?>
 TasksData validateTasksDataType(Object? value, String name) {
-  final map = <String, TaskData?>{};
+  final map = <String, TaskData>{};
 
   if (value is! Map<Object?, Object?>) {
     throw ValidationError('$name must be a Map');
@@ -235,14 +239,7 @@ TasksData validateTasksDataType(Object? value, String name) {
       throw ValidationError('$name must be a map with strings as keys');
     }
 
-    final inner = e.value;
-
-    if (inner == null) {
-      map[key] = null;
-      continue;
-    }
-
-    map[key] = validateTaskDataType(inner, '$name inner');
+    map[key] = validateTaskDataType(e.value, '$name inner');
   }
 
   return map;
