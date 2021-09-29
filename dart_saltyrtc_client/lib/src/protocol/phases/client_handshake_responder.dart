@@ -23,7 +23,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError, SendErrorException;
+    show ProtocolError, SendErrorException;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show NoSharedTaskFound;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
@@ -169,7 +171,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       // We expect a potential Close message, but only with a
       // CloseCode.noSharedTask reason.
       if (msg.reason == CloseCode.noSharedTask) {
-        throw NoSharedTaskError();
+        throw NoSharedTaskFound.signalAndException(common.events);
       }
     }
     if (msg is! AuthInitiator) {

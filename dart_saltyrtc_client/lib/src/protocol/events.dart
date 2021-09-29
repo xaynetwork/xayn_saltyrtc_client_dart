@@ -1,5 +1,9 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+    show SaltyRtcError;
 import 'package:meta/meta.dart' show immutable;
 
 abstract class Event {}
@@ -15,4 +19,13 @@ class ResponderAuthenticated extends Event {
   final Uint8List permanentKey;
 
   ResponderAuthenticated(this.permanentKey);
+}
+
+@immutable
+class NoSharedTaskFound extends Event {
+  static Exception signalAndException(Sink<Event> eventOut) {
+    eventOut.add(NoSharedTaskFound());
+    return SaltyRtcError(
+        CloseCode.goingAway, 'going away after no shared task was found');
+  }
 }

@@ -25,7 +25,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError, SendErrorException;
+    show ProtocolError, SendErrorException;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show NoSharedTaskFound;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -290,7 +292,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     if (task == null) {
       logger.w('No shared task for ${forResponder.id} found');
       sendMessage(Close(CloseCode.noSharedTask), to: forResponder);
-      throw NoSharedTaskError();
+      throw NoSharedTaskFound.signalAndException(common.events);
     }
 
     return task;

@@ -118,7 +118,7 @@ class PeerData {
 
   T expectMessageOfType<T extends Message>(PackageQueue packages,
       {CryptoBox? decryptWith}) {
-    final package = packages.nextPackage();
+    final package = packages.next();
     final nonce = Nonce.fromBytes(package);
     expect(nonce.source, equals(testedPeer.address));
     expect(nonce.destination, equals(address));
@@ -213,7 +213,6 @@ class TestTaskBuilder extends TaskBuilder {
   TaskData? getInitialResponderData() => initialResponderData;
 }
 
-//FIXME check older usages of TestTask
 class TestTask extends Task {
   final String name;
 

@@ -1,4 +1,3 @@
-import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show AuthToken;
@@ -20,8 +19,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, SendErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+    show SendErrorException;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show NoSharedTaskFound;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -32,7 +32,8 @@ import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
+import '../../network_mock.dart'
+    show EventQueue, MockSyncWebSocketSink, PackageQueue, PhaseWithEvents;
 import '../../utils.dart'
     show
         PeerData,
@@ -213,7 +214,7 @@ class _Setup {
   final PeerData server;
   final PeerData initiator;
   final ResponderClientHandshakePhase initialPhase;
-  final StreamController<Event> events;
+  final EventQueue events;
 
   _Setup({
     required this.server,
@@ -251,7 +252,7 @@ class _Setup {
     server.testedPeer.ourSessionKey = crypto.createKeyStore();
     server.testedPeer.permanentKey = responderPermanentKeys;
 
-    final events = StreamController<Event>.broadcast();
+    final events = EventQueue();
     final common = Common(crypto, MockSyncWebSocketSink(), events);
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
       ownKeyStore: responderPermanentKeys,
@@ -412,18 +413,18 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
 }
 
 Phase Function(Phase, PackageQueue) mkSendNoSharedTaskTest(PeerData initiator) {
-  return (initialPhase, packages) {
+  return (phase, packages) {
     expect(() {
       initiator.sendAndTransitToPhase<ResponderTaskPhase>(
         message: Close(CloseCode.noSharedTask),
-        sendTo: initialPhase,
+        sendTo: phase,
         encryptWith: crypto.createSharedKeyStore(
             ownKeyStore: initiator.testedPeer.ourSessionKey!,
             remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
       );
-    }, throwsA(isA<NoSharedTaskError>()));
-    //TODO check that sink was closed!
-    return initialPhase;
+    }, throwsSaltyRtcError(closeCode: CloseCode.goingAway));
+    expect(phase.nextEvent(), isA<NoSharedTaskFound>());
+    return phase;
   };
 }
 

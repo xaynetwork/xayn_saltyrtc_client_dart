@@ -3,10 +3,12 @@ import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:async/async.dart' show StreamQueue;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink, WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketStream;
+import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:test/test.dart';
 
 class MockSyncWebSocketSink implements WebSocketSink {
@@ -16,7 +18,7 @@ class MockSyncWebSocketSink implements WebSocketSink {
 
   @override
   void add(Uint8List package) {
-    queue.sendPackage(package);
+    queue.add(package);
   }
 
   @override
@@ -69,20 +71,51 @@ class MockWebSocket implements WebSocket {
   Sink<Uint8List> get sinkToClient => controller.sink;
 }
 
-class PackageQueue {
-  final Queue<Uint8List> queue = Queue();
-
-  void sendPackage(Uint8List package) {
-    queue.add(package);
-  }
-
-  Uint8List nextPackage() {
-    expect(queue, isNotEmpty);
-    return queue.removeFirst();
-  }
-
-  bool get isEmpty => queue.isEmpty;
+class QueueSink<T> implements Sink<T> {
+  final Queue<T> _queue = Queue();
+  bool isClosed = false;
 
   @override
-  String toString() => 'PackageQueue($queue)';
+  void add(T data) {
+    if (isClosed) {
+      throw StateError('QueueSink was already closed');
+    }
+    _queue.add(data);
+  }
+
+  @override
+  void close() {
+    isClosed = true;
+  }
+
+  T next() {
+    expect(_queue, isNotEmpty);
+    return _queue.removeFirst();
+  }
+
+  bool get isEmpty => _queue.isEmpty;
+
+  @override
+  String toString() => 'QueueSink($_queue)';
+}
+
+class PackageQueue extends QueueSink<Uint8List> {
+  @override
+  String toString() => 'PackageQueue($_queue)';
+}
+
+class EventQueue extends QueueSink<Event> {
+  @override
+  String toString() => 'EventQueue($_queue)';
+}
+
+extension PhaseWithEvents on Phase {
+  Event? nextEvent() {
+    final queue = common.events as EventQueue;
+    if (queue.isEmpty) {
+      return null;
+    } else {
+      return queue.next();
+    }
+  }
 }

@@ -1,4 +1,3 @@
-import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
@@ -23,8 +22,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, SendErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+    show SendErrorException;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show NoSharedTaskFound;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -34,7 +34,8 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
+import '../../network_mock.dart'
+    show EventQueue, MockSyncWebSocketSink, PackageQueue, PhaseWithEvents;
 import '../../utils.dart'
     show
         PeerData,
@@ -368,7 +369,7 @@ class _Setup {
   final PeerData server;
   final List<PeerData> responders;
   final InitiatorClientHandshakePhase initialPhase;
-  final StreamController<Event> events;
+  final EventQueue events;
 
   _Setup._(
     this.server,
@@ -400,7 +401,7 @@ class _Setup {
       testedPeerId: Id.initiatorAddress,
     );
 
-    final events = StreamController<Event>.broadcast();
+    final events = EventQueue();
     final common = Common(
       crypto,
       MockSyncWebSocketSink(),
@@ -562,11 +563,11 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
   required List<TestTaskBuilder> responderTasks,
 }) {
   return (phase, packages) {
-    try {
-      final tasksData = {
-        for (final task in responderTasks)
-          task.name: task.getInitialResponderData()
-      };
+    final tasksData = {
+      for (final task in responderTasks)
+        task.name: task.getInitialResponderData()
+    };
+    expect(() {
       phase = responder.sendAndTransitToPhase<TaskPhase>(
         message: AuthResponder(responder.testedPeer.cookiePair.theirs!,
             tasksData.keys.toList(), tasksData),
@@ -575,9 +576,9 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
             ownKeyStore: responder.testedPeer.ourSessionKey!,
             remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey),
       );
-    } on NoSharedTaskError {
-      // ignore: empty_catches
-    }
+    }, throwsSaltyRtcError(closeCode: CloseCode.goingAway));
+
+    expect(phase.nextEvent(), isA<NoSharedTaskFound>());
 
     for (final task in supportedTasks) {
       expect(task.lastInitiatorTask, isNull);
@@ -590,10 +591,6 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
             remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey));
 
     expect(msg.reason, CloseCode.noSharedTask);
-
-    //TODO make sure sink is closed correctly
-    // final channel = (phase.common.sink as MockWebSocket);
-    // expect(channel.closeCode, equals(CloseCode.goingAway));
 
     return phase;
   };
