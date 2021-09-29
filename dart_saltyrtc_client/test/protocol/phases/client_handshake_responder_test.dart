@@ -234,8 +234,7 @@ Phase Function(Phase, PackageQueue) mkRecvTokenAndKeyTest(PeerData initiator) {
     final tokenMsg = initiator.expectMessageOfType<Token>(packages,
         decryptWith: initiator.authToken);
 
-    expect(
-        tokenMsg.key, equals(initialPhase.config.permanentKeys.publicKey));
+    expect(tokenMsg.key, equals(initialPhase.config.permanentKeys.publicKey));
     initiator.testedPeer.permanentKey = initialPhase.config.permanentKeys;
 
     return keyTest(phase, packages);
