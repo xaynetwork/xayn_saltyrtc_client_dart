@@ -13,7 +13,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Phase, Common, InitiatorConfig, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:meta/meta.dart' show immutable, protected;
 
 enum _ClientState {
@@ -74,7 +74,7 @@ class InitiatorClient extends Client {
     Crypto crypto,
     WebSocket ws,
     KeyStore ourPermanentKeys,
-    List<Task> tasks, {
+    List<TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     Uint8List? responderTrustedKey,
@@ -125,7 +125,7 @@ class ResponderClient extends Client {
     Crypto crypto,
     WebSocket ws,
     KeyStore ourPermanentKeys,
-    List<Task> tasks, {
+    List<TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     required Uint8List initiatorTrustedKey,

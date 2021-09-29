@@ -1,7 +1,12 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' as saltyrtc
-    show InitiatorClient, ResponderClient, websocketProtocols, KeyStore, Task;
+    show
+        InitiatorClient,
+        ResponderClient,
+        websocketProtocols,
+        KeyStore,
+        TaskBuilder;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
     show crypto;
@@ -54,7 +59,7 @@ class InitiatorClient implements saltyrtc.InitiatorClient {
   factory InitiatorClient._build(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.Task> tasks, {
+    List<saltyrtc.TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     Uint8List? responderTrustedKey,
@@ -136,7 +141,7 @@ class ResponderClient implements saltyrtc.ResponderClient {
   factory ResponderClient._build(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.Task> tasks, {
+    List<saltyrtc.TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     required Uint8List initiatorTrustedKey,

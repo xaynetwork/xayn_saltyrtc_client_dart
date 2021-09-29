@@ -12,6 +12,6 @@ export 'src/protocol/events.dart'
     show Event, ServerHandshakeDone, ResponderAuthenticated;
 export 'src/protocol/network.dart'
     show WebSocket, WebSocketSink, WebSocketStream;
-export 'src/protocol/task.dart' show Task;
+export 'src/protocol/task.dart' show Task, TaskBuilder;
 
 const List<String> websocketProtocols = [saltyrtcSubprotocol];
