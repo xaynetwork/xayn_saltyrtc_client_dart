@@ -15,28 +15,22 @@ import '../utils.dart' show Pair;
 ///    data which is send back to the responder (as part of the auth message).
 /// 4. The responder creates a task instance based on the data returned from
 ///    the initiator.
-//TODO should we name it TaskFactory??
 abstract class TaskBuilder {
   /// Name of the task.
   String get name;
 
-  /// The data a responder uses to start negating the task setup.
-  TaskData getInitialResponderData();
+  /// The data a responder uses to start negotiating the task setup.
+  TaskData? getInitialResponderData();
 
   /// Create a task instance for the initiator.
-  Pair<Task, TaskData> buildInitiatorTask(TaskData initialResponderData);
+  Pair<Task, TaskData?> buildInitiatorTask(TaskData? initialResponderData);
 
   /// Create a task instance for the responder.
-  Task buildResponderTask(TaskData initiatorData);
+  Task buildResponderTask(TaskData? initiatorData);
 }
 
 /// Type representing a initialized/running task.
 abstract class Task {
-  /// Name of the task.
-  ///
-  /// Must be the same as the TaskBuilder.
-  String get name;
-
   /// The custom message types that the task use.
   List<String> get supportedTypes;
 }

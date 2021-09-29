@@ -17,9 +17,8 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart'
     show Task, TaskBuilder;
-import 'package:dart_saltyrtc_client/src/utils.dart';
+import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/expect.dart';
-import 'package:test/test.dart';
 
 import 'crypto_mock.dart' show crypto, setUpCrypto;
 import 'logging.dart' show setUpLogging;
@@ -178,7 +177,7 @@ class TestTaskBuilder extends TaskBuilder {
   @override
   final String name;
 
-  final TaskData initialResponderData;
+  final TaskData? initialResponderData;
 
   TestTask? lastInitiatorTask;
   TestTask? lastResponderTask;
@@ -186,8 +185,8 @@ class TestTaskBuilder extends TaskBuilder {
   TestTaskBuilder(this.name, {this.initialResponderData});
 
   @override
-  Pair<Task, TaskData?> buildInitiatorTask(TaskData initialResponderData) {
-    TaskData data;
+  Pair<Task, TaskData?> buildInitiatorTask(TaskData? initialResponderData) {
+    TaskData? data;
     if (initialResponderData == null) {
       data = {
         'initWasCalled': [2, 0, 12]
@@ -209,15 +208,14 @@ class TestTaskBuilder extends TaskBuilder {
   }
 
   @override
-  TaskData getInitialResponderData() => initialResponderData;
+  TaskData? getInitialResponderData() => initialResponderData;
 }
 
 //FIXME check older usages of TestTask
 class TestTask extends Task {
-  @override
   final String name;
 
-  final TaskData initData;
+  final TaskData? initData;
 
   @override
   final List<String> supportedTypes;

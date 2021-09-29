@@ -97,7 +97,7 @@ class MessageFields {
 // The library we use makes it complex to encode `Object?`, and we don't need it.
 // We use List<int> and not Uint8List so we don't have to create a new map where
 // we replace List<int> with Uint8List. `unpackBinary` returns List<int>.
-typedef TaskData = Map<String, List<int>?>?;
+typedef TaskData = Map<String, List<int>?>;
 typedef TasksData = Map<String, TaskData?>;
 
 const signedKeysLength = Crypto.publicKeyBytes * 2 + Crypto.boxOverhead;

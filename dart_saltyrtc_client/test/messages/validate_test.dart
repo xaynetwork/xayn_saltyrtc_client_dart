@@ -12,7 +12,7 @@ void main() {
   test('validateTaskDataType null', () {
     final map = validateTaskDataType({field: null}, '');
     expect(map, isNotNull);
-    expect(map, isA<TaskData>());
+    expect(map, isA<TaskData?>());
     expect(map!.keys, contains(field));
     expect(map[field], null);
   });

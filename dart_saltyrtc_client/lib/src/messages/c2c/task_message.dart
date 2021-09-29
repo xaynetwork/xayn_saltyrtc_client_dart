@@ -9,9 +9,7 @@ import 'package:meta/meta.dart' show immutable;
 class TaskMessage extends Message {
   @override
   final String type;
-  // Theoretically we should allow arbitrary data,
-  // practically its for now limited to TaskData.
-  final TaskData data;
+  final TaskData? data;
 
   @override
   List<Object?> get props => [type, data];
