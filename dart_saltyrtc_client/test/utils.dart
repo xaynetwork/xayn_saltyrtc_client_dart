@@ -11,13 +11,14 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolError, SaltyRtcError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show CombinedSequencePair, CookiePair, Initiator;
+    show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, Common, ResponderData, ClientHandshakeInput;
+    show Common, Config, InitiatorConfig, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
+import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/expect.dart';
 
@@ -43,7 +44,8 @@ class SetupData {
   );
 
   factory SetupData.init(
-    Phase Function(Common, ClientHandshakeInput, int) initPhase, [
+    Role role,
+    Phase Function(Common, Config) initPhase, [
     int pingInterval = 13,
     List<Task> tasks = const [],
   ]) {
@@ -54,15 +56,29 @@ class SetupData {
     final outMsgs = ws.queue;
     final common = Common(
       crypto,
-      clientPermanentKeys,
-      server.permanentPublicKey,
       ws,
     );
-    final clientHandshakeInput = ClientHandshakeInput(
+    final Config config;
+    if (role == Role.initiator) {
+      config = InitiatorConfig(
+        permanentKeys: clientPermanentKeys,
+        expectedServerPublicKey: server.permanentPublicKey,
+        pingInterval: pingInterval,
         tasks: tasks,
         authMethod: InitialClientAuthMethod.fromEither(
-            authToken: crypto.createAuthToken()));
-    final phase = initPhase(common, clientHandshakeInput, pingInterval);
+            authToken: crypto.createAuthToken()),
+      );
+    } else {
+      config = ResponderConfig(
+        permanentKeys: clientPermanentKeys,
+        expectedServerPublicKey: server.permanentPublicKey,
+        pingInterval: pingInterval,
+        tasks: tasks,
+        initiatorPermanentPublicKey: crypto.createKeyStore().publicKey,
+      );
+    }
+
+    final phase = initPhase(common, config);
 
     return SetupData._(
         crypto, clientPermanentKeys, server, outMsgs, phase, pingInterval);
@@ -71,28 +87,19 @@ class SetupData {
 
 InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
   Common common,
-  ClientHandshakeInput clientHandshakeInput,
-  int pingInterval,
+  Config config,
 ) {
   return InitiatorServerHandshakePhase(
     common,
-    clientHandshakeInput,
-    pingInterval,
+    config as InitiatorConfig,
   );
 }
 
 ResponderServerHandshakePhase makeResponderServerHandshakePhase(
   Common common,
-  ClientHandshakeInput clientHandshakeInput,
-  int pingInterval, [
-  ResponderData? data,
-]) {
-  return ResponderServerHandshakePhase(
-    common,
-    clientHandshakeInput,
-    pingInterval,
-    data ?? ResponderData(Initiator(common.crypto)),
-  );
+  Config config,
+) {
+  return ResponderServerHandshakePhase(common, config as ResponderConfig);
 }
 
 Matcher throwsValidationError() {
@@ -110,13 +117,24 @@ Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
 }
 
+Matcher throwsSaltyRtcError({CloseCode closeCode = CloseCode.protocolError}) {
+  final errorHasExpectedState = (Object? error) {
+    if (error is! SaltyRtcError) {
+      return true;
+    } else {
+      return error.closeCode == closeCode;
+    }
+  };
+  return throwsA(allOf(isA<SaltyRtcError>(), predicate(errorHasExpectedState)));
+}
+
 class MockKnowledgeAboutTestedPeer {
   KeyStore? permanentKey;
   KeyStore? theirSessionKey;
   KeyStore? ourSessionKey;
   final Id address;
-  final CombinedSequencePair csPair;
-  final CookiePair cookiePair;
+  CombinedSequencePair csPair;
+  CookiePair cookiePair;
 
   MockKnowledgeAboutTestedPeer({
     required Crypto crypto,
@@ -226,23 +244,22 @@ void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
   }
 }
 
+//FIXME check older usages of TestTask
 class TestTask extends Task {
   @override
   final String name;
+  @override
+  final TaskData? data;
 
   bool initWasCalled = false;
+  TaskData? initData;
 
-  TestTask(this.name);
-
-  @override
-  TaskData? get data => {
-        'soda': [12, 3, 2]
-      };
+  TestTask(this.name, [this.data]);
 
   @override
   void initialize(TaskData? data) {
-    expect(data, equals(this.data));
     initWasCalled = true;
+    initData = data;
   }
 
   @override

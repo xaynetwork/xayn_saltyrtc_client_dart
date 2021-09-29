@@ -22,10 +22,10 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show AuthenticatedServer, Client, Initiator, Peer, Server;
+    show AuthenticatedServer, Client, Peer, Server;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
-import 'package:meta/meta.dart' show protected;
+import 'package:meta/meta.dart' show immutable, protected;
 
 /// The protocol goes through 3 different phases
 /// 1. Server handshake
@@ -35,13 +35,9 @@ import 'package:meta/meta.dart' show protected;
 /// Data that is common to all phases and roles.
 class Common {
   final Crypto crypto;
-  final KeyStore ourKeys;
 
   /// Server instance.
   Server server;
-
-  /// Optional permanent key of the server. It can be used to verify the server.
-  final Uint8List? expectedServerKey;
 
   /// Every client start with address set to unknown.
   Id address = Id.unknownAddress;
@@ -52,34 +48,82 @@ class Common {
 
   Common(
     this.crypto,
-    this.ourKeys,
-    this.expectedServerKey,
     this.sink,
-  ) : server = Server.fromRandom(crypto) {
-    if (expectedServerKey != null) {
-      Crypto.checkPublicKey(expectedServerKey!);
+  ) : server = Server.fromRandom(crypto);
+}
+
+/// Config values shared by all people.
+@immutable
+abstract class Config {
+  /// The permanent keys of this client.
+  final KeyStore permanentKeys;
+  final int pingInterval;
+
+  /// The expected server permanent public key.
+  final Uint8List? expectedServerPublicKey;
+  final List<Task> tasks;
+
+  Config({
+    required this.permanentKeys,
+    required this.tasks,
+    required this.expectedServerPublicKey,
+    required this.pingInterval,
+  }) {
+    if (expectedServerPublicKey != null) {
+      Crypto.checkPublicKey(expectedServerPublicKey!);
     }
   }
 }
 
-/// Data that is needed for the client handshake and is passed by the user.
-class ClientHandshakeInput {
-  /// Tasks that the user support
-  final List<Task> tasks;
-
-  /// Method to initially authenticate the responder
-  /// Trusted public key of the responder we expect to peer with.
+/// The config for the initiator.
+@immutable
+class InitiatorConfig extends Config {
+  /// Method to initially authenticate the responder.
   final InitialClientAuthMethod authMethod;
 
-  ClientHandshakeInput({required this.tasks, required this.authMethod});
+  InitiatorConfig({
+    required this.authMethod,
+    required KeyStore permanentKeys,
+    required List<Task> tasks,
+    Uint8List? expectedServerPublicKey,
+    int pingInterval = 0,
+  }) : super(
+          permanentKeys: permanentKeys,
+          tasks: tasks,
+          expectedServerPublicKey: expectedServerPublicKey,
+          pingInterval: pingInterval,
+        );
 }
 
-/// Additional data for a responder.
-class ResponderData {
-  Initiator initiator;
-  AuthToken? authToken;
+/// The config for the responder.
+@immutable
+class ResponderConfig extends Config {
+  /// Auth token used to transmit the clients permanent public key.
+  ///
+  /// If not given it's assumed the initiator knowns about the clients
+  /// public key (through trusted responder mechanism).
+  final AuthToken? authToken;
 
-  ResponderData(this.initiator);
+  /// The initiators permanent public key.
+  ///
+  /// It's known as it's part of the "path" we used to connect to the server.
+  final Uint8List initiatorPermanentPublicKey;
+
+  ResponderConfig({
+    required KeyStore permanentKeys,
+    required List<Task> tasks,
+    required this.initiatorPermanentPublicKey,
+    this.authToken,
+    Uint8List? expectedServerPublicKey,
+    int pingInterval = 0,
+  }) : super(
+          permanentKeys: permanentKeys,
+          tasks: tasks,
+          expectedServerPublicKey: expectedServerPublicKey,
+          pingInterval: pingInterval,
+        ) {
+    Crypto.checkPublicKey(initiatorPermanentPublicKey);
+  }
 }
 
 /// A phase can handle a message and returns the next phase.
@@ -87,6 +131,11 @@ class ResponderData {
 abstract class Phase {
   /// Data common to all phases and role.
   final Common common;
+
+  /// Client Config.
+  ///
+  /// Use `config` provided by `InitiatorIdentity`/`ResponderIdentity` instead.
+  Config get config;
 
   Phase(this.common);
 
@@ -149,14 +198,20 @@ abstract class Phase {
   }
 
   /// Short form for `send(buildPacket(msg, to))`
-  void sendMessage(Message msg, {required Peer to, bool encrypted = true}) {
+  void sendMessage(
+    Message msg, {
+    required Peer to,
+    bool encrypt = true,
+    AuthToken? authToken,
+  }) {
     final type = msg.type;
-    send(buildPacket(msg, to, encrypted));
+    send(buildPacket(msg, to, encrypt: encrypt, authToken: authToken));
     logger.d('Send $type');
   }
 
   /// Build binary packet to send.
-  Uint8List buildPacket(Message msg, Peer receiver, [bool encrypt = true]) {
+  Uint8List buildPacket(Message msg, Peer receiver,
+      {bool encrypt = true, AuthToken? authToken}) {
     final cs = receiver.csPair.ours;
     try {
       cs.next();
@@ -171,7 +226,7 @@ abstract class Phase {
     if (!encrypt) {
       payload = msg.toBytes();
     } else {
-      payload = receiver.encrypt(msg, nonce);
+      payload = receiver.encrypt(msg, nonce, authToken);
     }
 
     final builder = BytesBuilder(copy: false)
@@ -205,15 +260,20 @@ mixin InitiatorIdentity implements Phase {
   Role get role => Role.initiator;
 }
 
+mixin ResponderIdentity implements Phase {
+  @override
+  Role get role => Role.responder;
+}
+
 /// A mixin for anything that expects messages from either the server or a known peer.
 mixin WithPeer implements Phase {
-  Client get pairedClient;
+  Client? get pairedClient;
 
   @override
   Peer? getPeerWithId(Id id) {
     if (id.isServer()) {
       return common.server;
-    } else if (id == pairedClient.id) {
+    } else if (id == pairedClient?.id) {
       return pairedClient;
     }
     return null;
@@ -224,23 +284,6 @@ mixin InitiatorSendDropResponder on Phase {
   void sendDropResponder(IdResponder id, CloseCode closeCode) {
     logger.d('Dropping responder $id');
     sendMessage(DropResponder(id, closeCode), to: common.server);
-  }
-}
-
-/// Brings in data an common methods for a responder.
-mixin ResponderPhase implements Phase {
-  ResponderData get data;
-
-  @override
-  Role get role => Role.responder;
-
-  @override
-  Peer? getPeerWithId(Id id) {
-    if (id.isServer()) return common.server;
-    if (id.isInitiator()) {
-      return data.initiator;
-    }
-    return null;
   }
 }
 
@@ -276,8 +319,6 @@ class CommonAfterServerHandshake extends Common {
         server = common.server.asAuthenticated(),
         super(
           common.crypto,
-          common.ourKeys,
-          common.expectedServerKey,
           common.sink,
         );
 }

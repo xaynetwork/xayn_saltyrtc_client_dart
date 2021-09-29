@@ -171,19 +171,14 @@ class Initiator extends Client {
   @override
   final IdInitiator id = Id.initiatorAddress;
 
-  bool connected;
+  Initiator(Crypto crypto) : super.fromRandom(crypto);
 
-  Initiator(Crypto crypto)
-      : connected = false,
-        super.fromRandom(crypto);
-
-  Initiator._fromParts(
-      {required SharedKeyStore? sessionSharedKey,
-      required SharedKeyStore? permanentSharedKey,
-      required CookiePair cookiePair,
-      required CombinedSequencePair csPair,
-      required this.connected})
-      : super._fromParts(
+  Initiator._fromParts({
+    required SharedKeyStore? sessionSharedKey,
+    required SharedKeyStore? permanentSharedKey,
+    required CookiePair cookiePair,
+    required CombinedSequencePair csPair,
+  }) : super._fromParts(
           sessionSharedKey: sessionSharedKey,
           permanentSharedKey: permanentSharedKey,
           cookiePair: cookiePair,
@@ -265,13 +260,11 @@ class AuthenticatedInitiator extends Initiator with AuthenticatedPeer {
           permanentSharedKey: unauthenticated.permanentSharedKey,
           cookiePair: unauthenticated.cookiePair,
           csPair: unauthenticated.csPair,
-          connected: unauthenticated.connected,
         ) {
     if (unauthenticated.sessionSharedKey == null ||
         unauthenticated.permanentSharedKey == null ||
         unauthenticated.cookiePair.theirs == null ||
-        unauthenticated.csPair.theirs == null ||
-        !unauthenticated.connected) {
+        unauthenticated.csPair.theirs == null) {
       throw StateError('Initiator is not authenticated');
     }
   }

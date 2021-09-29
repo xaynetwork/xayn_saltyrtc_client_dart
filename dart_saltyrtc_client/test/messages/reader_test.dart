@@ -12,7 +12,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart';
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType, signedKeysLength;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
@@ -41,7 +41,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_responder.dart
     show ServerAuthResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
 import 'package:test/test.dart';
 
 import '../crypto_mock.dart' show MockCrypto;

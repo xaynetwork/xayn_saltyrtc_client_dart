@@ -31,11 +31,11 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
-        InitiatorSendDropResponder,
-        Phase,
         CommonAfterServerHandshake,
-        ClientHandshakeInput,
-        InitiatorIdentity;
+        InitiatorConfig,
+        InitiatorIdentity,
+        InitiatorSendDropResponder,
+        Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show InitiatorTaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
@@ -78,6 +78,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     with InitiatorIdentity, InitiatorSendDropResponder {
   final Map<IdResponder, ResponderWithState> responders = {};
 
+  @override
+  final InitiatorConfig config;
+
   /// Continuous incremental counter, used to track the oldest responder.
   ///
   /// Given of at least 2^53 (compiled to JS) id's this is more then enough
@@ -86,8 +89,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
   InitiatorClientHandshakePhase(
     CommonAfterServerHandshake common,
-    ClientHandshakeInput input,
-  ) : super(common, input);
+    this.config,
+  ) : super(common);
 
   @override
   Peer? getPeerWithId(Id id) {
@@ -126,7 +129,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     responders[id] = ResponderWithState(
       Responder(id, common.crypto),
       counter: responderCounter++,
-      authMethod: input.authMethod,
+      authMethod: config.authMethod,
     );
 
     // If we have more then this number of responders we drop the oldest.
@@ -176,10 +179,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
   Phase _handleWaitForToken(
       ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
-    assert(input.authMethod.trustedResponderSharedKey == null);
+    assert(config.authMethod.trustedResponderSharedKey == null);
 
     final responder = responderWithState.responder;
-    final authToken = input.authMethod.authToken!;
+    final authToken = config.authMethod.authToken!;
     final msg = authToken.readEncryptedMessageOfType<Token>(
       msgBytes: msgBytes,
       nonce: nonce,
@@ -191,7 +194,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     //      need to report it back to the client in some way.
     responder.setPermanentSharedKey(
         InitialClientAuthMethod.createResponderSharedPermanentKey(
-            common.crypto, common.ourKeys, msg.key));
+            common.crypto, config.permanentKeys, msg.key));
 
     responderWithState.state = State.waitForKeyMsg;
 
@@ -257,13 +260,15 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    return InitiatorTaskPhase(common, responder.assertAuthenticated(), task);
+    //TODO notify application about potentially tursted authenticator
+    return InitiatorTaskPhase(
+        common, config, responder.assertAuthenticated(), task);
   }
 
   /// Selects a task if possible, initiates connection termination if not.
   Task _selectTask(List<String> tasks, Responder forResponder) {
     Task? task;
-    for (final ourTask in input.tasks) {
+    for (final ourTask in config.tasks) {
       if (tasks.contains(ourTask.name)) {
         task = ourTask;
       }

@@ -1,49 +1,186 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show KeyStore;
+import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
+    show AuthInitiator;
+import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
+    show AuthResponder;
+import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
+import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
+import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
+import 'package:dart_saltyrtc_client/src/messages/message.dart'
+    show MessageType;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+    show MessageDecryptionExt;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart';
+import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+    show validateIdInitiator;
+import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+    show NoSharedTaskError, ProtocolError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
-        ResponderPhase,
-        ResponderData,
         CommonAfterServerHandshake,
         Phase,
-        ClientHandshakeInput;
+        ResponderConfig,
+        ResponderIdentity,
+        WithPeer;
+import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
+    show ResponderTaskPhase;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+
+/// State of the handshake with the initiator.
+enum State {
+  waitForKeyMsg,
+  waitForAuth,
+}
+
+class InitiatorWithState {
+  final Initiator initiator;
+  State state;
+  final KeyStore sessionKey;
+
+  InitiatorWithState({
+    required this.initiator,
+    required this.state,
+    required this.sessionKey,
+  });
+}
 
 class ResponderClientHandshakePhase extends ClientHandshakePhase
-    with ResponderPhase {
+    with ResponderIdentity, WithPeer {
   @override
-  final ResponderData data;
+  ResponderConfig config;
+
+  @override
+  Initiator? get pairedClient => initiatorWithState?.initiator;
+  InitiatorWithState? initiatorWithState;
 
   ResponderClientHandshakePhase(
     CommonAfterServerHandshake common,
-    ClientHandshakeInput input,
-    this.data,
-  ) : super(common, input);
+    this.config,
+    bool initiatorConnected,
+  ) : super(common) {
+    if (initiatorConnected) {
+      startNewHandshake();
+    }
+  }
+
+  void startNewHandshake() {
+    final initiator = Initiator(common.crypto);
+    if (config.authToken != null) {
+      sendMessage(Token(config.permanentKeys.publicKey),
+          to: initiator, authToken: config.authToken);
+    }
+    initiator.setPermanentSharedKey(common.crypto.createSharedKeyStore(
+        ownKeyStore: config.permanentKeys,
+        remotePublicKey: config.initiatorPermanentPublicKey));
+    final sessionKey = common.crypto.createKeyStore();
+    sendMessage(Key(sessionKey.publicKey), to: initiator);
+
+    initiatorWithState = InitiatorWithState(
+      initiator: initiator,
+      state: State.waitForKeyMsg,
+      sessionKey: sessionKey,
+    );
+  }
 
   @override
   void handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdInitiator(id.value);
-    data.initiator = Initiator(common.crypto);
-    //TODO inform client/application
-  }
-
-  @override
-  Phase handleClientMessage(Uint8List msgBytes, Nonce nonce) {
-    // TODO: implement handleClientMessage
-    throw UnimplementedError();
+    initiatorWithState = null;
+    //TODO notify client/application
   }
 
   @override
   void handleNewInitiator(NewInitiator msg) {
-    throw UnimplementedError();
+    startNewHandshake();
+  }
+
+  @override
+  Phase handleClientMessage(Uint8List msgBytes, Nonce nonce) {
+    // We only handle message from clients if the initiator is set
+    // so it should never be unset.
+    final initiatorWithState = this.initiatorWithState!;
+    switch (initiatorWithState.state) {
+      case State.waitForKeyMsg:
+        return _handleWaitForKeyMsg(msgBytes, nonce);
+      case State.waitForAuth:
+        return _handleWaitForAuthMsg(msgBytes, nonce);
+    }
+  }
+
+  Phase _handleWaitForKeyMsg(Uint8List msgBytes, Nonce nonce) {
+    final initiatorWithState = this.initiatorWithState!;
+    final initiator = initiatorWithState.initiator;
+
+    final keyMsg =
+        initiator.permanentSharedKey!.readEncryptedMessageOfType<Key>(
+      msgBytes: msgBytes,
+      nonce: nonce,
+      msgType: MessageType.key,
+    );
+
+    initiator.setSessionSharedKey(common.crypto.createSharedKeyStore(
+      ownKeyStore: initiatorWithState.sessionKey,
+      remotePublicKey: keyMsg.key,
+    ));
+
+    final taskData = {for (final task in config.tasks) task.name: task.data};
+    final taskNames = [for (final task in config.tasks) task.name];
+
+    sendMessage(
+      AuthResponder(initiator.cookiePair.theirs!, taskNames, taskData),
+      to: initiator,
+    );
+
+    initiatorWithState.state = State.waitForAuth;
+    return this;
+  }
+
+  Phase _handleWaitForAuthMsg(Uint8List msgBytes, Nonce nonce) {
+    final initiatorWithState = this.initiatorWithState!;
+    final initiator = initiatorWithState.initiator;
+
+    final msg = initiator.sessionSharedKey!.readEncryptedMessage(
+      msgBytes: msgBytes,
+      nonce: nonce,
+    );
+
+    if (msg is Close) {
+      // We expect a potential Close message, but only with a
+      // CloseCode.noSharedTask reason.
+      if (msg.reason == CloseCode.noSharedTask) {
+        throw NoSharedTaskError();
+      }
+    }
+    if (msg is! AuthInitiator) {
+      throw ProtocolError(
+          'Unexpected message of type ${msg.type}, expected auth');
+    }
+
+    if (msg.yourCookie != initiator.cookiePair.ours) {
+      throw ProtocolError('Bad repeated cookie in ${MessageType.auth} message');
+    }
+
+    final Task task;
+    try {
+      task = config.tasks.firstWhere((task) => task.name == msg.task);
+    } on StateError {
+      throw ProtocolError('unknown selected task ${msg.task}');
+    }
+
+    task.initialize(msg.data[task.name]);
+    return ResponderTaskPhase(
+        common, config, initiator.assertAuthenticated(), task);
   }
 }
