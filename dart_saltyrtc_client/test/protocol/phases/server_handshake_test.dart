@@ -22,8 +22,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show ResponderServerHandshakePhase, InitiatorServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart'
-    show TaskBuilder;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;

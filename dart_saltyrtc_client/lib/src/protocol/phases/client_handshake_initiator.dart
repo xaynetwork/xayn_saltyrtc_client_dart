@@ -39,8 +39,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show InitiatorTaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart'
-    show TaskBuilder;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
 class ResponderWithState {
   final Responder responder;

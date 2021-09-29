@@ -36,8 +36,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         WithPeer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show ResponderTaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart'
-    show TaskBuilder;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
 /// State of the handshake with the initiator.
 enum State {

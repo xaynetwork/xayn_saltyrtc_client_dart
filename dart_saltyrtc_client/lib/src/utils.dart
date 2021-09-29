@@ -1,4 +1,3 @@
-
 /// Pair of two values.
 class Pair<T1, T2> {
   final T1 first;
