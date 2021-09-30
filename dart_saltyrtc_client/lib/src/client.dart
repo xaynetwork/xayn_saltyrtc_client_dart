@@ -49,7 +49,8 @@ abstract class Client {
     });
   }
 
-  Future<void> close() {
+  Future<void> close() async {
+    await _events.close();
     return _ws.sink.close(CloseCode.closingNormal.toInt(), '');
   }
 
