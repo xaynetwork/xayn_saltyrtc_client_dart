@@ -100,7 +100,7 @@ class MockServer {
     );
   }
 
-  Uint8List send<M extends Message>(
+  Uint8List buildMessage<M extends Message>(
     NonceAndMessage<M> nam, {
     bool encrypt = true,
   }) {
@@ -118,7 +118,7 @@ class MockServer {
     bool encrypt = true,
     bool expectSame = true,
   }) {
-    final messageBytes = send(nam, encrypt: encrypt);
+    final messageBytes = buildMessage(nam, encrypt: encrypt);
 
     final nextPhase = phase.handleMessage(messageBytes);
     if (expectSame) {

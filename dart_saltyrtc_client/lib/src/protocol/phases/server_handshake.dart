@@ -123,27 +123,23 @@ abstract class ServerHandshakePhase extends Phase {
 
     switch (handshakeState) {
       case ServerHandshakeState.start:
-        {
-          if (msg is ServerHello) {
-            handleServerHello(msg, nonce);
-            sendClientHello();
-            sendClientAuth();
-          } else {
-            throw ProtocolError(
-                'Expected ${MessageType.serverHello}, but got ${msg.type}');
-          }
-          logger.v('Current server handshake status $handshakeState');
+        if (msg is ServerHello) {
+          handleServerHello(msg, nonce);
+          sendClientHello();
+          sendClientAuth();
+        } else {
+          throw ProtocolError(
+              'Expected ${MessageType.serverHello}, but got ${msg.type}');
         }
+        logger.v('Current server handshake status $handshakeState');
         return this;
       case ServerHandshakeState.helloSent:
         throw ProtocolError(
             'Received ${msg.type} message before sending ${MessageType.clientAuth}');
       case ServerHandshakeState.authSent:
-        {
-          final clientPhase = handleServerAuth(msg, nonce);
-          common.events.add(ServerHandshakeDone());
-          return clientPhase;
-        }
+        final clientPhase = handleServerAuth(msg, nonce);
+        common.events.add(ServerHandshakeDone());
+        return clientPhase;
     }
   }
 

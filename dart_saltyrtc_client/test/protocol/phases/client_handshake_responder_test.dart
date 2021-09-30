@@ -162,12 +162,13 @@ class _Setup {
   final ResponderClientHandshakePhase initialPhase;
   final StreamController<Event> events;
 
-  _Setup(
-      {required this.crypto,
-      required this.server,
-      required this.initiator,
-      required this.initialPhase,
-      required this.events});
+  _Setup({
+    required this.crypto,
+    required this.server,
+    required this.initiator,
+    required this.initialPhase,
+    required this.events,
+  });
 
   factory _Setup.create({
     required Crypto crypto,

@@ -17,8 +17,9 @@ abstract class CryptoProvider {
 bool _init = false;
 
 Future<Crypto> getCrypto() async {
-  if (_init) {
+  if (!_init) {
     await initCrypto();
+    _init = true;
   }
 
   return crypto();

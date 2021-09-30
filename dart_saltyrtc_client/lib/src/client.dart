@@ -21,6 +21,11 @@ enum _ClientState {
   running,
 }
 
+extension BytesToAuthToken on Uint8List {
+  AuthToken toAuthToken(Crypto crypto) =>
+      crypto.createAuthTokenFromToken(token: this);
+}
+
 abstract class Client {
   final WebSocket _ws;
   final StreamController<Event> _events;
@@ -87,12 +92,6 @@ class InitiatorClient extends Client {
       );
     }
 
-    final authToken = getAuthToken(
-      crypto,
-      trustedKey: responderTrustedKey,
-      sharedAuthToken: sharedAuthToken,
-    );
-
     final events = StreamController<Event>.broadcast();
     final common = Common(
       crypto,
@@ -101,7 +100,7 @@ class InitiatorClient extends Client {
     );
     final authMethod = InitialClientAuthMethod.fromEither(
       crypto: crypto,
-      authToken: authToken,
+      authToken: sharedAuthToken?.toAuthToken(crypto),
       trustedResponderPermanentPublicKey: responderTrustedKey,
       initiatorPermanentKeys: ourPermanentKeys,
     );
@@ -145,6 +144,7 @@ class ResponderClient extends Client {
       initiatorPermanentPublicKey: initiatorTrustedKey,
       pingInterval: pingInterval,
       expectedServerPublicKey: expectedServerKey,
+      authToken: sharedAuthToken?.toAuthToken(crypto),
     );
     final phase = ResponderServerHandshakePhase(
       common,
@@ -164,19 +164,4 @@ class SaltyRtcClientError extends Error {
   StackTrace? get stackTrace => _customStackTrace ?? super.stackTrace;
 
   SaltyRtcClientError(this.message, [this._customStackTrace]);
-}
-
-AuthToken? getAuthToken(
-  Crypto crypto, {
-  Uint8List? trustedKey,
-  Uint8List? sharedAuthToken,
-}) {
-  final AuthToken? authToken;
-  if (sharedAuthToken != null) {
-    authToken = crypto.createAuthTokenFromToken(token: sharedAuthToken);
-  } else {
-    authToken = null;
-  }
-
-  return authToken;
 }

@@ -44,7 +44,7 @@ void main() async {
   test('Client initiator server handshake', () async {
     final ourPermanentKeys = crypto.createKeyStore();
 
-    final client = InitiatorClient.build(
+    final client = InitiatorClient.withUntrustedResponder(
       serverUri,
       ourPermanentKeys,
       [],
@@ -63,7 +63,7 @@ void main() async {
     final ourPermanentKeys = crypto.createKeyStore();
     final initiatorTrustedKey = crypto.createKeyStore().publicKey;
 
-    final client = ResponderClient.build(
+    final client = ResponderClient.withTrustedKey(
       serverUri,
       ourPermanentKeys,
       [],

@@ -16,7 +16,42 @@ class InitiatorClient implements saltyrtc.InitiatorClient {
 
   InitiatorClient._(this._client);
 
-  factory InitiatorClient.build(
+  factory InitiatorClient.withUntrustedResponder(
+    Uri baseUri,
+    saltyrtc.KeyStore ourPermanentKeys,
+    List<saltyrtc.Task> tasks, {
+    required int pingInterval,
+    required Uint8List expectedServerKey,
+    required Uint8List sharedAuthToken,
+  }) {
+    return InitiatorClient._build(
+      baseUri,
+      ourPermanentKeys,
+      tasks,
+      pingInterval: pingInterval,
+      expectedServerKey: expectedServerKey,
+      sharedAuthToken: sharedAuthToken,
+    );
+  }
+
+  factory InitiatorClient.withTrustedResponder(
+    Uri baseUri,
+    saltyrtc.KeyStore ourPermanentKeys,
+    List<saltyrtc.Task> tasks, {
+    required int pingInterval,
+    required Uint8List expectedServerKey,
+    required Uint8List responderTrustedKey,
+  }) {
+    return InitiatorClient._build(
+      baseUri,
+      ourPermanentKeys,
+      tasks,
+      pingInterval: pingInterval,
+      expectedServerKey: expectedServerKey,
+    );
+  }
+
+  factory InitiatorClient._build(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
     List<saltyrtc.Task> tasks, {
@@ -60,7 +95,45 @@ class ResponderClient implements saltyrtc.ResponderClient {
 
   ResponderClient._(this._client);
 
-  factory ResponderClient.build(
+  factory ResponderClient.withAuthToken(
+    Uri baseUri,
+    saltyrtc.KeyStore ourPermanentKeys,
+    List<saltyrtc.Task> tasks, {
+    required int pingInterval,
+    required Uint8List expectedServerKey,
+    required Uint8List initiatorTrustedKey,
+    required Uint8List sharedAuthToken,
+  }) {
+    return ResponderClient._build(
+      baseUri,
+      ourPermanentKeys,
+      tasks,
+      pingInterval: pingInterval,
+      expectedServerKey: expectedServerKey,
+      initiatorTrustedKey: initiatorTrustedKey,
+      sharedAuthToken: sharedAuthToken,
+    );
+  }
+
+  factory ResponderClient.withTrustedKey(
+    Uri baseUri,
+    saltyrtc.KeyStore ourPermanentKeys,
+    List<saltyrtc.Task> tasks, {
+    required int pingInterval,
+    required Uint8List expectedServerKey,
+    required Uint8List initiatorTrustedKey,
+  }) {
+    return ResponderClient._build(
+      baseUri,
+      ourPermanentKeys,
+      tasks,
+      pingInterval: pingInterval,
+      expectedServerKey: expectedServerKey,
+      initiatorTrustedKey: initiatorTrustedKey,
+    );
+  }
+
+  factory ResponderClient._build(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
     List<saltyrtc.Task> tasks, {
