@@ -29,7 +29,7 @@ import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../server_mock.dart'
     show Decrypt, IntermediateState, MockServer, NonceAndMessage;
-import '../../utils.dart';
+import '../../utils.dart' show setUpTesting;
 
 void main() {
   setUpTesting();
