@@ -22,7 +22,7 @@ import 'package:test/expect.dart';
 
 import 'crypto_mock.dart' show crypto, setUpCrypto;
 import 'logging.dart' show setUpLogging;
-import 'network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
+import 'network_mock.dart' show EventQueue, MockSyncWebSocketSink, PackageQueue;
 
 // Setups logging and crypto.
 void setUpTesting() {
@@ -167,11 +167,14 @@ T noChange<T>(T v) => v;
 
 void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
   final sink = phase.common.sink;
+  final events = phase.common.events as EventQueue;
   var packageQueue = (sink as MockSyncWebSocketSink).queue;
   for (final step in steps) {
     phase = step(phase, packageQueue);
     expect(packageQueue, isEmpty);
     expect(phase.common.sink, same(sink));
+    expect(events, isEmpty);
+    expect(phase.common.events, same(events));
   }
 }
 

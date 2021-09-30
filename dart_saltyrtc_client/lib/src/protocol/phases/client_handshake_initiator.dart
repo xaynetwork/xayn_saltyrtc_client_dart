@@ -275,7 +275,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    //TODO notify application about potentially tursted authenticator
+    //TODO
+    // common.events.add(
+    //     ResponderAuthenticated(responder.permanentSharedKey!.remotePublicKey));
+
     return InitiatorTaskPhase(
         common, config, responder.assertAuthenticated(), taskAndData.first);
   }

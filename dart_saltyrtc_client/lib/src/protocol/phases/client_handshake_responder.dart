@@ -192,6 +192,10 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     }
 
     final task = taskBuilder.buildResponderTask(msg.data[taskName]);
+
+    //TODO
+    // common.events.add(ResponderAuthenticated(config.permanentKeys.publicKey));
+
     return ResponderTaskPhase(
         common, config, initiator.assertAuthenticated(), task);
   }
