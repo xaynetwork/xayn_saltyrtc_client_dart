@@ -17,3 +17,8 @@ abstract class WebSocketSink implements Sink<Uint8List> {
 }
 
 typedef WebSocketStream = Stream<Uint8List>;
+
+abstract class WebSocket {
+  WebSocketSink get sink;
+  WebSocketStream get stream;
+}

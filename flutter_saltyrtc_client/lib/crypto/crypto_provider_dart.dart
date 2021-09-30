@@ -6,7 +6,7 @@ import 'package:libsodium/libsodium.dart' as _sodium;
 
 Crypto? _instance;
 
-Future initCrypto() async {}
+Future<void> initCrypto() async {}
 
 Crypto get cryptoInstance {
   _instance ??= _DartSodiumCrypto();

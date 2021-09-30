@@ -17,8 +17,11 @@ dependencies:
     path: ../dart_saltyrtc_client
   flutter_sodium: 0.2.0
   libsodium: 0.2.0
+  web_socket_channel: 2.1.0
+  hex: 0.2.0
 
 dev_dependencies:
+  logger: 1.1.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^1.0.0

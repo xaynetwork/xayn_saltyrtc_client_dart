@@ -1,3 +1,4 @@
+import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
@@ -12,6 +13,7 @@ import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError, ValidationError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -23,7 +25,7 @@ import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/expect.dart';
 
 import 'crypto_mock.dart' show MockCrypto;
-import 'network_mock.dart' show MockWebSocket, PackageQueue;
+import 'network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import 'server_mock.dart' show MockServer;
 
 class SetupData {
@@ -32,6 +34,7 @@ class SetupData {
   final MockServer server;
   final PackageQueue outMsgs;
   final int pingInterval;
+  final StreamController<Event> events;
   Phase phase;
 
   SetupData._(
@@ -41,6 +44,7 @@ class SetupData {
     this.outMsgs,
     this.phase,
     this.pingInterval,
+    this.events,
   );
 
   factory SetupData.init(
@@ -52,11 +56,13 @@ class SetupData {
     final crypto = MockCrypto();
     final clientPermanentKeys = crypto.createKeyStore();
     final server = MockServer(crypto);
-    final ws = MockWebSocket();
+    final ws = MockSyncWebSocketSink();
     final outMsgs = ws.queue;
+    final events = StreamController<Event>.broadcast();
     final common = Common(
       crypto,
       ws,
+      events.sink,
     );
     final Config config;
     if (role == Role.initiator) {
@@ -81,7 +87,14 @@ class SetupData {
     final phase = initPhase(common, config);
 
     return SetupData._(
-        crypto, clientPermanentKeys, server, outMsgs, phase, pingInterval);
+      crypto,
+      clientPermanentKeys,
+      server,
+      outMsgs,
+      phase,
+      pingInterval,
+      events,
+    );
   }
 }
 
@@ -236,7 +249,7 @@ T noChange<T>(T v) => v;
 
 void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
   final sink = phase.common.sink;
-  var packageQueue = (sink as MockWebSocket).queue;
+  var packageQueue = (sink as MockSyncWebSocketSink).queue;
   for (final step in steps) {
     phase = step(phase, packageQueue);
     expect(packageQueue, isEmpty);

@@ -13,3 +13,18 @@ abstract class CryptoProvider {
 
   static Crypto get instance => cryptoInstance;
 }
+
+bool _init = false;
+
+Future<Crypto> getCrypto() async {
+  if (!_init) {
+    await initCrypto();
+    _init = true;
+  }
+
+  return crypto();
+}
+
+Crypto crypto() {
+  return cryptoInstance;
+}

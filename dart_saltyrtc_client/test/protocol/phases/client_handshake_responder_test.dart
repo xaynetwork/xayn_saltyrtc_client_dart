@@ -1,3 +1,5 @@
+import 'dart:async' show StreamController;
+
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
@@ -17,7 +19,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show NoSharedTaskError;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart';
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
+    show CookiePair, CombinedSequencePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -29,7 +33,7 @@ import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show MockCrypto;
 import '../../logging.dart' show setUpLogging;
-import '../../network_mock.dart' show MockWebSocket, PackageQueue;
+import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../utils.dart'
     show PeerData, TestTask, phaseAs, runTest, throwsSaltyRtcError;
 
@@ -156,12 +160,14 @@ class _Setup {
   final PeerData server;
   final PeerData initiator;
   final ResponderClientHandshakePhase initialPhase;
+  final StreamController<Event> events;
 
   _Setup({
     required this.crypto,
     required this.server,
     required this.initiator,
     required this.initialPhase,
+    required this.events,
   });
 
   factory _Setup.create({
@@ -196,7 +202,8 @@ class _Setup {
     server.testedPeer.ourSessionKey = crypto.createKeyStore();
     server.testedPeer.permanentKey = responderPermanentKeys;
 
-    final common = Common(crypto, MockWebSocket());
+    final events = StreamController<Event>.broadcast();
+    final common = Common(crypto, MockSyncWebSocketSink(), events);
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
       ownKeyStore: responderPermanentKeys,
       remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
@@ -222,6 +229,7 @@ class _Setup {
       server: server,
       initiator: initiator,
       initialPhase: phase,
+      events: events,
     );
   }
 }

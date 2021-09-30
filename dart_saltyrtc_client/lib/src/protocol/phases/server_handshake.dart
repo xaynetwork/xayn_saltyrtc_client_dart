@@ -24,6 +24,8 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ValidationError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show ServerHandshakeDone;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
@@ -121,23 +123,23 @@ abstract class ServerHandshakePhase extends Phase {
 
     switch (handshakeState) {
       case ServerHandshakeState.start:
-        {
-          if (msg is ServerHello) {
-            handleServerHello(msg, nonce);
-            sendClientHello();
-            sendClientAuth();
-          } else {
-            throw ProtocolError(
-                'Expected ${MessageType.serverHello}, but got ${msg.type}');
-          }
-          logger.v('Current server handshake status $handshakeState');
+        if (msg is ServerHello) {
+          handleServerHello(msg, nonce);
+          sendClientHello();
+          sendClientAuth();
+        } else {
+          throw ProtocolError(
+              'Expected ${MessageType.serverHello}, but got ${msg.type}');
         }
+        logger.v('Current server handshake status $handshakeState');
         return this;
       case ServerHandshakeState.helloSent:
         throw ProtocolError(
             'Received ${msg.type} message before sending ${MessageType.clientAuth}');
       case ServerHandshakeState.authSent:
-        return handleServerAuth(msg, nonce);
+        final clientPhase = handleServerAuth(msg, nonce);
+        common.events.add(ServerHandshakeDone());
+        return clientPhase;
     }
   }
 
