@@ -27,7 +27,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show NoSharedTaskFound;
+    show NoSharedTaskFound, ResponderAuthenticated;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -203,8 +203,6 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       decryptionErrorCloseCode: CloseCode.initiatorCouldNotDecrypt,
     );
 
-    //TODO[trusted responder]: But once we want to "trust" responder we
-    //      need to report it back to the client in some way.
     responder.setPermanentSharedKey(
         InitialClientAuthMethod.createResponderSharedPermanentKey(
             common.crypto, config.permanentKeys, msg.key));
@@ -275,9 +273,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    //TODO
-    // common.events.add(
-    //     ResponderAuthenticated(responder.permanentSharedKey!.remotePublicKey));
+    common.events.add(
+        ResponderAuthenticated(responder.permanentSharedKey!.remotePublicKey));
 
     return InitiatorTaskPhase(
         common, config, responder.assertAuthenticated(), taskAndData.first);

@@ -8,7 +8,6 @@ import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink, WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketStream;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:test/test.dart';
 
 class MockSyncWebSocketSink implements WebSocketSink {
@@ -107,15 +106,4 @@ class PackageQueue extends QueueSink<Uint8List> {
 class EventQueue extends QueueSink<Event> {
   @override
   String toString() => 'EventQueue($_queue)';
-}
-
-extension PhaseWithEvents on Phase {
-  Event? nextEvent() {
-    final queue = common.events as EventQueue;
-    if (queue.isEmpty) {
-      return null;
-    } else {
-      return queue.next();
-    }
-  }
 }

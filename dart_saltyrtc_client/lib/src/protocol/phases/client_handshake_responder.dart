@@ -25,7 +25,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show NoSharedTaskFound;
+    show NoSharedTaskFound, ResponderAuthenticated;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
@@ -193,8 +193,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
 
     final task = taskBuilder.buildResponderTask(msg.data[taskName]);
 
-    //TODO
-    // common.events.add(ResponderAuthenticated(config.permanentKeys.publicKey));
+    common.events.add(ResponderAuthenticated(config.permanentKeys.publicKey));
 
     return ResponderTaskPhase(
         common, config, initiator.assertAuthenticated(), task);

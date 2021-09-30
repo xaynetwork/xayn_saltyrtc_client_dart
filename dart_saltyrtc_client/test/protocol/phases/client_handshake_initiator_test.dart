@@ -24,7 +24,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show NoSharedTaskFound;
+    show NoSharedTaskFound, ResponderAuthenticated;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -34,8 +34,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart'
-    show EventQueue, MockSyncWebSocketSink, PhaseWithEvents;
+import '../../network_mock.dart' show EventQueue, MockSyncWebSocketSink;
 import '../../utils.dart'
     show
         Io,
@@ -578,7 +577,7 @@ Phase Function(Phase, Io) mkSendAuthNoSharedTaskTest({
       );
     }, throwsSaltyRtcError(closeCode: CloseCode.goingAway));
 
-    expect(phase.nextEvent(), isA<NoSharedTaskFound>());
+    io.expectEventOfType<NoSharedTaskFound>();
 
     for (final task in supportedTasks) {
       expect(task.lastInitiatorTask, isNull);
@@ -663,6 +662,9 @@ Phase Function(Phase, Io) mkSendAuthTest({
         ));
     expect(dropMsg.id, equals(Id.responderId(4)));
     expect(dropMsg.reason, equals(CloseCode.droppedByInitiator));
+
+    final authEvent = io.expectEventOfType<ResponderAuthenticated>();
+    expect(authEvent.permanentKey, equals(responder.permanentKey.publicKey));
 
     return phase;
   };

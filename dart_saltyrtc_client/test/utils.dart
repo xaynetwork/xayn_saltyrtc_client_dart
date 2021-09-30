@@ -12,6 +12,7 @@ import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError, ValidationError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
@@ -169,6 +170,12 @@ class Io {
   EventQueue sendEvents;
 
   Io(this.sendPackages, this.sendEvents);
+
+  T expectEventOfType<T extends Event>() {
+    final event = sendEvents.next();
+    expect(event, isA<T>());
+    return event as T;
+  }
 }
 
 void runTest(Phase phase, List<Phase Function(Phase, Io)> steps) {
