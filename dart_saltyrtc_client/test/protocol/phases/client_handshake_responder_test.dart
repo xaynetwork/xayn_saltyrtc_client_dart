@@ -290,8 +290,8 @@ Phase Function(Phase, Io) mkRecvTokenAndKeyTest(PeerData initiator) {
   return (initialPhase, io) {
     final phase = phaseAs<ResponderClientHandshakePhase>(initialPhase);
 
-    final tokenMsg = initiator.expectMessageOfType<Token>(io,
-        decryptWith: initiator.authToken);
+    final tokenMsg = io.expectMessageOfType<Token>(
+        sendTo: initiator, decryptWith: initiator.authToken);
 
     expect(tokenMsg.key, equals(initialPhase.config.permanentKeys.publicKey));
     initiator.testedPeer.permanentKey = initialPhase.config.permanentKeys;
@@ -302,7 +302,8 @@ Phase Function(Phase, Io) mkRecvTokenAndKeyTest(PeerData initiator) {
 
 Phase Function(Phase, Io) mkRecvKeyTest(PeerData initiator) {
   return (initialPhase, io) {
-    final keyMsg = initiator.expectMessageOfType<Key>(io,
+    final keyMsg = io.expectMessageOfType<Key>(
+        sendTo: initiator,
         decryptWith: crypto.createSharedKeyStore(
             ownKeyStore: initiator.permanentKey,
             remotePublicKey: initiator.testedPeer.permanentKey!.publicKey));
@@ -376,8 +377,8 @@ Phase Function(Phase, Io) mkSendKeyRecvAuthTest({
     expect(phase.initiatorWithState!.initiator.sessionSharedKey,
         same(sessionSharedKey));
 
-    final authMsg = initiator.expectMessageOfType<AuthResponder>(io,
-        decryptWith: sessionSharedKey);
+    final authMsg = io.expectMessageOfType<AuthResponder>(
+        sendTo: initiator, decryptWith: sessionSharedKey);
 
     expect(authMsg.yourCookie, equals(initiator.testedPeer.cookiePair.ours));
     final taskData = {

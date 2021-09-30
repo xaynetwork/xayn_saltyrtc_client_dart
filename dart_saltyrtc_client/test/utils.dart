@@ -117,28 +117,6 @@ class PeerData {
     return message.buildPackage(nonce, encryptWith: encryptWith);
   }
 
-  T expectMessageOfType<T extends Message>(Io io, {CryptoBox? decryptWith}) {
-    final package = io.sendPackages.next();
-    final nonce = Nonce.fromBytes(package);
-    expect(nonce.source, equals(testedPeer.address));
-    expect(nonce.destination, equals(address));
-    testedPeer.cookiePair.updateAndCheck(nonce.cookie, nonce.source);
-    testedPeer.csPair.updateAndCheck(nonce.combinedSequence, nonce.source);
-    final payload = Uint8List.sublistView(package, Nonce.totalLength);
-    final Message msg;
-    if (decryptWith == null) {
-      msg = readMessage(payload);
-    } else {
-      msg = decryptWith.readEncryptedMessageOfType<T>(
-        msgBytes: payload,
-        nonce: nonce,
-        msgType: T.runtimeType.toString(),
-      );
-    }
-    expect(msg, isA<T>());
-    return msg as T;
-  }
-
   void resetTestedClientKnowledge() {
     final old = testedPeer;
     testedPeer = MockKnowledgeAboutTestedPeer(address: old.address);
@@ -175,6 +153,28 @@ class Io {
     final event = sendEvents.next();
     expect(event, isA<T>());
     return event as T;
+  }
+
+  T expectMessageOfType<T extends Message>({required PeerData sendTo, CryptoBox? decryptWith}) {
+    final package = sendPackages.next();
+    final nonce = Nonce.fromBytes(package);
+    expect(nonce.source, equals(sendTo.testedPeer.address));
+    expect(nonce.destination, equals(sendTo.address));
+    sendTo.testedPeer.cookiePair.updateAndCheck(nonce.cookie, nonce.source);
+    sendTo.testedPeer.csPair.updateAndCheck(nonce.combinedSequence, nonce.source);
+    final payload = Uint8List.sublistView(package, Nonce.totalLength);
+    final Message msg;
+    if (decryptWith == null) {
+      msg = readMessage(payload);
+    } else {
+      msg = decryptWith.readEncryptedMessageOfType<T>(
+        msgBytes: payload,
+        nonce: nonce,
+        msgType: T.runtimeType.toString(),
+      );
+    }
+    expect(msg, isA<T>());
+    return msg as T;
   }
 }
 
