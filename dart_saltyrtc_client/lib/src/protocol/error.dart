@@ -1,4 +1,6 @@
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart';
+import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:meta/meta.dart' show immutable;
 
 @immutable
@@ -51,4 +53,14 @@ class ValidationError extends ProtocolError {
 class AuthenticatedPeerDisconnected extends SaltyRtcError {
   AuthenticatedPeerDisconnected()
       : super(CloseCode.closingNormal, 'authenticated peer disconnected');
+}
+
+@immutable
+class SendErrorException implements Exception {
+  final Id destination;
+
+  SendErrorException(this.destination);
+
+  @override
+  String toString() => 'delivering message to $destination failed';
 }

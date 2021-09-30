@@ -24,7 +24,11 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show AuthenticatedPeerDisconnected, ProtocolError, SaltyRtcError;
+    show
+        AuthenticatedPeerDisconnected,
+        ProtocolError,
+        SaltyRtcError,
+        SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -52,6 +56,12 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @protected
   void handleServerMessage(Message msg);
+
+  @override
+  void handleSendErrorByDestination(Id destination) {
+    //TODO reset connection
+    throw SendErrorException(destination);
+  }
 
   @override
   void onProtocolError(ProtocolError e, Id? source) {

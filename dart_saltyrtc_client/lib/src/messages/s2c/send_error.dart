@@ -1,5 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -31,6 +32,9 @@ class SendError extends Message with EquatableMixin {
 
     return SendError(id);
   }
+
+  Id get source => Id.peerId(id[0]);
+  Id get destination => Id.peerId(id[1]);
 
   @override
   String get type => _type;

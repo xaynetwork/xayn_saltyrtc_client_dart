@@ -1,4 +1,5 @@
 import 'dart:async' show StreamController;
+import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto;
@@ -17,11 +18,11 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
+import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
+    show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError;
+    show NoSharedTaskError, SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show CookiePair, CombinedSequencePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -151,6 +152,27 @@ void main() {
     runTest(setup.initialPhase, [
       mkRecvTokenAndKeyTest(setup.initiator),
       mkNewInitiatorTest(initiator: setup.initiator, server: setup.server),
+    ]);
+  });
+
+  test('handle SendError', () {
+    final tasks = [TestTask('example.v23')];
+    final setup = _Setup.create(crypto: crypto, tasks: tasks);
+    final initiator = setup.initiator;
+    final server = setup.server;
+    runTest(setup.initialPhase, [
+      mkRecvTokenAndKeyTest(initiator),
+      mkSendErrorTest(server: setup.server, initiator: initiator),
+      mkNewInitiatorTest(initiator: initiator, server: server),
+      mkSendKeyRecvAuthTest(
+        initiator: initiator,
+        tasks: tasks,
+      ),
+      mkSendAuthTest(initiator: initiator, task: 'example.v23', data: {
+        'example.v23': {
+          'foo': [1]
+        }
+      }),
     ]);
   });
 }
@@ -293,8 +315,7 @@ Phase Function(Phase, PackageQueue) mkNewInitiatorTest({
     expect(initiatorFromResponder.csPair.theirs, isNull);
     expect(initiatorFromResponder.permanentSharedKey, isNotNull);
 
-    initiator.testedPeer.csPair = CombinedSequencePair.fromRandom(crypto);
-    initiator.testedPeer.cookiePair = CookiePair.fromRandom(crypto);
+    resetInitiatorData(initiator);
 
     return tokenAndKeyTest(phase, packages);
   };
@@ -394,4 +415,43 @@ Phase Function(Phase, PackageQueue) mkInitiatorDisconnectedTest({
     expect(phase.initiatorWithState, isNull);
     return phase;
   };
+}
+
+Phase Function(Phase, PackageQueue) mkSendErrorTest({
+  required PeerData server,
+  required PeerData initiator,
+}) {
+  return (phaseUntyped, packages) {
+    expect(() {
+      server.sendAndTransitToPhase<ResponderClientHandshakePhase>(
+        message: SendError(Uint8List.fromList([
+          phaseUntyped.common.address.value,
+          Id.initiatorAddress.value,
+          0,
+          0,
+          1,
+          2,
+          3,
+          4
+        ])),
+        sendTo: phaseUntyped,
+        encryptWith: crypto.createSharedKeyStore(
+            ownKeyStore: server.testedPeer.ourSessionKey!,
+            remotePublicKey: server.testedPeer.permanentKey!.publicKey),
+      );
+    }, throwsA(isA<SendErrorException>()));
+
+    final phase = phaseAs<ResponderClientHandshakePhase>(phaseUntyped);
+    expect(phase.initiatorWithState, isNull);
+
+    resetInitiatorData(initiator);
+
+    return phase;
+  };
+}
+
+void resetInitiatorData(PeerData initiator) {
+  final oldKnowledge = initiator.testedPeer;
+  initiator.resetTestedClientKnowledge(crypto);
+  initiator.testedPeer.permanentKey = oldKnowledge.permanentKey;
 }

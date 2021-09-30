@@ -22,9 +22,10 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart';
+import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+    show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError;
+    show NoSharedTaskError, ProtocolError, SendErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -116,6 +117,16 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     validateIdResponder(id.value);
     responders.remove(id);
     //TODO potentially inform client
+  }
+
+  @override
+  void handleSendErrorByDestination(Id destination) {
+    final removed = responders.remove(destination);
+    if (removed != null) {
+      throw SendErrorException(destination);
+    } else {
+      logger.d('send-error from already removed destination');
+    }
   }
 
   @override

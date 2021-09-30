@@ -146,8 +146,8 @@ class MockKnowledgeAboutTestedPeer {
   KeyStore? theirSessionKey;
   KeyStore? ourSessionKey;
   final Id address;
-  CombinedSequencePair csPair;
-  CookiePair cookiePair;
+  final CombinedSequencePair csPair;
+  final CookiePair cookiePair;
 
   MockKnowledgeAboutTestedPeer({
     required Crypto crypto,
@@ -164,7 +164,7 @@ class PeerData {
   final AuthToken? authToken;
   final Id address;
   final KeyStore permanentKey;
-  final MockKnowledgeAboutTestedPeer testedPeer;
+  MockKnowledgeAboutTestedPeer testedPeer;
 
   PeerData({
     required this.crypto,
@@ -224,6 +224,12 @@ class PeerData {
     }
     expect(msg, isA<T>());
     return msg as T;
+  }
+
+  void resetTestedClientKnowledge(Crypto crypto) {
+    final old = testedPeer;
+    testedPeer =
+        MockKnowledgeAboutTestedPeer(crypto: crypto, address: old.address);
   }
 }
 
