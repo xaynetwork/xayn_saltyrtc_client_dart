@@ -116,9 +116,8 @@ class PeerData {
     return message.buildPackage(nonce, encryptWith: encryptWith);
   }
 
-  T expectMessageOfType<T extends Message>(PackageQueue packages,
-      {CryptoBox? decryptWith}) {
-    final package = packages.next();
+  T expectMessageOfType<T extends Message>(Io io, {CryptoBox? decryptWith}) {
+    final package = io.sendPackages.next();
     final nonce = Nonce.fromBytes(package);
     expect(nonce.source, equals(testedPeer.address));
     expect(nonce.destination, equals(address));
@@ -165,16 +164,24 @@ T phaseAs<T extends Phase>(Phase phase) {
 
 T noChange<T>(T v) => v;
 
-void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
+class Io {
+  PackageQueue sendPackages;
+  EventQueue sendEvents;
+
+  Io(this.sendPackages, this.sendEvents);
+}
+
+void runTest(Phase phase, List<Phase Function(Phase, Io)> steps) {
   final sink = phase.common.sink;
-  final events = phase.common.events as EventQueue;
-  var packageQueue = (sink as MockSyncWebSocketSink).queue;
+  final sendPackages = (sink as MockSyncWebSocketSink).queue;
+  final sendEvents = phase.common.events as EventQueue;
+  final io = Io(sendPackages, sendEvents);
   for (final step in steps) {
-    phase = step(phase, packageQueue);
-    expect(packageQueue, isEmpty);
+    phase = step(phase, io);
+    expect(sendPackages, isEmpty);
     expect(phase.common.sink, same(sink));
-    expect(events, isEmpty);
-    expect(phase.common.events, same(events));
+    expect(sendEvents, isEmpty);
+    expect(phase.common.events, same(sendEvents));
   }
 }
 
