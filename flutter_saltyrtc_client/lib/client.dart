@@ -10,12 +10,16 @@ import 'package:hex/hex.dart' show HEX;
 import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
 
-/// Client for an initiator
+/// Client for an initiator.
 class InitiatorClient implements saltyrtc.InitiatorClient {
   final saltyrtc.InitiatorClient _client;
 
   InitiatorClient._(this._client);
 
+  /// Create an initiator that needs to communicate with a responder that has
+  /// not yet been authenticated. The some authentication token must be used only
+  /// once. If an errors accurs before the selection of a task is completed a
+  /// different value for `sharedAuthToken` must be passed.
   factory InitiatorClient.withUntrustedResponder(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
@@ -34,6 +38,8 @@ class InitiatorClient implements saltyrtc.InitiatorClient {
     );
   }
 
+  /// Create an initiator that needs to communicate with a responder
+  /// that is considered trusted and that.
   factory InitiatorClient.withTrustedResponder(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
@@ -80,12 +86,21 @@ class InitiatorClient implements saltyrtc.InitiatorClient {
     return InitiatorClient._(client);
   }
 
+  /// Events produced from the client.
   @override
   Stream<Event> get events => _client.events;
 
+  /// Start listening to messages on the websocket.
   @override
   void run() {
     _client.run();
+  }
+
+  /// Close the connection with the server, the client is not usable after
+  /// this method has been called.
+  @override
+  Future<void> close() {
+    return _client.close();
   }
 }
 
@@ -95,6 +110,10 @@ class ResponderClient implements saltyrtc.ResponderClient {
 
   ResponderClient._(this._client);
 
+  /// Create a responder that needs to authenticate itself with the initiator
+  /// using the authentication token. The some authentication token must be used only
+  /// once. If an errors accurs before the selection of a task is completed a
+  /// different value for `sharedAuthToken` must be passed.
   factory ResponderClient.withAuthToken(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
@@ -115,6 +134,7 @@ class ResponderClient implements saltyrtc.ResponderClient {
     );
   }
 
+  /// Create an responder that has already authenticated itself with the initiator.
   factory ResponderClient.withTrustedKey(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
@@ -160,16 +180,25 @@ class ResponderClient implements saltyrtc.ResponderClient {
     return ResponderClient._(client);
   }
 
+  /// Events produced from the client.
   @override
   Stream<Event> get events => _client.events;
 
+  /// Start listening to messages on the websocket.
   @override
   void run() {
     _client.run();
   }
+
+  /// Close the connection with the server, the client is not
+  /// usable after this method has been called.
+  @override
+  Future<void> close() {
+    return _client.close();
+  }
 }
 
-/// Construct the uri where the last part of the path is the public of the initiator
+/// Construct the uri where the last part of the path is the public of the initiator.
 Uri _getUri(Uri baseUri, Uint8List initiatorPublicKey) {
   return baseUri.replace(
       // we keep the original path because the server can be deployed behind a specific endpoint
