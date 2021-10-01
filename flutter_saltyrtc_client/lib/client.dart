@@ -10,8 +10,20 @@ import 'package:hex/hex.dart' show HEX;
 import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
 
+abstract class SaltyRtcClient {
+  /// Events produced from the client.
+  Stream<Event> get events;
+
+  /// Start listening to messages on the websocket.
+  void run();
+
+  /// Close the connection with the server, the client is not usable after
+  /// this method has been called.
+  Future<void> close();
+}
+
 /// Client for an initiator.
-class InitiatorClient implements saltyrtc.InitiatorClient {
+class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
   final saltyrtc.InitiatorClient _client;
 
   InitiatorClient._(this._client);
@@ -105,7 +117,7 @@ class InitiatorClient implements saltyrtc.InitiatorClient {
 }
 
 /// Client for an responder
-class ResponderClient implements saltyrtc.ResponderClient {
+class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
   final saltyrtc.ResponderClient _client;
 
   ResponderClient._(this._client);

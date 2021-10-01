@@ -46,11 +46,18 @@ abstract class Client {
 
     _ws.stream.forEach((bytes) {
       _onWsMessage(bytes);
+    }).whenComplete(() {
+      _close();
     });
   }
 
-  Future<void> close() async {
+  /// Actions to do always when we close the client.
+  Future<void> _close() async {
+    // TODO we need to send a close event before closing the stream.
     await _events.close();
+  }
+
+  Future<void> close() async {
     return _ws.sink.close(CloseCode.closingNormal.toInt(), '');
   }
 
