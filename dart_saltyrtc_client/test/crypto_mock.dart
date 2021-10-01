@@ -7,12 +7,14 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'package:fixnum/fixnum.dart' show Int64;
+import 'package:meta/meta.dart' show immutable;
 
 final listEq = ListEquality<int>();
 
 typedef _KeyId = int;
 typedef _MessageId = Int64;
 
+@immutable
 class _MockKeyStore extends KeyStore {
   final _KeyId _keyId;
   final MockCrypto crypto;
@@ -35,6 +37,7 @@ class _MockKeyStore extends KeyStore {
   }
 }
 
+@immutable
 class _MockSharedKeyStore extends SharedKeyStore {
   final _KeyId _keyId;
   final MockCrypto crypto;
@@ -64,6 +67,7 @@ class _MockSharedKeyStore extends SharedKeyStore {
   }
 }
 
+@immutable
 class _MockAuthToken extends AuthToken {
   final _KeyId _keyId;
   final MockCrypto crypto;
@@ -88,6 +92,7 @@ class _MockAuthToken extends AuthToken {
   }
 }
 
+@immutable
 class EncryptionInfo {
   final Uint8List decryptedData;
   final Uint8List nonce;
@@ -100,6 +105,7 @@ class EncryptionInfo {
   });
 }
 
+@immutable
 class _TwoKeyIds extends Equatable {
   @override
   final List<Object?> props;
@@ -108,6 +114,7 @@ class _TwoKeyIds extends Equatable {
       : props = first < second ? [first, second] : [second, first];
 }
 
+@immutable
 class _KeyBytes extends Equatable {
   @override
   final List<Object?> props;
@@ -139,6 +146,13 @@ class MockCrypto extends Crypto {
   _MessageId _nextMessageId() => _nextMessageIdState++;
 
   MockCrypto();
+
+  void _reset() {
+    encryptedMessages = {};
+    keyStoreLookUp = {};
+    authTokenLookUp = {};
+    sharedKeyStoreLookUp = {};
+  }
 
   @override
   AuthToken createAuthToken() {
@@ -252,3 +266,14 @@ class MockCrypto extends Crypto {
     return info.decryptedData;
   }
 }
+
+/// Setup crypto.
+///
+/// Call (at most) once per test file.
+///
+/// Do not call before/after each test.
+void setUpCrypto() {
+  crypto._reset();
+}
+
+final crypto = MockCrypto();

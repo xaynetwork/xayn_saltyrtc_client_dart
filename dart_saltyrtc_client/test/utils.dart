@@ -1,8 +1,7 @@
-import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, Crypto, CryptoBox, InitialClientAuthMethod, KeyStore;
+    show AuthToken, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -13,106 +12,21 @@ import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError, ValidationError;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Common, Config, InitiatorConfig, Phase, ResponderConfig;
-import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
-    show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
+import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/expect.dart';
+import 'package:test/test.dart';
 
-import 'crypto_mock.dart' show MockCrypto;
+import 'crypto_mock.dart' show crypto, setUpCrypto;
+import 'logging.dart' show setUpLogging;
 import 'network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
-import 'server_mock.dart' show MockServer;
 
-class SetupData {
-  final Crypto crypto;
-  final KeyStore clientPermanentKeys;
-  final MockServer server;
-  final PackageQueue outMsgs;
-  final int pingInterval;
-  final StreamController<Event> events;
-  Phase phase;
-
-  SetupData._(
-    this.crypto,
-    this.clientPermanentKeys,
-    this.server,
-    this.outMsgs,
-    this.phase,
-    this.pingInterval,
-    this.events,
-  );
-
-  factory SetupData.init(
-    Role role,
-    Phase Function(Common, Config) initPhase, [
-    int pingInterval = 13,
-    List<Task> tasks = const [],
-  ]) {
-    final crypto = MockCrypto();
-    final clientPermanentKeys = crypto.createKeyStore();
-    final server = MockServer(crypto);
-    final ws = MockSyncWebSocketSink();
-    final outMsgs = ws.queue;
-    final events = StreamController<Event>.broadcast();
-    final common = Common(
-      crypto,
-      ws,
-      events.sink,
-    );
-    final Config config;
-    if (role == Role.initiator) {
-      config = InitiatorConfig(
-        permanentKeys: clientPermanentKeys,
-        expectedServerPublicKey: server.permanentPublicKey,
-        pingInterval: pingInterval,
-        tasks: tasks,
-        authMethod: InitialClientAuthMethod.fromEither(
-            authToken: crypto.createAuthToken()),
-      );
-    } else {
-      config = ResponderConfig(
-        permanentKeys: clientPermanentKeys,
-        expectedServerPublicKey: server.permanentPublicKey,
-        pingInterval: pingInterval,
-        tasks: tasks,
-        initiatorPermanentPublicKey: crypto.createKeyStore().publicKey,
-      );
-    }
-
-    final phase = initPhase(common, config);
-
-    return SetupData._(
-      crypto,
-      clientPermanentKeys,
-      server,
-      outMsgs,
-      phase,
-      pingInterval,
-      events,
-    );
-  }
-}
-
-InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
-  Common common,
-  Config config,
-) {
-  return InitiatorServerHandshakePhase(
-    common,
-    config as InitiatorConfig,
-  );
-}
-
-ResponderServerHandshakePhase makeResponderServerHandshakePhase(
-  Common common,
-  Config config,
-) {
-  return ResponderServerHandshakePhase(common, config as ResponderConfig);
+// Setups logging and crypto.
+void setUpTesting() {
+  setUpLogging();
+  setUpCrypto();
 }
 
 Matcher throwsValidationError() {
@@ -150,7 +64,6 @@ class MockKnowledgeAboutTestedPeer {
   final CookiePair cookiePair;
 
   MockKnowledgeAboutTestedPeer({
-    required Crypto crypto,
     required this.address,
     this.permanentKey,
     this.theirSessionKey,
@@ -160,20 +73,17 @@ class MockKnowledgeAboutTestedPeer {
 }
 
 class PeerData {
-  final Crypto crypto;
   final AuthToken? authToken;
   final Id address;
   final KeyStore permanentKey;
   MockKnowledgeAboutTestedPeer testedPeer;
 
   PeerData({
-    required this.crypto,
     required this.address,
     required Id testedPeerId,
     this.authToken,
   })  : permanentKey = crypto.createKeyStore(),
-        testedPeer =
-            MockKnowledgeAboutTestedPeer(crypto: crypto, address: testedPeerId);
+        testedPeer = MockKnowledgeAboutTestedPeer(address: testedPeerId);
 
   N sendAndTransitToPhase<N extends Phase>({
     required Message message,
@@ -226,10 +136,9 @@ class PeerData {
     return msg as T;
   }
 
-  void resetTestedClientKnowledge(Crypto crypto) {
+  void resetTestedClientKnowledge() {
     final old = testedPeer;
-    testedPeer =
-        MockKnowledgeAboutTestedPeer(crypto: crypto, address: old.address);
+    testedPeer = MockKnowledgeAboutTestedPeer(address: old.address);
   }
 }
 

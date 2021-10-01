@@ -176,7 +176,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     }
 
     if (msg.yourCookie != initiator.cookiePair.ours) {
-      throw ProtocolError('Bad repeated cookie in ${MessageType.auth} message');
+      throw ProtocolError('Bad your_cookie in ${MessageType.auth} message');
     }
 
     final Task task;

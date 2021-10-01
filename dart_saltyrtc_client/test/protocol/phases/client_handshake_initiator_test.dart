@@ -2,7 +2,7 @@ import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, InitialClientAuthMethod;
+    show InitialClientAuthMethod;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
     show AuthInitiator;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
@@ -34,35 +34,38 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/test.dart';
 
-import '../../crypto_mock.dart' show MockCrypto;
-import '../../logging.dart' show setUpLogging;
+import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
-import '../../utils.dart' show PeerData, TestTask, phaseAs, runTest;
+import '../../utils.dart'
+    show
+        PeerData,
+        TestTask,
+        phaseAs,
+        runTest,
+        setUpTesting,
+        throwsSaltyRtcError;
 
 void main() {
-  setUpLogging();
+  setUpTesting();
 
-  final crypto = MockCrypto();
   group('successful transition', () {
     test('initial(expect token) -> key', () {
-      final setup = _Setup.create(crypto: crypto);
+      final setup = _Setup.create();
 
-      runTest(
-          setup.initialPhase, [mkSendTokenTest(crypto, setup.responders[0])]);
+      runTest(setup.initialPhase, [mkSendTokenTest(setup.responders[0])]);
     });
 
     test('initial(expect key) -> auth', () {
-      final setup = _Setup.create(crypto: crypto, usePresetTrust: true);
-      runTest(
-          setup.initialPhase, [mkSendKeyTest(crypto, setup.responders.first)]);
+      final setup = _Setup.create(usePresetTrust: true);
+      runTest(setup.initialPhase, [mkSendKeyTest(setup.responders.first)]);
     });
 
     test('key -> auth', () {
-      final setup = _Setup.create(crypto: crypto);
+      final setup = _Setup.create();
       final mockPeer = setup.responders[0];
       runTest(setup.initialPhase, [
-        mkSendTokenTest(crypto, mockPeer),
-        mkSendKeyTest(crypto, mockPeer),
+        mkSendTokenTest(mockPeer),
+        mkSendKeyTest(mockPeer),
       ]);
     });
 
@@ -81,14 +84,13 @@ void main() {
         TestTask('bar', {'b': null}),
         TestTask('example.v23', {'c': null}),
       ];
-      final setup = _Setup.create(
-          crypto: crypto, tasks: supportedTasks, responderIds: [2, 3, 4]);
+      final setup =
+          _Setup.create(tasks: supportedTasks, responderIds: [2, 3, 4]);
       final mockPeer = setup.responders[0];
       runTest(setup.initialPhase, [
-        mkSendTokenTest(crypto, mockPeer),
-        mkSendKeyTest(crypto, mockPeer),
+        mkSendTokenTest(mockPeer),
+        mkSendKeyTest(mockPeer),
         mkSendAuthTest(
-          crypto,
           responder: mockPeer,
           server: setup.server,
           supportedTasks: supportedTasks,
@@ -101,15 +103,13 @@ void main() {
 
   group('auth/decryption failure', () {
     test('initial(expect token) -> drop', () {
-      final setup = _Setup.create(
-          crypto: crypto, responderIds: [12, 21, 111], goodResponderAt: 1);
+      final setup =
+          _Setup.create(responderIds: [12, 21, 111], goodResponderAt: 1);
       final server = setup.server;
       runTest(setup.initialPhase, [
-        mkSendBadTokenTest(crypto,
-            responder: setup.responders[0], server: server),
-        mkSendTokenTest(crypto, setup.responders[1]),
-        mkSendBadTokenTest(crypto,
-            responder: setup.responders[2], server: server),
+        mkSendBadTokenTest(responder: setup.responders[0], server: server),
+        mkSendTokenTest(setup.responders[1]),
+        mkSendBadTokenTest(responder: setup.responders[2], server: server),
         (phaseUntyped, packages) {
           final phase = phaseAs<InitiatorClientHandshakePhase>(phaseUntyped);
           expect(phase.responders.length, equals(1));
@@ -121,17 +121,14 @@ void main() {
 
     test('initial(expect key) -> drop', () {
       final setup = _Setup.create(
-          crypto: crypto,
           responderIds: [12, 21, 111],
           goodResponderAt: 1,
           usePresetTrust: true);
       final server = setup.server;
       runTest(setup.initialPhase, [
-        mkSendBadKeyTest(crypto,
-            responder: setup.responders[0], server: server),
-        mkSendKeyTest(crypto, setup.responders[1]),
-        mkSendBadKeyTest(crypto,
-            responder: setup.responders[2], server: server),
+        mkSendBadKeyTest(responder: setup.responders[0], server: server),
+        mkSendKeyTest(setup.responders[1]),
+        mkSendBadKeyTest(responder: setup.responders[2], server: server),
         (phaseUntyped, packages) {
           final phase = phaseAs<InitiatorClientHandshakePhase>(phaseUntyped);
           expect(phase.responders.length, equals(1));
@@ -142,10 +139,10 @@ void main() {
     });
 
     test('key -> drop', () {
-      final setup = _Setup.create(crypto: crypto);
+      final setup = _Setup.create();
       runTest(setup.initialPhase, [
-        mkSendTokenTest(crypto, setup.responders.first),
-        mkSendBadKeyTest(crypto,
+        mkSendTokenTest(setup.responders.first),
+        mkSendBadKeyTest(
             responder: setup.responders.first, server: setup.server),
         (phaseUntyped, packages) {
           final phase = phaseAs<InitiatorClientHandshakePhase>(phaseUntyped);
@@ -156,21 +153,21 @@ void main() {
     });
 
     test('auth -> protocol error', () {
-      final setup = _Setup.create(crypto: crypto);
-      final mockPeer = setup.responders.first;
+      final setup = _Setup.create();
+      final responder = setup.responders.first;
       final server = setup.server;
       runTest(setup.initialPhase, [
-        mkSendTokenTest(crypto, mockPeer),
-        mkSendKeyTest(crypto, mockPeer),
+        mkSendTokenTest(responder),
+        mkSendKeyTest(responder),
         (initialPhase, packages) {
           final phase =
-              mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+              responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
                   message: Close(CloseCode.goingAway),
                   sendTo: initialPhase,
                   encryptWith: crypto.createSharedKeyStore(
-                      ownKeyStore: mockPeer.testedPeer.ourSessionKey!,
+                      ownKeyStore: responder.testedPeer.ourSessionKey!,
                       remotePublicKey:
-                          mockPeer.testedPeer.theirSessionKey!.publicKey));
+                          responder.testedPeer.theirSessionKey!.publicKey));
 
           final dropMsg = server.expectMessageOfType<DropResponder>(packages,
               decryptWith: crypto.createSharedKeyStore(
@@ -178,10 +175,103 @@ void main() {
                   remotePublicKey:
                       server.testedPeer.theirSessionKey!.publicKey));
 
-          expect(dropMsg.id, equals(mockPeer.address));
+          expect(dropMsg.id, equals(responder.address));
           return phase;
         }
       ]);
+    });
+
+    test('auth your_cookie is checked', () {
+      final responderTasks = [
+        TestTask('fe fe', {
+          'yo': [1, 4, 3]
+        }),
+        TestTask('example.v23', {'xml': []}),
+        TestTask('bar', {
+          'yes': [0, 0, 0]
+        }),
+      ];
+      final supportedTasks = [
+        TestTask('bar foot', {'a': null}),
+        TestTask('bar', {'b': null}),
+        TestTask('example.v23', {'c': null}),
+      ];
+      final setup =
+          _Setup.create(tasks: supportedTasks, responderIds: [2, 3, 4]);
+      final server = setup.server;
+      final responder = setup.responders[0];
+      runTest(setup.initialPhase, [
+        mkSendTokenTest(responder),
+        mkSendKeyTest(responder),
+        (initialPhase, packages) {
+          final tasksData = {
+            for (final task in responderTasks) task.name: task.data
+          };
+
+          final phase =
+              responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+            message: AuthResponder(responder.testedPeer.cookiePair.ours,
+                tasksData.keys.toList(), tasksData),
+            sendTo: initialPhase,
+            encryptWith: crypto.createSharedKeyStore(
+                ownKeyStore: responder.testedPeer.ourSessionKey!,
+                remotePublicKey:
+                    responder.testedPeer.theirSessionKey!.publicKey),
+          );
+
+          expect(phase.responders[responder.address], isNull);
+
+          final dropMsg = server.expectMessageOfType<DropResponder>(
+            packages,
+            decryptWith: crypto.createSharedKeyStore(
+                ownKeyStore: server.testedPeer.theirSessionKey!,
+                remotePublicKey: server.testedPeer.ourSessionKey!.publicKey),
+          );
+
+          expect(dropMsg.id, equals(responder.address));
+          return phase;
+        }
+      ]);
+    });
+
+    group('send-error checks', () {
+      test('send-error source is checked', () {
+        final setup = _Setup.create(
+          responderIds: [12, 21],
+          usePresetTrust: true,
+        );
+        final server = setup.server;
+        final responder0 = setup.responders[0];
+        final responder1 = setup.responders[1];
+
+        runTest(setup.initialPhase, [
+          mkSendKeyTest(responder0),
+          mkSendBadSendErrorTest(
+              server: server,
+              source: Id.peerId(32),
+              destination: responder0.address),
+          // We don't know if we dropped a responder, so
+          // we can't know that we didn't send a message ;)
+          mkSendBadSendErrorTest(
+              server: server,
+              source: Id.peerId(32),
+              destination: responder1.address),
+        ]);
+      });
+
+      test('send-error destination is checked', () {
+        final setup = _Setup.create(usePresetTrust: true);
+        final server = setup.server;
+        final responder0 = setup.responders[0];
+
+        runTest(setup.initialPhase, [
+          mkSendKeyTest(responder0),
+          mkSendBadSendErrorTest(
+              server: server,
+              source: Id.initiatorAddress,
+              destination: Id.initiatorAddress),
+        ]);
+      });
     });
   });
 
@@ -200,14 +290,12 @@ void main() {
       TestTask('bor'),
       TestTask('duck')
     ];
-    final setup = _Setup.create(
-        crypto: crypto, tasks: supportedTasks, responderIds: [2, 3, 4]);
+    final setup = _Setup.create(tasks: supportedTasks, responderIds: [2, 3, 4]);
     final responder = setup.responders[0];
     runTest(setup.initialPhase, [
-      mkSendTokenTest(crypto, responder),
-      mkSendKeyTest(crypto, responder),
+      mkSendTokenTest(responder),
+      mkSendKeyTest(responder),
       mkSendAuthNoSharedTaskTest(
-        crypto,
         responder: responder,
         supportedTasks: supportedTasks,
         responderTasks: responderTasks,
@@ -217,29 +305,25 @@ void main() {
 
   test('path cleaning is done', () {
     final setup = _Setup.create(
-      crypto: crypto,
       responderIds: List.generate(252, (index) => index + 2),
       goodResponderAt: 1,
     );
     final server = setup.server;
     runTest(setup.initialPhase, [
-      mkSendTokenTest(crypto, setup.responders[1]),
+      mkSendTokenTest(setup.responders[1]),
       mkDropOldOnNewReceiverTest(
         newResponderId: 255,
         droppedResponderId: 2,
-        crypto: crypto,
         server: server,
       ),
       mkDropOldOnNewReceiverTest(
         newResponderId: 2,
         droppedResponderId: 4,
-        crypto: crypto,
         server: server,
       ),
       mkDropOldOnNewReceiverTest(
         newResponderId: 4,
         droppedResponderId: 5,
-        crypto: crypto,
         server: server,
       ),
     ]);
@@ -247,20 +331,17 @@ void main() {
 
   test('handleDisconnected', () {
     final setup = _Setup.create(
-      crypto: crypto,
       responderIds: [20, 30, 40],
       goodResponderAt: 2,
     );
     final server = setup.server;
     runTest(setup.initialPhase, [
-      mkSendTokenTest(crypto, setup.responders[2]),
+      mkSendTokenTest(setup.responders[2]),
       mkSendDisconnectedTest(
-        crypto: crypto,
         server: server,
         disconnect: 30,
       ),
       mkSendDisconnectedTest(
-        crypto: crypto,
         server: server,
         disconnect: 20,
       ),
@@ -269,33 +350,27 @@ void main() {
 
   test('handle SendError', () {
     final setup = _Setup.create(
-      crypto: crypto,
       responderIds: [20, 30, 40],
       goodResponderAt: 1,
     );
     final server = setup.server;
 
     runTest(setup.initialPhase, [
-      mkSendErrorTest(
-          crypto: crypto, server: server, responder: setup.responders[0]),
-      mkSendTokenTest(crypto, setup.responders[1]),
-      mkSendErrorTest(
-          crypto: crypto, server: server, responder: setup.responders[1]),
-      mkSendErrorTest(
-          crypto: crypto, server: server, responder: setup.responders[2]),
+      mkSendErrorTest(server: server, responder: setup.responders[0]),
+      mkSendTokenTest(setup.responders[1]),
+      mkSendErrorTest(server: server, responder: setup.responders[1]),
+      mkSendErrorTest(server: server, responder: setup.responders[2]),
     ]);
   });
 }
 
 class _Setup {
-  final Crypto crypto;
   final PeerData server;
   final List<PeerData> responders;
   final InitiatorClientHandshakePhase initialPhase;
   final StreamController<Event> events;
 
   _Setup._(
-    this.crypto,
     this.server,
     this.responders,
     this.initialPhase,
@@ -303,7 +378,6 @@ class _Setup {
   );
 
   factory _Setup.create({
-    required Crypto crypto,
     int goodResponderAt = 0,
     bool usePresetTrust = false,
     List<int>? responderIds,
@@ -316,14 +390,12 @@ class _Setup {
 
     final responders = responderIds
         .map((address) => PeerData(
-            crypto: crypto,
             address: Id.responderId(address),
             testedPeerId: Id.initiatorAddress,
             authToken: address == goodResponder ? goodAuthToken : badAuthToken))
         .toList(growable: false);
 
     final server = PeerData(
-      crypto: crypto,
       address: Id.serverAddress,
       testedPeerId: Id.initiatorAddress,
     );
@@ -372,12 +444,11 @@ class _Setup {
       phase.addNewResponder(responder.address.asResponder());
     }
 
-    return _Setup._(crypto, server, responders, phase, events);
+    return _Setup._(server, responders, phase, events);
   }
 }
 
-Phase Function(Phase, PackageQueue) mkSendTokenTest(
-    Crypto crypto, PeerData mockPeer) {
+Phase Function(Phase, PackageQueue) mkSendTokenTest(PeerData mockPeer) {
   assert(mockPeer.authToken != null);
   return (initialPhase, packages) {
     final phase = mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
@@ -399,7 +470,7 @@ Phase Function(Phase, PackageQueue) mkSendTokenTest(
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendBadTokenTest(Crypto crypto,
+Phase Function(Phase, PackageQueue) mkSendBadTokenTest(
     {required PeerData responder, required PeerData server}) {
   assert(responder.authToken != null);
   return (initialPhase, packages) {
@@ -420,8 +491,7 @@ Phase Function(Phase, PackageQueue) mkSendBadTokenTest(Crypto crypto,
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendKeyTest(
-    MockCrypto crypto, PeerData mockPeer) {
+Phase Function(Phase, PackageQueue) mkSendKeyTest(PeerData mockPeer) {
   return (initialPhase, packages) {
     mockPeer.testedPeer.ourSessionKey = crypto.createKeyStore();
     final sendPubKey = mockPeer.testedPeer.ourSessionKey!.publicKey;
@@ -458,7 +528,7 @@ Phase Function(Phase, PackageQueue) mkSendKeyTest(
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendBadKeyTest(Crypto crypto,
+Phase Function(Phase, PackageQueue) mkSendBadKeyTest(
     {required PeerData responder, required PeerData server}) {
   return (initialPhase, packages) {
     responder.testedPeer.ourSessionKey = crypto.createKeyStore();
@@ -486,8 +556,7 @@ Phase Function(Phase, PackageQueue) mkSendBadKeyTest(Crypto crypto,
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest(
-  MockCrypto crypto, {
+Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
   required PeerData responder,
   required List<TestTask> supportedTasks,
   required List<TestTask> responderTasks,
@@ -528,8 +597,7 @@ Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest(
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendAuthTest(
-  MockCrypto crypto, {
+Phase Function(Phase, PackageQueue) mkSendAuthTest({
   required PeerData responder,
   required PeerData server,
   required List<TestTask> supportedTasks,
@@ -596,7 +664,6 @@ Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
   required int newResponderId,
   required int droppedResponderId,
   required PeerData server,
-  required Crypto crypto,
 }) {
   return (initialPhase, packages) {
     final nrOfResponders =
@@ -629,7 +696,6 @@ Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
 Phase Function(Phase, PackageQueue) mkSendDisconnectedTest({
   required int disconnect,
   required PeerData server,
-  required Crypto crypto,
 }) {
   final disonnectId = Id.responderId(disconnect);
   return (initialPhaseUntyped, packages) {
@@ -654,7 +720,6 @@ Phase Function(Phase, PackageQueue) mkSendDisconnectedTest({
 }
 
 Phase Function(Phase, PackageQueue) mkSendErrorTest({
-  required Crypto crypto,
   required PeerData server,
   required PeerData responder,
 }) {
@@ -684,6 +749,26 @@ Phase Function(Phase, PackageQueue) mkSendErrorTest({
 
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[responder.address], isNull);
+    return phase;
+  };
+}
+
+Phase Function(Phase, PackageQueue) mkSendBadSendErrorTest({
+  required PeerData server,
+  required Id source,
+  required Id destination,
+}) {
+  return (phase, packages) {
+    expect(() {
+      server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+        message: SendError(Uint8List.fromList(
+            [source.value, destination.value, 0, 0, 1, 2, 3, 4])),
+        sendTo: phase,
+        encryptWith: crypto.createSharedKeyStore(
+            ownKeyStore: server.testedPeer.ourSessionKey!,
+            remotePublicKey: server.testedPeer.theirSessionKey!.publicKey),
+      );
+    }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
     return phase;
   };
 }

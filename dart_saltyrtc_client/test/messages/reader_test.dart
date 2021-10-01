@@ -44,9 +44,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Responder;
 import 'package:test/test.dart';
 
-import '../crypto_mock.dart' show MockCrypto;
-import '../logging.dart' show setUpLogging;
-import '../utils.dart' show throwsProtocolError;
+import '../crypto_mock.dart' show crypto;
+import '../utils.dart'
+    show setUpTesting, throwsProtocolError, throwsValidationError;
 
 void checkRead<T extends Message>(T Function() getMsg) {
   final msg = getMsg();
@@ -54,7 +54,8 @@ void checkRead<T extends Message>(T Function() getMsg) {
 }
 
 void main() {
-  setUpLogging();
+  setUpTesting();
+
   group('readMessage', () {
     final key = Uint8List(Crypto.publicKeyBytes);
     final signedKeys = Uint8List(signedKeysLength);
@@ -123,6 +124,14 @@ void main() {
       checkRead(() => AuthResponder(yourCookie, ['task'], taskData));
     });
 
+    test('Missing entry in task data is error, not null', () {
+      expect(() {
+        AuthResponder(yourCookie, ['task'], {});
+      }, throwsValidationError());
+      //but null is ok
+      AuthResponder(yourCookie, ['task'], {'task': null});
+    });
+
     test('Read close', () {
       checkRead(() => Close(CloseCode.closingNormal));
     });
@@ -133,7 +142,6 @@ void main() {
   });
 
   group('MessageDecryptionExt', () {
-    final crypto = MockCrypto();
     final keyFrom = crypto.createKeyStore();
     final keyTo = crypto.createKeyStore();
     final receiver = Responder(Id.responderId(12), crypto);

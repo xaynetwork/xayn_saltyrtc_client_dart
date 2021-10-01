@@ -7,10 +7,11 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
 import 'package:test/test.dart';
 
-import '../crypto_mock.dart' show MockCrypto;
+import '../crypto_mock.dart' show crypto;
+import '../utils.dart';
 
 void main() {
-  final crypto = MockCrypto();
+  setUpTesting();
 
   group('buildPackage', () {
     test('without encryption', () {

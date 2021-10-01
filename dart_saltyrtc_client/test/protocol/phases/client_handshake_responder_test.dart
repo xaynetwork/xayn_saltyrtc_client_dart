@@ -1,8 +1,7 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, Crypto;
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show AuthToken;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
     show AuthInitiator;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
@@ -32,29 +31,32 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
 import 'package:test/test.dart';
 
-import '../../crypto_mock.dart' show MockCrypto;
-import '../../logging.dart' show setUpLogging;
+import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../utils.dart'
-    show PeerData, TestTask, phaseAs, runTest, throwsSaltyRtcError;
-
-final crypto = MockCrypto();
+    show
+        PeerData,
+        TestTask,
+        phaseAs,
+        runTest,
+        setUpTesting,
+        throwsSaltyRtcError;
 
 void main() {
-  setUpLogging();
+  setUpTesting();
 
   group('successful transition', () {
     test('key+token are send out on creation', () {
-      final setup = _Setup.create(crypto: crypto);
+      final setup = _Setup.create();
       runTest(setup.initialPhase, [mkRecvTokenAndKeyTest(setup.initiator)]);
     });
     test('key is send out on creation', () {
-      final setup = _Setup.create(crypto: crypto, usePresetTrust: true);
+      final setup = _Setup.create(usePresetTrust: true);
       runTest(setup.initialPhase, [mkRecvKeyTest(setup.initiator)]);
     });
 
     test('initiator connects later', () {
-      final setup = _Setup.create(crypto: crypto, initiatorIsKnown: false);
+      final setup = _Setup.create(initiatorIsKnown: false);
       runTest(setup.initialPhase, [
         (phase, packages) {
           expect(packages, isEmpty);
@@ -70,8 +72,7 @@ void main() {
         TestTask('bar'),
         TestTask('example.v23')
       ];
-      final setup =
-          _Setup.create(crypto: crypto, usePresetTrust: true, tasks: tasks);
+      final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
       final initiator = setup.initiator;
       runTest(setup.initialPhase, [
         mkRecvKeyTest(initiator),
@@ -84,8 +85,7 @@ void main() {
 
     test('initiator sends auth', () {
       final tasks = [TestTask('example.v23')];
-      final setup =
-          _Setup.create(crypto: crypto, usePresetTrust: true, tasks: tasks);
+      final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
       final initiator = setup.initiator;
       runTest(setup.initialPhase, [
         mkRecvKeyTest(initiator),
@@ -103,7 +103,7 @@ void main() {
   });
 
   test('protocol error', () {
-    final setup = _Setup.create(crypto: crypto);
+    final setup = _Setup.create();
     final initiator = setup.initiator;
     runTest(setup.initialPhase, [
       mkRecvTokenAndKeyTest(initiator),
@@ -126,8 +126,7 @@ void main() {
 
   test('auth -> no task found', () {
     final tasks = [TestTask('example.v23', null)];
-    final setup =
-        _Setup.create(crypto: crypto, usePresetTrust: true, tasks: tasks);
+    final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
     final initiator = setup.initiator;
     runTest(setup.initialPhase, [
       mkRecvKeyTest(initiator),
@@ -140,7 +139,7 @@ void main() {
   });
 
   test('handleDisconnected', () {
-    final setup = _Setup.create(crypto: crypto, usePresetTrust: true);
+    final setup = _Setup.create(usePresetTrust: true);
     runTest(setup.initialPhase, [
       mkRecvKeyTest(setup.initiator),
       mkInitiatorDisconnectedTest(server: setup.server),
@@ -148,7 +147,7 @@ void main() {
   });
 
   test('initiator override', () {
-    final setup = _Setup.create(crypto: crypto);
+    final setup = _Setup.create();
     runTest(setup.initialPhase, [
       mkRecvTokenAndKeyTest(setup.initiator),
       mkNewInitiatorTest(initiator: setup.initiator, server: setup.server),
@@ -157,7 +156,7 @@ void main() {
 
   test('handle SendError', () {
     final tasks = [TestTask('example.v23')];
-    final setup = _Setup.create(crypto: crypto, tasks: tasks);
+    final setup = _Setup.create(tasks: tasks);
     final initiator = setup.initiator;
     final server = setup.server;
     runTest(setup.initialPhase, [
@@ -175,17 +174,47 @@ void main() {
       }),
     ]);
   });
+
+  test('auth your_cookie is checked', () {
+    final tasks = [TestTask('example.v23')];
+    final setup = _Setup.create(usePresetTrust: true, tasks: tasks);
+    final initiator = setup.initiator;
+    runTest(setup.initialPhase, [
+      mkRecvKeyTest(initiator),
+      mkSendKeyRecvAuthTest(
+        initiator: initiator,
+        tasks: tasks,
+      ),
+      (initialPhase, packages) {
+        expect(() {
+          initiator.sendAndTransitToPhase<ResponderClientHandshakePhase>(
+            message: AuthInitiator(initiator.testedPeer.cookiePair.ours,
+                'example.v23', {'example.v23': null}),
+            sendTo: initialPhase,
+            encryptWith: crypto.createSharedKeyStore(
+                ownKeyStore: initiator.testedPeer.ourSessionKey!,
+                remotePublicKey:
+                    initiator.testedPeer.theirSessionKey!.publicKey),
+          );
+        }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
+
+        final phase = phaseAs<ResponderClientHandshakePhase>(initialPhase);
+        //TODO closing doesn't clean...
+        // expect(phase.initiatorWithState, isNull);
+
+        return phase;
+      }
+    ]);
+  });
 }
 
 class _Setup {
-  final Crypto crypto;
   final PeerData server;
   final PeerData initiator;
   final ResponderClientHandshakePhase initialPhase;
   final StreamController<Event> events;
 
   _Setup({
-    required this.crypto,
     required this.server,
     required this.initiator,
     required this.initialPhase,
@@ -193,7 +222,6 @@ class _Setup {
   });
 
   factory _Setup.create({
-    required Crypto crypto,
     bool usePresetTrust = false,
     bool badInitialAuth = false,
     bool initiatorIsKnown = true,
@@ -208,7 +236,6 @@ class _Setup {
     }
 
     final initiator = PeerData(
-      crypto: crypto,
       address: Id.initiatorAddress,
       testedPeerId: responderId,
       authToken: badInitialAuth ? crypto.createAuthToken() : authToken,
@@ -217,7 +244,6 @@ class _Setup {
       initiator.testedPeer.permanentKey = responderPermanentKeys;
     }
     final server = PeerData(
-      crypto: crypto,
       address: Id.serverAddress,
       testedPeerId: responderId,
     );
@@ -247,7 +273,6 @@ class _Setup {
     );
 
     return _Setup(
-      crypto: crypto,
       server: server,
       initiator: initiator,
       initialPhase: phase,
@@ -452,6 +477,6 @@ Phase Function(Phase, PackageQueue) mkSendErrorTest({
 
 void resetInitiatorData(PeerData initiator) {
   final oldKnowledge = initiator.testedPeer;
-  initiator.resetTestedClientKnowledge(crypto);
+  initiator.resetTestedClientKnowledge();
   initiator.testedPeer.permanentKey = oldKnowledge.permanentKey;
 }
