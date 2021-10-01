@@ -58,7 +58,6 @@ abstract class Client {
   }
 
   Future<void> close() async {
-    await _close();
     return _ws.sink.close(CloseCode.closingNormal.toInt(), '');
   }
 
