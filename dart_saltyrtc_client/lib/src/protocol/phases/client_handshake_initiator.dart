@@ -113,7 +113,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
-  void handleDisconnected(Disconnected msg) {
+  Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdResponder(id.value);
     final removed = responders.remove(id);
@@ -124,16 +124,18 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       peerKind = events.PeerKind.unknownPeer;
     }
     common.events.add(events.Disconnected(peerKind));
+    return this;
   }
 
   @override
-  void handleSendErrorByDestination(Id destination) {
+  Phase handleSendErrorByDestination(Id destination) {
     final removed = responders.remove(destination);
     if (removed != null) {
       common.events.add(events.SendError(wasAuthenticated: false));
     } else {
       logger.d('send-error from already removed destination');
     }
+    return this;
   }
 
   @override

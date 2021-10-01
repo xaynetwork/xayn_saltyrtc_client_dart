@@ -25,8 +25,13 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, SaltyRtcError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
+    show InitiatorClientHandshakePhase;
+import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
+    show ResponderClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakePhase,
@@ -54,12 +59,6 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   void handleServerMessage(Message msg);
 
   @override
-  void handleSendErrorByDestination(Id destination) {
-    //TODO reset connection
-    throw UnimplementedError();
-  }
-
-  @override
   void onProtocolError(ProtocolError e, Id? source) {
     if (source == pairedClient.id) {
       sendMessage(Close(e.closeCode), to: pairedClient);
@@ -77,9 +76,9 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
     if (nonce.source.isServer()) {
       if (msg is SendError) {
-        handleSendError(msg);
+        return handleSendError(msg);
       } else if (msg is Disconnected) {
-        handleDisconnected(msg);
+        return handleDisconnected(msg);
       } else {
         handleServerMessage(msg);
       }
@@ -140,11 +139,27 @@ class InitiatorTaskPhase extends TaskPhase
   ) : super(common, pairedClient, task);
 
   @override
-  void handleDisconnected(Disconnected msg) {
+  Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdResponder(id.value);
-    //TODO also return phase which resets to client handhsake
-    throw UnimplementedError();
+    if (id != pairedClient.id) {
+      common.events.add(events.Disconnected(events.PeerKind.unknownPeer));
+      return this;
+    } else {
+      common.events.add(events.Disconnected(events.PeerKind.authenticatedPeer));
+      return InitiatorClientHandshakePhase(common, config);
+    }
+  }
+
+  @override
+  Phase handleSendErrorByDestination(Id destination) {
+    if (destination != pairedClient.id) {
+      common.events.add(events.SendError(wasAuthenticated: false));
+      return this;
+    } else {
+      common.events.add(events.SendError(wasAuthenticated: true));
+      return InitiatorClientHandshakePhase(common, config);
+    }
   }
 
   @override
@@ -173,10 +188,19 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   ) : super(common, pairedClient, task);
 
   @override
-  void handleDisconnected(Disconnected msg) {
+  Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdInitiator(id.value);
-    throw UnimplementedError();
+    common.events.add(events.Disconnected(events.PeerKind.authenticatedPeer));
+    return ResponderClientHandshakePhase(common, config,
+        initiatorConnected: false);
+  }
+
+  @override
+  Phase handleSendErrorByDestination(Id destination) {
+    common.events.add(events.SendError(wasAuthenticated: true));
+    return ResponderClientHandshakePhase(common, config,
+        initiatorConnected: false);
   }
 
   @override

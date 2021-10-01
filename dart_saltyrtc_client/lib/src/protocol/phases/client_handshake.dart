@@ -43,9 +43,9 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
     );
 
     if (msg is SendError) {
-      handleSendError(msg);
+      return handleSendError(msg);
     } else if (msg is Disconnected) {
-      handleDisconnected(msg);
+      return handleDisconnected(msg);
     } else if (msg is NewResponder) {
       handleNewResponder(msg);
     } else if (msg is NewInitiator) {

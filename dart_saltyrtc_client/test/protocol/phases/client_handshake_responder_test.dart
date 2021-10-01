@@ -270,7 +270,7 @@ class _Setup {
     final phase = ResponderClientHandshakePhase(
       CommonAfterServerHandshake(common),
       config,
-      initiatorIsKnown,
+      initiatorConnected: initiatorIsKnown,
     );
 
     return _Setup(

@@ -298,7 +298,7 @@ abstract class AfterServerHandshakePhase extends Phase {
 
   AfterServerHandshakePhase(this.common) : super(common);
 
-  void handleSendError(SendError msg) {
+  Phase handleSendError(SendError msg) {
     if (msg.source != common.address) {
       throw ProtocolError('received send-error for message not send by us');
     }
@@ -310,12 +310,12 @@ abstract class AfterServerHandshakePhase extends Phase {
       throw ProtocolError(
           'received send-error for unexpected destination $destination');
     }
-    handleSendErrorByDestination(destination);
+    return handleSendErrorByDestination(destination);
   }
 
-  void handleSendErrorByDestination(Id destination);
+  Phase handleSendErrorByDestination(Id destination);
 
-  void handleDisconnected(Disconnected msg);
+  Phase handleDisconnected(Disconnected msg);
 }
 
 /// Data that is common to all phases and roles after the server handshake.

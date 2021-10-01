@@ -68,9 +68,9 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
 
   ResponderClientHandshakePhase(
     CommonAfterServerHandshake common,
-    this.config,
-    bool initiatorConnected,
-  ) : super(common) {
+    this.config, {
+    required bool initiatorConnected,
+  }) : super(common) {
     if (initiatorConnected) {
       startNewHandshake();
     }
@@ -96,18 +96,20 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
-  void handleDisconnected(Disconnected msg) {
+  Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdInitiator(id.value);
     initiatorWithState = null;
     common.events
         .add(events.Disconnected(events.PeerKind.unauthenticatedTargetPeer));
+    return this;
   }
 
   @override
-  void handleSendErrorByDestination(Id destination) {
+  Phase handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
     common.events.add(events.SendError(wasAuthenticated: false));
+    return this;
   }
 
   @override

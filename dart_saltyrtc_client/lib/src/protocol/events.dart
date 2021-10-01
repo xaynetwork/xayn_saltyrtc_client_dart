@@ -20,6 +20,9 @@ class ResponderAuthenticated extends Event {
   /// Permanent key of the responder.
   /// After this has been received the authentication token must not
   /// be used again, this key must be use instead.
+  ///
+  /// But be aware that the responder might not yet be aware of being
+  /// authenticated.
   final Uint8List permanentKey;
 
   ResponderAuthenticated(this.permanentKey);
@@ -41,6 +44,10 @@ class ResponderAuthenticated extends Event {
 /// Many cases of `unauthenticatedTargetPeer` or `authenticatedPeer`
 /// can point to the peer we want to connect to having some trouble,
 /// likely a problematic internet connection.
+///
+/// Be aware that receiving a disconnected (known peer) event implies that
+/// the connection was reset to the begin of the client to client handshake,
+/// it doesn't imply that the connection will be closed.
 ///
 @immutable
 class Disconnected extends Event {
@@ -71,6 +78,11 @@ enum PeerKind {
 }
 
 /// Event emitted when sending a message to a client failed.
+///
+/// Be aware that receiving a send error (of which the peer had been
+/// authenticated) event implies that the connection was reset to the begin of
+/// the client to client handshake, it doesn't imply that the connection
+/// will be closed.
 @immutable
 class SendError extends Event {
   /// True if we already completed the client to client handshake.

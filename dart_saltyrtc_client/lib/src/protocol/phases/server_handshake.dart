@@ -288,7 +288,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
     return ResponderClientHandshakePhase(
       CommonAfterServerHandshake(common),
       config,
-      msg.initiatorConnected,
+      initiatorConnected: msg.initiatorConnected,
     );
   }
 }
