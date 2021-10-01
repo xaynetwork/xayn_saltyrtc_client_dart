@@ -1,6 +1,5 @@
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:meta/meta.dart' show immutable;
 
 @immutable
@@ -23,6 +22,12 @@ class ProtocolError implements Exception {
       ProtocolError(_msg, closeCode: code);
 }
 
+/// Data to instantiate a message is invalid.
+@immutable
+class ValidationError extends ProtocolError {
+  ValidationError(String msg) : super(msg);
+}
+
 /// It will result in the connection closing with the specified error code.
 @immutable
 class SaltyRtcError implements Exception {
@@ -33,27 +38,4 @@ class SaltyRtcError implements Exception {
 
   @override
   String toString() => _msg;
-}
-
-/// Data to instantiate a message is invalid.
-@immutable
-class ValidationError extends ProtocolError {
-  ValidationError(String msg) : super(msg);
-}
-
-/// The authenticated peer disconnected during the task phase
-@immutable
-class AuthenticatedPeerDisconnected extends SaltyRtcError {
-  AuthenticatedPeerDisconnected()
-      : super(CloseCode.closingNormal, 'authenticated peer disconnected');
-}
-
-@immutable
-class SendErrorException implements Exception {
-  final Id destination;
-
-  SendErrorException(this.destination);
-
-  @override
-  String toString() => 'delivering message to $destination failed';
 }

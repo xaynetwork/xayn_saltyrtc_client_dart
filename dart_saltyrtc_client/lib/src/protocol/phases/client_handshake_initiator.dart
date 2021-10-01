@@ -25,9 +25,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SendErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show NoSharedTaskFound, ResponderAuthenticated;
+    show ProtocolError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -117,15 +116,21 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   void handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdResponder(id.value);
-    responders.remove(id);
-    //TODO potentially inform client
+    final removed = responders.remove(id);
+    final events.PeerKind peerKind;
+    if (removed?.receivedAnyMessage == true) {
+      peerKind = events.PeerKind.unauthenticatedTargetPeer;
+    } else {
+      peerKind = events.PeerKind.unknownPeer;
+    }
+    common.events.add(events.Disconnected(peerKind));
   }
 
   @override
   void handleSendErrorByDestination(Id destination) {
     final removed = responders.remove(destination);
     if (removed != null) {
-      throw SendErrorException(destination);
+      common.events.add(events.SendError(wasAuthenticated: false));
     } else {
       logger.d('send-error from already removed destination');
     }
@@ -273,8 +278,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    common.events.add(
-        ResponderAuthenticated(responder.permanentSharedKey!.remotePublicKey));
+    common.events.add(events.ResponderAuthenticated(
+        responder.permanentSharedKey!.remotePublicKey));
 
     return InitiatorTaskPhase(
         common, config, responder.assertAuthenticated(), taskAndData.first);
@@ -292,7 +297,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     if (task == null) {
       logger.w('No shared task for ${forResponder.id} found');
       sendMessage(Close(CloseCode.noSharedTask), to: forResponder);
-      throw NoSharedTaskFound.signalAndException(common.events);
+      throw events.NoSharedTaskFound.signalAndException(common.events);
     }
 
     return task;

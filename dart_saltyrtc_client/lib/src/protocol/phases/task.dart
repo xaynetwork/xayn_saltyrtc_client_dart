@@ -24,11 +24,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder, validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show
-        AuthenticatedPeerDisconnected,
-        ProtocolError,
-        SaltyRtcError,
-        SendErrorException;
+    show ProtocolError, SaltyRtcError;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -60,7 +56,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
   void handleSendErrorByDestination(Id destination) {
     //TODO reset connection
-    throw SendErrorException(destination);
+    throw UnimplementedError();
   }
 
   @override
@@ -148,7 +144,7 @@ class InitiatorTaskPhase extends TaskPhase
     final id = msg.id;
     validateIdResponder(id.value);
     //TODO also return phase which resets to client handhsake
-    throw AuthenticatedPeerDisconnected();
+    throw UnimplementedError();
   }
 
   @override
@@ -180,7 +176,7 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   void handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdInitiator(id.value);
-    throw AuthenticatedPeerDisconnected();
+    throw UnimplementedError();
   }
 
   @override

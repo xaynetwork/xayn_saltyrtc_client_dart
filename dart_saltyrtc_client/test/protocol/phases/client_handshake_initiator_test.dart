@@ -21,10 +21,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show SendErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show NoSharedTaskFound, ResponderAuthenticated;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -334,14 +331,15 @@ void main() {
   test('handleDisconnected', () {
     final setup = _Setup.create(
       responderIds: [20, 30, 40],
-      goodResponderAt: 2,
+      goodResponderAt: 1,
     );
     final server = setup.server;
     runTest(setup.initialPhase, [
-      mkSendTokenTest(setup.responders[2]),
+      mkSendTokenTest(setup.responders[1]),
       mkSendDisconnectedTest(
         server: server,
         disconnect: 30,
+        knownPeer: true,
       ),
       mkSendDisconnectedTest(
         server: server,
@@ -583,7 +581,7 @@ Phase Function(Phase, Io) mkSendAuthNoSharedTaskTest({
       );
     }, throwsSaltyRtcError(closeCode: CloseCode.goingAway));
 
-    io.expectEventOfType<NoSharedTaskFound>();
+    io.expectEventOfType<events.NoSharedTaskFound>();
 
     for (final task in supportedTasks) {
       expect(task.lastInitiatorTask, isNull);
@@ -673,7 +671,7 @@ Phase Function(Phase, Io) mkSendAuthTest({
     expect(dropMsg.id, equals(Id.responderId(4)));
     expect(dropMsg.reason, equals(CloseCode.droppedByInitiator));
 
-    final authEvent = io.expectEventOfType<ResponderAuthenticated>();
+    final authEvent = io.expectEventOfType<events.ResponderAuthenticated>();
     expect(authEvent.permanentKey, equals(responder.permanentKey.publicKey));
 
     return phase;
@@ -717,6 +715,7 @@ Phase Function(Phase, Io) mkDropOldOnNewReceiverTest({
 Phase Function(Phase, Io) mkSendDisconnectedTest({
   required int disconnect,
   required PeerData server,
+  bool knownPeer = false,
 }) {
   final disonnectId = Id.responderId(disconnect);
   return (initialPhaseUntyped, io) {
@@ -733,9 +732,15 @@ Phase Function(Phase, Io) mkSendDisconnectedTest({
         remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
       ),
     );
-
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[disconnect], isNull);
+    final disconnectedMsg = io.expectEventOfType<events.Disconnected>();
+    if (knownPeer) {
+      expect(
+          disconnectedMsg.peerKind, events.PeerKind.unauthenticatedTargetPeer);
+    } else {
+      expect(disconnectedMsg.peerKind, events.PeerKind.unknownPeer);
+    }
     return phase;
   };
 }
@@ -745,31 +750,32 @@ Phase Function(Phase, Io) mkSendErrorTest({
   required PeerData responder,
 }) {
   return (initialPhaseUntyped, io) {
-    final phase = phaseAs<InitiatorClientHandshakePhase>(initialPhaseUntyped);
+    var phase = phaseAs<InitiatorClientHandshakePhase>(initialPhaseUntyped);
     final otherResponders =
         phase.responders.keys.where((id) => id != responder.address).toList();
-    expect(() {
-      server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
-        message: SendError(Uint8List.fromList([
-          phase.common.address.value,
-          responder.address.value,
-          0,
-          0,
-          1,
-          2,
-          3,
-          4
-        ])),
-        sendTo: initialPhaseUntyped,
-        encryptWith: crypto.createSharedKeyStore(
-          ownKeyStore: server.testedPeer.ourSessionKey!,
-          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
-        ),
-      );
-    }, throwsA(isA<SendErrorException>()));
 
+    phase = server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+      message: SendError(Uint8List.fromList([
+        phase.common.address.value,
+        responder.address.value,
+        0,
+        0,
+        1,
+        2,
+        3,
+        4
+      ])),
+      sendTo: initialPhaseUntyped,
+      encryptWith: crypto.createSharedKeyStore(
+        ownKeyStore: server.testedPeer.ourSessionKey!,
+        remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+      ),
+    );
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[responder.address], isNull);
+
+    final errEvent = io.expectEventOfType<events.SendError>();
+    expect(errEvent.wasAuthenticated, isFalse);
     return phase;
   };
 }

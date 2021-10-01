@@ -23,9 +23,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SendErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show NoSharedTaskFound, ResponderAuthenticated;
+    show ProtocolError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
@@ -101,13 +100,14 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     final id = msg.id;
     validateIdInitiator(id.value);
     initiatorWithState = null;
-    //TODO notify client/application
+    common.events
+        .add(events.Disconnected(events.PeerKind.unauthenticatedTargetPeer));
   }
 
   @override
   void handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
-    throw SendErrorException(destination);
+    common.events.add(events.SendError(wasAuthenticated: false));
   }
 
   @override
@@ -171,7 +171,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       // We expect a potential Close message, but only with a
       // CloseCode.noSharedTask reason.
       if (msg.reason == CloseCode.noSharedTask) {
-        throw NoSharedTaskFound.signalAndException(common.events);
+        throw events.NoSharedTaskFound.signalAndException(common.events);
       }
     }
     if (msg is! AuthInitiator) {
@@ -193,7 +193,8 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
 
     final task = taskBuilder.buildResponderTask(msg.data[taskName]);
 
-    common.events.add(ResponderAuthenticated(config.permanentKeys.publicKey));
+    common.events
+        .add(events.ResponderAuthenticated(config.permanentKeys.publicKey));
 
     return ResponderTaskPhase(
         common, config, initiator.assertAuthenticated(), task);

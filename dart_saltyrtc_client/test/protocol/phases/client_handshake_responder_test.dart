@@ -18,10 +18,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show SendErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show NoSharedTaskFound, ResponderAuthenticated;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -412,7 +409,7 @@ Phase Function(Phase, Io) mkSendAuthTest({
     expect(taskObject.name, equals(task));
     expect(taskObject.initData, equals(data[taskObject.name]));
 
-    final authEvent = io.expectEventOfType<ResponderAuthenticated>();
+    final authEvent = io.expectEventOfType<events.ResponderAuthenticated>();
     expect(
         authEvent.permanentKey, equals(phase.config.permanentKeys.publicKey));
     return phase;
@@ -431,7 +428,7 @@ Phase Function(Phase, Io) mkSendNoSharedTaskTest(PeerData initiator) {
       );
     }, throwsSaltyRtcError(closeCode: CloseCode.goingAway));
 
-    io.expectEventOfType<NoSharedTaskFound>();
+    io.expectEventOfType<events.NoSharedTaskFound>();
     return phase;
   };
 }
@@ -447,7 +444,9 @@ Phase Function(Phase, Io) mkInitiatorDisconnectedTest({
           ownKeyStore: server.testedPeer.ourSessionKey!,
           remotePublicKey: server.testedPeer.permanentKey!.publicKey),
     );
-
+    final disconnectedEvent = io.expectEventOfType<events.Disconnected>();
+    expect(
+        disconnectedEvent.peerKind, events.PeerKind.unauthenticatedTargetPeer);
     expect(phase.initiatorWithState, isNull);
     return phase;
   };
@@ -458,29 +457,28 @@ Phase Function(Phase, Io) mkSendErrorTest({
   required PeerData initiator,
 }) {
   return (phaseUntyped, io) {
-    expect(() {
-      server.sendAndTransitToPhase<ResponderClientHandshakePhase>(
-        message: SendError(Uint8List.fromList([
-          phaseUntyped.common.address.value,
-          Id.initiatorAddress.value,
-          0,
-          0,
-          1,
-          2,
-          3,
-          4
-        ])),
-        sendTo: phaseUntyped,
-        encryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: server.testedPeer.ourSessionKey!,
-            remotePublicKey: server.testedPeer.permanentKey!.publicKey),
-      );
-    }, throwsA(isA<SendErrorException>()));
+    final phase = server.sendAndTransitToPhase<ResponderClientHandshakePhase>(
+      message: SendError(Uint8List.fromList([
+        phaseUntyped.common.address.value,
+        Id.initiatorAddress.value,
+        0,
+        0,
+        1,
+        2,
+        3,
+        4
+      ])),
+      sendTo: phaseUntyped,
+      encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey),
+    );
 
-    final phase = phaseAs<ResponderClientHandshakePhase>(phaseUntyped);
     expect(phase.initiatorWithState, isNull);
-
     resetInitiatorData(initiator);
+
+    final errEvent = io.expectEventOfType<events.SendError>();
+    expect(errEvent.wasAuthenticated, isFalse);
 
     return phase;
   };

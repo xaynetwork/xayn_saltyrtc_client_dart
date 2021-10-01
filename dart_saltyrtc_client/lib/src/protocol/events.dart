@@ -56,8 +56,14 @@ enum PeerKind {
   /// connected to the server but has not yet send any message to the client.
   unknownPeer,
 
-  /// A peer with which we started but did not complete a client to client
-  /// handshake.
+  /// A peer from which we know that we will (probably) authenticate with it,
+  /// but have not yet authenticated.
+  ///
+  /// For responders this is the initiator.
+  ///
+  /// For initiators this are responders from which they successfully received
+  /// a message (which implies the responder either has the valid auth token or
+  /// the private key for the trusted public key).
   unauthenticatedTargetPeer,
 
   /// A peer with which we completed a client to client handshake.
@@ -70,7 +76,7 @@ class SendError extends Event {
   /// True if we already completed the client to client handshake.
   final bool wasAuthenticated;
 
-  SendError(this.wasAuthenticated);
+  SendError({required this.wasAuthenticated});
 }
 
 @immutable
