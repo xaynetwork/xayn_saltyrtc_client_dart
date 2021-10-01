@@ -24,7 +24,7 @@ class InitiatorClient implements saltyrtc.InitiatorClient {
   factory InitiatorClient.withUntrustedResponder(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.Task> tasks, {
+    List<saltyrtc.TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     required Uint8List sharedAuthToken,
@@ -42,7 +42,7 @@ class InitiatorClient implements saltyrtc.InitiatorClient {
   factory InitiatorClient.withTrustedResponder(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.Task> tasks, {
+    List<saltyrtc.TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     required Uint8List responderTrustedKey,
@@ -103,7 +103,7 @@ class ResponderClient implements saltyrtc.ResponderClient {
   factory ResponderClient.withAuthToken(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.Task> tasks, {
+    List<saltyrtc.TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     required Uint8List initiatorTrustedKey,
@@ -123,7 +123,7 @@ class ResponderClient implements saltyrtc.ResponderClient {
   factory ResponderClient.withTrustedKey(
     Uri baseUri,
     saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.Task> tasks, {
+    List<saltyrtc.TaskBuilder> tasks, {
     required int pingInterval,
     required Uint8List expectedServerKey,
     required Uint8List initiatorTrustedKey,
