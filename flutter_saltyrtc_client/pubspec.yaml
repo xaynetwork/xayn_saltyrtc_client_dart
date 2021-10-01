@@ -27,7 +27,7 @@ dev_dependencies:
   flutter_lints: ^1.0.0
   # This is often incompatible with flutter_test,
   # we allow the patch version to be changed so the solver can choose the correct one
-  test: ^1.17.0
+  test: '>=1.17.0 <1.18.0'
   equatable: 2.0.3
 
 # For information on the generic Dart part of this file, see the
