@@ -406,7 +406,6 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
 
     final taskObject = phase.task as TestTask;
     expect(taskObject.name, equals(task));
-    ;
     expect(taskObject.initData, equals(data[taskObject.name]));
     return phase;
   };

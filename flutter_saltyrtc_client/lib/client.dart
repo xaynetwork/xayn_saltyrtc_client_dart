@@ -6,8 +6,8 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' as saltyrtc
         ResponderClient,
         websocketProtocols,
         KeyStore,
-        TaskBuilder;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+        TaskBuilder,
+        Event;
 import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
     show crypto;
 import 'package:flutter_saltyrtc_client/network.dart' show WebSocket;
@@ -17,7 +17,7 @@ import 'package:web_socket_channel/web_socket_channel.dart'
 
 abstract class SaltyRtcClient {
   /// Events produced from the client.
-  Stream<Event> get events;
+  Stream<saltyrtc.Event> get events;
 
   /// Start listening to messages on the websocket.
   void run();
@@ -105,7 +105,7 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
 
   /// Events produced from the client.
   @override
-  Stream<Event> get events => _client.events;
+  Stream<saltyrtc.Event> get events => _client.events;
 
   /// Start listening to messages on the websocket.
   @override
@@ -199,7 +199,7 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
 
   /// Events produced from the client.
   @override
-  Stream<Event> get events => _client.events;
+  Stream<saltyrtc.Event> get events => _client.events;
 
   /// Start listening to messages on the websocket.
   @override

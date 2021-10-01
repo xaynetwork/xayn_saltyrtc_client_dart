@@ -35,24 +35,26 @@ Matcher throwsValidationError() {
 }
 
 Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
-  final errorHasExpectedState = (Object? error) {
+  bool errorHasExpectedState(Object? error) {
     if (error is! ProtocolError) {
       return true;
     } else {
       return error.closeCode == closeCode;
     }
-  };
+  }
+
   return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
 }
 
 Matcher throwsSaltyRtcError({CloseCode closeCode = CloseCode.protocolError}) {
-  final errorHasExpectedState = (Object? error) {
+  bool errorHasExpectedState(Object? error) {
     if (error is! SaltyRtcError) {
       return true;
     } else {
       return error.closeCode == closeCode;
     }
-  };
+  }
+
   return throwsA(allOf(isA<SaltyRtcError>(), predicate(errorHasExpectedState)));
 }
 

@@ -74,14 +74,15 @@ abstract class ServerHandshakePhase extends Phase {
   @override
   void validateNonceDestination(Nonce nonce) {
     final destination = nonce.destination;
-    final check = (Id expected) {
+
+    void check(Id expected) {
       if (destination != expected) {
         throw ValidationError(
           'Receive message with invalid nonce destination. '
           'Expected $expected, found $destination',
         );
       }
-    };
+    }
 
     switch (handshakeState) {
       // the address is still unknown

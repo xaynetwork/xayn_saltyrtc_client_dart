@@ -26,8 +26,8 @@ class NonceAndMessage<M extends Message> {
   final Nonce nonce;
   final M message;
 
-  static final _getMsg =
-      (Uint8List bytes) => Uint8List.sublistView(bytes, Nonce.totalLength);
+  static Uint8List _getMsg(Uint8List bytes) =>
+      Uint8List.sublistView(bytes, Nonce.totalLength);
 
   NonceAndMessage(this.nonce, this.message);
 

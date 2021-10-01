@@ -78,7 +78,7 @@ class Server extends Peer {
       : super(csPair, cookiePair);
 
   @override
-  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? _token]) {
+  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]) {
     return _encrypt(msg, nonce, sessionSharedKey!);
   }
 
@@ -95,6 +95,7 @@ class Server extends Peer {
 
 class AuthenticatedServer extends Server {
   @override
+  // ignore: overridden_fields
   final SharedKeyStore _sessionSharedKey;
 
   AuthenticatedServer(
@@ -186,14 +187,14 @@ class Initiator extends Client {
         );
 
   @override
-  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? authToken]) {
+  Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]) {
     // if it's a Token message we need to use authToken
     if (msg is Token) {
-      if (authToken == null) {
+      if (token == null) {
         throw ProtocolError(
             'Cannot encrypt token message for peer: auth token is null');
       }
-      return _encrypt(msg, nonce, authToken);
+      return _encrypt(msg, nonce, token);
     }
 
     return _encryptMsg(msg, nonce, permanentSharedKey, sessionSharedKey);
