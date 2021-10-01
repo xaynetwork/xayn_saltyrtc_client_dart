@@ -3,7 +3,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
     show ServerHandshakeDone;
 import 'package:flutter_saltyrtc_client/client.dart'
-    show InitiatorClient, ResponderClient;
+    show InitiatorClient, ResponderClient, SaltyRtcClient;
 import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
     show getCrypto;
 import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart';
@@ -25,6 +25,13 @@ Future<bool> isServerActive(Uri uri) async {
   return Future.value(true);
 }
 
+class Setup {
+  final SaltyRtcClient client;
+  final String name;
+
+  Setup(this.client, this.name);
+}
+
 void main() async {
   setUpLogging();
 
@@ -41,40 +48,66 @@ void main() async {
     return;
   }
 
-  test('Client initiator server handshake', () async {
-    final ourPermanentKeys = crypto.createKeyStore();
+  final initiatorWithUntrustedResponder = ({Uint8List? expectedServerKey}) {
+    return Setup(
+      InitiatorClient.withUntrustedResponder(
+        serverUri,
+        crypto.createKeyStore(),
+        [],
+        expectedServerKey: expectedServerKey ?? serverPublicKey,
+        pingInterval: pingInterval,
+        sharedAuthToken: crypto.createAuthToken().bytes,
+      ),
+      'initiator untrusted responder',
+    );
+  };
 
-    final client = InitiatorClient.withUntrustedResponder(
-      serverUri,
-      ourPermanentKeys,
-      [],
-      expectedServerKey: serverPublicKey,
-      pingInterval: pingInterval,
-      sharedAuthToken: crypto.createAuthToken().bytes,
+  final responderWithTrustedKey = ({Uint8List? expectedServerKey}) {
+    return Setup(
+      ResponderClient.withTrustedKey(
+        serverUri,
+        crypto.createKeyStore(),
+        [],
+        pingInterval: pingInterval,
+        expectedServerKey: serverPublicKey,
+        initiatorTrustedKey: crypto.createKeyStore().publicKey,
+      ),
+      'responder with trusted key',
+    );
+  };
+
+  group(
+    'Client server handhshake',
+    () {
+      for (final data in [
+        initiatorWithUntrustedResponder(),
+        responderWithTrustedKey()
+      ]) {
+        test('Client ${data.name} server handshake', () async {
+          data.client.run();
+
+          final serverHandshakeDone = await data.client.events.first;
+          expect(serverHandshakeDone, isA<ServerHandshakeDone>());
+        });
+      }
+    },
+  );
+
+  group('Client server handhshake wrong server key', () {
+    final wrongServerKey = Uint8List.fromList(
+      HEX.decode(
+          '0000000000000000000000000000000000000000000000000000000000000000'),
     );
 
-    client.run();
+    for (final data in [
+      initiatorWithUntrustedResponder(expectedServerKey: wrongServerKey),
+      responderWithTrustedKey(expectedServerKey: wrongServerKey),
+    ]) {
+      test('Client ${data.name} server handshake wrong key', () async {
+        data.client.run();
 
-    final serverHandshakeDone = await client.events.first;
-    expect(serverHandshakeDone, isA<ServerHandshakeDone>());
-  });
-
-  test('Client responder server handshake', () async {
-    final ourPermanentKeys = crypto.createKeyStore();
-    final initiatorTrustedKey = crypto.createKeyStore().publicKey;
-
-    final client = ResponderClient.withTrustedKey(
-      serverUri,
-      ourPermanentKeys,
-      [],
-      pingInterval: pingInterval,
-      expectedServerKey: serverPublicKey,
-      initiatorTrustedKey: initiatorTrustedKey,
-    );
-
-    client.run();
-
-    final serverHandshakeDone = await client.events.first;
-    expect(serverHandshakeDone, isA<ServerHandshakeDone>());
+        await data.client.events.isEmpty;
+      });
+    }
   });
 }
