@@ -8,7 +8,6 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:meta/meta.dart' show immutable;
-import 'package:test/test.dart' show setUp, tearDown;
 
 final listEq = ListEquality<int>();
 
@@ -123,24 +122,6 @@ class _KeyBytes extends Equatable {
   _KeyBytes(Uint8List data) : props = data.sublist(0);
 }
 
-@immutable
-class Snapshot {
-  final Map<_MessageId, EncryptionInfo> encryptedMessages;
-  final Map<_KeyBytes, _MockKeyStore> keyStoreLookUp;
-  final Map<_KeyBytes, _MockAuthToken> authTokenLookUp;
-  final Map<_TwoKeyIds, SharedKeyStore> sharedKeyStoreLookUp;
-
-  Snapshot({
-    required Map<_MessageId, EncryptionInfo> encryptedMessages,
-    required Map<_KeyBytes, _MockKeyStore> keyStoreLookUp,
-    required Map<_KeyBytes, _MockAuthToken> authTokenLookUp,
-    required Map<_TwoKeyIds, SharedKeyStore> sharedKeyStoreLookUp,
-  })  : encryptedMessages = Map.of(encryptedMessages),
-        keyStoreLookUp = Map.of(keyStoreLookUp),
-        authTokenLookUp = Map.of(authTokenLookUp),
-        sharedKeyStoreLookUp = Map.of(sharedKeyStoreLookUp);
-}
-
 class MockCrypto extends Crypto {
   static const List<int> magicNumber = [123, 249, 27, 55];
 
@@ -164,40 +145,13 @@ class MockCrypto extends Crypto {
   _KeyId _nextKeyId() => _nextKeyIdState++;
   _MessageId _nextMessageId() => _nextMessageIdState++;
 
-  List<Snapshot> snapshots = [];
-
   MockCrypto();
 
-  /// Forgets about all keys/tokens making them implicitly invalid to use.
-  ///
-  /// Use before/after tests to clean up before running the next test.
-  void pushSnapshot() {
-    snapshots.add(Snapshot(
-      encryptedMessages: encryptedMessages,
-      keyStoreLookUp: keyStoreLookUp,
-      authTokenLookUp: authTokenLookUp,
-      sharedKeyStoreLookUp: sharedKeyStoreLookUp,
-    ));
-  }
-
-  void popSnapshot() {
-    if (snapshots.isEmpty) {
-      encryptedMessages = {};
-      keyStoreLookUp = {};
-      authTokenLookUp = {};
-      sharedKeyStoreLookUp = {};
-    } else {
-      final snapshot = snapshots.removeLast();
-      encryptedMessages = snapshot.encryptedMessages;
-      keyStoreLookUp = snapshot.keyStoreLookUp;
-      authTokenLookUp = snapshot.authTokenLookUp;
-      sharedKeyStoreLookUp = snapshot.sharedKeyStoreLookUp;
-    }
-  }
-
-  void reset() {
-    snapshots = [];
-    popSnapshot();
+  void _reset() {
+    encryptedMessages = {};
+    keyStoreLookUp = {};
+    authTokenLookUp = {};
+    sharedKeyStoreLookUp = {};
   }
 
   @override
@@ -313,16 +267,13 @@ class MockCrypto extends Crypto {
   }
 }
 
+/// Setup crypto.
+///
+/// Call (at most) once per test file.
+///
+/// Do not call before/after each test.
 void setUpCrypto() {
-  crypto.reset();
-
-  setUp(() {
-    crypto.pushSnapshot();
-  });
-
-  tearDown(() {
-    crypto.popSnapshot();
-  });
+  crypto._reset();
 }
 
 final crypto = MockCrypto();
