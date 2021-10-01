@@ -49,6 +49,11 @@ abstract class Client {
     });
   }
 
+  Future<void> close() async {
+    await _events.close();
+    return _ws.sink.close(CloseCode.closingNormal.toInt(), '');
+  }
+
   void _onWsMessage(Uint8List bytes) {
     try {
       _phase = _phase.handleMessage(bytes);
