@@ -28,6 +28,51 @@ class ResponderAuthenticated extends Event {
   List<Object?> get props => [permanentKey];
 }
 
+/// Event emitted when a client disconnects from the path.
+///
+/// We diverge from the spec here as we don't report the client ID, the
+/// reason for this is that it's completely useless as it is a arbitrary
+/// given out an arbitrary re-used ID.
+///
+/// Instead we report what kind of peer disconnected.
+///
+/// A `unknownPeer` disconnecting can normally be ignored.
+///
+/// Many cases of `unauthenticatedTargetPeer` or `authenticatedPeer`
+/// can point to the peer we want to connect to having some trouble,
+/// likely a problematic internet connection.
+///
+@immutable
+class Disconnected extends Event {
+  final PeerKind peerKind;
+
+  Disconnected(this.peerKind);
+}
+
+enum PeerKind {
+  /// A peer about we don't really know anything.
+  ///
+  /// With the current version of SaltyRtc this can only be a responder which
+  /// connected to the server but has not yet send any message to the client.
+  unknownPeer,
+
+  /// A peer with which we started but did not complete a client to client
+  /// handshake.
+  unauthenticatedTargetPeer,
+
+  /// A peer with which we completed a client to client handshake.
+  authenticatedPeer,
+}
+
+/// Event emitted when sending a message to a client failed.
+@immutable
+class SendError extends Event {
+  /// True if we already completed the client to client handshake.
+  final bool wasAuthenticated;
+
+  SendError(this.wasAuthenticated);
+}
+
 @immutable
 class NoSharedTaskFound extends Event {
   static Exception signalAndException(Sink<Event> eventOut) {
