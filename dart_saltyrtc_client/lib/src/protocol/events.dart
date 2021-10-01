@@ -254,16 +254,6 @@ class UnexpectedStatus extends Event {
 @immutable
 class HandoverOfSignalingChannel extends Event {}
 
-/// Event indicating that the web socket was closed.
-///
-/// This doesn't contain a specific reason as there could be multiple reasons,
-/// or no reason in case of a normal closing and appropriate events for this
-/// reasons will already have been emitted.
-///
-/// In a certain way this is a "end of stream" marker.
-@immutable
-class Closed extends Event {}
-
 /// Creates a event from an status code.
 ///
 /// This can be used with WebRtc on-close status codes or codes send with a
