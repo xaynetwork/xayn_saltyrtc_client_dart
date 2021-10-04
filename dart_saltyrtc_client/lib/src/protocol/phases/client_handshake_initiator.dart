@@ -39,7 +39,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show InitiatorTaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
 class ResponderWithState {
   final Responder responder;
@@ -251,15 +251,17 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       throw ProtocolError('Bad your_cookie in ${MessageType.auth} message');
     }
 
-    final task = _selectTask(msg.tasks, responder);
-    logger.i('Selected task ${task.name}');
+    final taskBuilder = _selectTaskBuilder(msg.tasks, responder);
+    logger.i('Selected task ${taskBuilder.name}');
 
     /// AuthResponder parsing already validates integrity.
-    final taskData = msg.data[task.name]!;
-    task.initialize(taskData);
-    logger.d('Initiated task ${task.name}');
+    final taskData = msg.data[taskBuilder.name]!;
+    final taskAndData = taskBuilder.buildInitiatorTask(taskData);
+    logger.d('Initiated task ${taskBuilder.name}');
 
-    sendMessage(AuthInitiator(nonce.cookie, task.name, {task.name: task.data}),
+    sendMessage(
+        AuthInitiator(nonce.cookie, taskBuilder.name,
+            {taskBuilder.name: taskAndData.second}),
         to: responder);
 
     // Make sure we don't drop the just paired responder.
@@ -273,12 +275,12 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
     //TODO notify application about potentially tursted authenticator
     return InitiatorTaskPhase(
-        common, config, responder.assertAuthenticated(), task);
+        common, config, responder.assertAuthenticated(), taskAndData.first);
   }
 
   /// Selects a task if possible, initiates connection termination if not.
-  Task _selectTask(List<String> tasks, Responder forResponder) {
-    Task? task;
+  TaskBuilder _selectTaskBuilder(List<String> tasks, Responder forResponder) {
+    TaskBuilder? task;
     for (final ourTask in config.tasks) {
       if (tasks.contains(ourTask.name)) {
         task = ourTask;

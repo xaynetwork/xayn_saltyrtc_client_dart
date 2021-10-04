@@ -15,9 +15,10 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart'
+    show Task, TaskBuilder;
+import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/expect.dart';
-import 'package:test/test.dart';
 
 import 'crypto_mock.dart' show crypto, setUpCrypto;
 import 'logging.dart' show setUpLogging;
@@ -172,24 +173,52 @@ void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
   }
 }
 
-//FIXME check older usages of TestTask
-class TestTask extends Task {
+class TestTaskBuilder extends TaskBuilder {
   @override
   final String name;
+
+  final TaskData? initialResponderData;
+
+  TestTask? lastInitiatorTask;
+  TestTask? lastResponderTask;
+
+  TestTaskBuilder(this.name, {this.initialResponderData});
+
   @override
-  final TaskData? data;
-
-  bool initWasCalled = false;
-  TaskData? initData;
-
-  TestTask(this.name, [this.data]);
-
-  @override
-  void initialize(TaskData? data) {
-    initWasCalled = true;
-    initData = data;
+  Pair<Task, TaskData?> buildInitiatorTask(TaskData? initialResponderData) {
+    TaskData? data;
+    if (initialResponderData == null) {
+      data = {
+        'initWasCalled': [2, 0, 12]
+      };
+    } else {
+      data = Map.of(initialResponderData);
+      data['initWasCalled'] = [1, 0, 12];
+    }
+    final task = TestTask(name, initData: data);
+    lastInitiatorTask = task;
+    return Pair(task, data);
   }
 
   @override
-  List<String> get supportedTypes => ['magic'];
+  Task buildResponderTask(TaskData? initiatorData) {
+    final task = TestTask(name, initData: initiatorData);
+    lastResponderTask = task;
+    return task;
+  }
+
+  @override
+  TaskData? getInitialResponderData() => initialResponderData;
+}
+
+//FIXME check older usages of TestTask
+class TestTask extends Task {
+  final String name;
+
+  final TaskData? initData;
+
+  @override
+  final List<String> supportedTypes;
+
+  TestTask(this.name, {this.initData, this.supportedTypes = const ['magic']});
 }

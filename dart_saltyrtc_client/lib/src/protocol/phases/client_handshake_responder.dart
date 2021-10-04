@@ -36,7 +36,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         WithPeer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show ResponderTaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
 /// State of the handshake with the initiator.
 enum State {
@@ -142,7 +142,9 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       remotePublicKey: keyMsg.key,
     ));
 
-    final taskData = {for (final task in config.tasks) task.name: task.data};
+    final taskData = {
+      for (final task in config.tasks) task.name: task.getInitialResponderData()
+    };
     final taskNames = [for (final task in config.tasks) task.name];
 
     sendMessage(
@@ -179,14 +181,15 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       throw ProtocolError('Bad your_cookie in ${MessageType.auth} message');
     }
 
-    final Task task;
+    final taskName = msg.task;
+    final TaskBuilder taskBuilder;
     try {
-      task = config.tasks.firstWhere((task) => task.name == msg.task);
+      taskBuilder = config.tasks.firstWhere((task) => task.name == taskName);
     } on StateError {
       throw ProtocolError('unknown selected task ${msg.task}');
     }
 
-    task.initialize(msg.data[task.name]);
+    final task = taskBuilder.buildResponderTask(msg.data[taskName]);
     return ResponderTaskPhase(
         common, config, initiator.assertAuthenticated(), task);
   }

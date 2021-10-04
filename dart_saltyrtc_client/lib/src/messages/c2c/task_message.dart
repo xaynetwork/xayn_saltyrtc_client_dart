@@ -9,10 +9,10 @@ import 'package:meta/meta.dart' show immutable;
 class TaskMessage extends Message {
   @override
   final String type;
-  final TaskData data;
+  final TaskData? data;
 
   @override
-  List<Object> get props => [type, data];
+  List<Object?> get props => [type, data];
 
   TaskMessage(this.type, this.data);
 
@@ -20,7 +20,6 @@ class TaskMessage extends Message {
     final type = validateTypeType(map[MessageFields.type]);
     final data =
         validateTaskDataType(map[MessageFields.data], MessageFields.data);
-
     return TaskMessage(type, data);
   }
 
@@ -30,12 +29,19 @@ class TaskMessage extends Message {
       ..packMapLength(2)
       ..packString(MessageFields.type)
       ..packString(type)
-      ..packMapLength(data.length);
+      ..packString(MessageFields.data);
 
-    data.forEach((key, value) {
-      msgPacker
-        ..packString(key)
-        ..packBinary(value);
-    });
+    final data = this.data;
+    if (data == null) {
+      msgPacker.packNull();
+    } else {
+      msgPacker.packMapLength(data.length);
+
+      data.forEach((key, value) {
+        msgPacker
+          ..packString(key)
+          ..packBinary(value);
+      });
+    }
   }
 }
