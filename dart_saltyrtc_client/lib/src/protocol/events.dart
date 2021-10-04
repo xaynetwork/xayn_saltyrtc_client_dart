@@ -1,9 +1,5 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show SaltyRtcError;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'package:meta/meta.dart' show immutable;
 
@@ -103,14 +99,13 @@ class SendError extends Event {
   SendError({required this.wasAuthenticated});
 }
 
+/// No shared task was found between the initiator and responder.
+///
+/// This means that both clients are incompatible, which might be fixed
+/// through a software update. Or might mean that two unrelated applications
+/// try to accidentally connect with each other.
 @immutable
-class NoSharedTaskFound extends FatalErrorEvent {
-  static Exception signalAndException(Sink<Event> eventOut) {
-    eventOut.add(NoSharedTaskFound());
-    return SaltyRtcError(
-        CloseCode.goingAway, 'going away after no shared task was found');
-  }
-}
+class NoSharedTaskFound extends FatalErrorEvent {}
 
 /// Event indicating that the initiator could not decrypt the message send from us.
 ///

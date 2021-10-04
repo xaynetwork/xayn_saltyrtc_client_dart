@@ -38,8 +38,7 @@ import '../../utils.dart'
         TestTaskBuilder,
         phaseAs,
         runTest,
-        setUpTesting,
-        throwsSaltyRtcError;
+        setUpTesting;
 
 void main() {
   setUpTesting();
@@ -109,18 +108,16 @@ void main() {
     runTest(setup.initialPhase, [
       mkRecvTokenAndKeyTest(initiator),
       (phase, io) {
-        expect(() {
-          initiator.sendAndTransitToPhase(
-            message: Token(crypto.createAuthToken().bytes),
-            sendTo: phase,
-            encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: initiator.permanentKey,
-              remotePublicKey: initiator.testedPeer.permanentKey!.publicKey,
-            ),
-          );
-        }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
-        //TODO check that sink closed
-        return phase;
+        final closing = initiator.sendAndClose(
+          message: Token(crypto.createAuthToken().bytes),
+          sendTo: phase,
+          encryptWith: crypto.createSharedKeyStore(
+            ownKeyStore: initiator.permanentKey,
+            remotePublicKey: initiator.testedPeer.permanentKey!.publicKey,
+          ),
+        );
+        expect(closing, equals(CloseCode.protocolError));
+        return null;
       }
     ]);
   });
@@ -187,23 +184,17 @@ void main() {
         tasks: tasks,
       ),
       (initialPhase, io) {
-        expect(() {
-          initiator.sendAndTransitToPhase<ResponderClientHandshakePhase>(
-            message: AuthInitiator(initiator.testedPeer.cookiePair.ours,
-                'example.v23', {'example.v23': null}),
-            sendTo: initialPhase,
-            encryptWith: crypto.createSharedKeyStore(
-                ownKeyStore: initiator.testedPeer.ourSessionKey!,
-                remotePublicKey:
-                    initiator.testedPeer.theirSessionKey!.publicKey),
-          );
-        }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
+        final closing = initiator.sendAndClose(
+          message: AuthInitiator(initiator.testedPeer.cookiePair.ours,
+              'example.v23', {'example.v23': null}),
+          sendTo: initialPhase,
+          encryptWith: crypto.createSharedKeyStore(
+              ownKeyStore: initiator.testedPeer.ourSessionKey!,
+              remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
+        );
 
-        final phase = phaseAs<ResponderClientHandshakePhase>(initialPhase);
-        //TODO closing doesn't clean...
-        // expect(phase.initiatorWithState, isNull);
-
-        return phase;
+        expect(closing, equals(CloseCode.protocolError));
+        return null;
       }
     ]);
   });
@@ -282,7 +273,7 @@ class _Setup {
   }
 }
 
-Phase Function(Phase, Io) mkRecvTokenAndKeyTest(PeerData initiator) {
+Phase? Function(Phase, Io) mkRecvTokenAndKeyTest(PeerData initiator) {
   final keyTest = mkRecvKeyTest(initiator);
   return (initialPhase, io) {
     final phase = phaseAs<ResponderClientHandshakePhase>(initialPhase);
@@ -297,7 +288,7 @@ Phase Function(Phase, Io) mkRecvTokenAndKeyTest(PeerData initiator) {
   };
 }
 
-Phase Function(Phase, Io) mkRecvKeyTest(PeerData initiator) {
+Phase? Function(Phase, Io) mkRecvKeyTest(PeerData initiator) {
   return (initialPhase, io) {
     final keyMsg = io.expectMessageOfType<Key>(
         sendTo: initiator,
@@ -321,7 +312,7 @@ Phase Function(Phase, Io) mkRecvKeyTest(PeerData initiator) {
   };
 }
 
-Phase Function(Phase, Io) mkNewInitiatorTest({
+Phase? Function(Phase, Io) mkNewInitiatorTest({
   required PeerData initiator,
   required PeerData server,
 }) {
@@ -348,7 +339,7 @@ Phase Function(Phase, Io) mkNewInitiatorTest({
   };
 }
 
-Phase Function(Phase, Io) mkSendKeyRecvAuthTest({
+Phase? Function(Phase, Io) mkSendKeyRecvAuthTest({
   required PeerData initiator,
   required List<TaskBuilder> tasks,
 }) {
@@ -387,7 +378,7 @@ Phase Function(Phase, Io) mkSendKeyRecvAuthTest({
   };
 }
 
-Phase Function(Phase, Io) mkSendAuthTest({
+Phase? Function(Phase, Io) mkSendAuthTest({
   required PeerData initiator,
   required String task,
   required TasksData data,
@@ -416,24 +407,24 @@ Phase Function(Phase, Io) mkSendAuthTest({
   };
 }
 
-Phase Function(Phase, Io) mkSendNoSharedTaskTest(PeerData initiator) {
+Phase? Function(Phase, Io) mkSendNoSharedTaskTest(PeerData initiator) {
   return (phase, io) {
-    expect(() {
-      initiator.sendAndTransitToPhase<ResponderTaskPhase>(
-        message: Close(CloseCode.noSharedTask),
-        sendTo: phase,
-        encryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: initiator.testedPeer.ourSessionKey!,
-            remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
-      );
-    }, throwsSaltyRtcError(closeCode: CloseCode.goingAway));
+    final closing = initiator.sendAndClose(
+      message: Close(CloseCode.noSharedTask),
+      sendTo: phase,
+      encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: initiator.testedPeer.ourSessionKey!,
+          remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
+    );
+
+    expect(closing, isNull);
 
     io.expectEventOfType<events.NoSharedTaskFound>();
     return phase;
   };
 }
 
-Phase Function(Phase, Io) mkInitiatorDisconnectedTest({
+Phase? Function(Phase, Io) mkInitiatorDisconnectedTest({
   required PeerData server,
 }) {
   return (initialPhase, io) {
@@ -452,7 +443,7 @@ Phase Function(Phase, Io) mkInitiatorDisconnectedTest({
   };
 }
 
-Phase Function(Phase, Io) mkSendErrorTest({
+Phase? Function(Phase, Io) mkSendErrorTest({
   required PeerData server,
   required PeerData initiator,
 }) {

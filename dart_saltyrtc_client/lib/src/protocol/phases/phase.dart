@@ -1,3 +1,4 @@
+import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
@@ -18,8 +19,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError, ValidationError;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+    show ProtocolError, ValidationError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show ClosingErrorEvent, Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
@@ -48,7 +50,7 @@ class Common {
   WebSocketSink sink;
 
   /// Event stream to send to the client.
-  Sink<Event> events;
+  EventSink<Event> events;
 
   Common(
     this.crypto,
@@ -134,6 +136,19 @@ class ResponderConfig extends Config {
 /// A phase can handle a message and returns the next phase.
 /// This also contains common and auxiliary code.
 abstract class Phase {
+  // Temporary until TY-2125
+  bool isClosed = false;
+  // Temporary until TY-2125
+  CloseCode? closeCode;
+  // Temporary until TY-2125
+  String? closeReason;
+  // Temporary until TY-2125
+  void close(CloseCode? closeCode, String? closeReason) {
+    isClosed = true;
+    this.closeCode = closeCode;
+    this.closeReason = closeReason;
+  }
+
   /// Data common to all phases and role.
   final Common common;
 
@@ -166,16 +181,14 @@ abstract class Phase {
 
       return run(peer, msgBytes, nonce);
     } on ProtocolError catch (e) {
-      onProtocolError(e, nonce?.source);
-      logger.w('Dropping message(protocol error): $e');
-      return this;
+      return onProtocolError(e, nonce?.source);
     }
   }
 
   @protected
-  void onProtocolError(ProtocolError e, Id? source) {
-    throw SaltyRtcError(
-        e.closeCode, 'ProtocolError($source=>${common.address}): $e');
+  Phase onProtocolError(ProtocolError e, Id? source) {
+    close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
+    return this;
   }
 
   @protected
@@ -195,6 +208,15 @@ abstract class Phase {
         'Invalid nonce destination.'
         'Expected $address, found $destination',
       );
+    }
+  }
+
+  @protected
+  void emitEvent(Event event) {
+    if (event is ClosingErrorEvent) {
+      common.events.addError(event, StackTrace.current);
+    } else {
+      common.events.add(event);
     }
   }
 

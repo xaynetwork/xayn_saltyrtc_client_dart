@@ -27,15 +27,3 @@ class ProtocolError implements Exception {
 class ValidationError extends ProtocolError {
   ValidationError(String msg) : super(msg);
 }
-
-/// It will result in the connection closing with the specified error code.
-@immutable
-class SaltyRtcError implements Exception {
-  final CloseCode closeCode;
-  final String _msg;
-
-  SaltyRtcError(this.closeCode, this._msg);
-
-  @override
-  String toString() => _msg;
-}

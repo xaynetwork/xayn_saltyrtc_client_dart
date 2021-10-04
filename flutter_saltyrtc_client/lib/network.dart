@@ -15,6 +15,9 @@ class WebSocket implements saltyrtc.WebSocket {
 
   @override
   saltyrtc.WebSocketStream get stream => _ws.stream.cast();
+
+  @override
+  int? get closeCode => _ws.closeCode;
 }
 
 /// Wrap websocket.WebSocketSink to implement saltyrtc.WebSocketSink.

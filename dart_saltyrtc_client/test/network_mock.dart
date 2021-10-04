@@ -1,4 +1,4 @@
-import 'dart:async' show StreamController;
+import 'dart:async' show EventSink, StreamController;
 import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
@@ -8,6 +8,7 @@ import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink, WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketStream;
+import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/test.dart';
 
 class MockSyncWebSocketSink implements WebSocketSink {
@@ -57,6 +58,9 @@ class MockAsyncWebSocketSink implements WebSocketSink {
 }
 
 class MockWebSocket implements WebSocket {
+  @override
+  int? get closeCode => sink.closeCode;
+
   final controller = StreamController<Uint8List>.broadcast();
 
   /// This is the sink that the client use to send messages to the server.
@@ -70,8 +74,8 @@ class MockWebSocket implements WebSocket {
   Sink<Uint8List> get sinkToClient => controller.sink;
 }
 
-class QueueSink<T> implements Sink<T> {
-  final Queue<T> _queue = Queue();
+class QueueSink<T> implements EventSink<T> {
+  final Queue<Pair<T, bool>> _queue = Queue();
   bool isClosed = false;
 
   @override
@@ -79,7 +83,17 @@ class QueueSink<T> implements Sink<T> {
     if (isClosed) {
       throw StateError('QueueSink was already closed');
     }
-    _queue.add(data);
+    _queue.add(Pair(data, false));
+  }
+
+  @override
+  void addError(Object data, [StackTrace? stackTrace]) {
+    if (isClosed) {
+      throw StateError('QueueSink was already closed');
+    }
+    expect(data, isA<T>());
+    expect(stackTrace, isNotNull);
+    _queue.add(Pair(data as T, true));
   }
 
   @override
@@ -87,9 +101,12 @@ class QueueSink<T> implements Sink<T> {
     isClosed = true;
   }
 
-  T next() {
-    expect(_queue, isNotEmpty);
-    return _queue.removeFirst();
+  T next({bool? isError}) {
+    final pair = _queue.removeFirst();
+    if (isError != null) {
+      expect(pair.second, equals(isError));
+    }
+    return pair.first;
   }
 
   bool get isEmpty => _queue.isEmpty;

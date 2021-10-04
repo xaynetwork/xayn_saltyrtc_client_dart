@@ -104,11 +104,12 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
-  void onProtocolError(ProtocolError e, Id? source) {
+  Phase onProtocolError(ProtocolError e, Id? source) {
     if (source != null && source.isResponder()) {
       dropResponder(source.asResponder(), e.closeCode);
+      return this;
     } else {
-      super.onProtocolError(e, source);
+      return super.onProtocolError(e, source);
     }
   }
 
@@ -123,7 +124,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     } else {
       peerKind = events.PeerKind.unknownPeer;
     }
-    common.events.add(events.Disconnected(peerKind));
+    emitEvent(events.Disconnected(peerKind));
     return this;
   }
 
@@ -131,7 +132,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   Phase handleSendErrorByDestination(Id destination) {
     final removed = responders.remove(destination);
     if (removed != null) {
-      common.events.add(events.SendError(wasAuthenticated: false));
+      emitEvent(events.SendError(wasAuthenticated: false));
     } else {
       logger.d('send-error from already removed destination');
     }
@@ -139,8 +140,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
-  void handleNewResponder(NewResponder msg) {
+  Phase handleNewResponder(NewResponder msg) {
     addNewResponder(msg.id);
+    return this;
   }
 
   /// Adds a new responder the the container of known responders.
@@ -259,6 +261,13 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     }
 
     final taskBuilder = _selectTaskBuilder(msg.tasks, responder);
+    if (taskBuilder == null) {
+      logger.w('No shared task for ${responder.id} found');
+      sendMessage(Close(CloseCode.noSharedTask), to: responder);
+      emitEvent(events.NoSharedTaskFound());
+      close(CloseCode.goingAway, 'no shared task was found');
+      return this;
+    }
     logger.i('Selected task ${taskBuilder.name}');
 
     /// AuthResponder parsing already validates integrity.
@@ -280,7 +289,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    common.events.add(events.ResponderAuthenticated(
+    emitEvent(events.ResponderAuthenticated(
         responder.permanentSharedKey!.remotePublicKey));
 
     return InitiatorTaskPhase(
@@ -288,18 +297,12 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   /// Selects a task if possible, initiates connection termination if not.
-  TaskBuilder _selectTaskBuilder(List<String> tasks, Responder forResponder) {
+  TaskBuilder? _selectTaskBuilder(List<String> tasks, Responder forResponder) {
     TaskBuilder? task;
     for (final ourTask in config.tasks) {
       if (tasks.contains(ourTask.name)) {
         task = ourTask;
       }
-    }
-
-    if (task == null) {
-      logger.w('No shared task for ${forResponder.id} found');
-      sendMessage(Close(CloseCode.noSharedTask), to: forResponder);
-      throw events.NoSharedTaskFound.signalAndException(common.events);
     }
 
     return task;

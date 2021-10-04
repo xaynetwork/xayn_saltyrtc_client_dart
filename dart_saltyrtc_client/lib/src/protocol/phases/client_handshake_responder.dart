@@ -39,6 +39,8 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show ResponderTaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
+import '../../logger.dart';
+
 /// State of the handshake with the initiator.
 enum State {
   waitForKeyMsg,
@@ -100,21 +102,21 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     final id = msg.id;
     validateIdInitiator(id.value);
     initiatorWithState = null;
-    common.events
-        .add(events.Disconnected(events.PeerKind.unauthenticatedTargetPeer));
+    emitEvent(events.Disconnected(events.PeerKind.unauthenticatedTargetPeer));
     return this;
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
-    common.events.add(events.SendError(wasAuthenticated: false));
+    emitEvent(events.SendError(wasAuthenticated: false));
     return this;
   }
 
   @override
-  void handleNewInitiator(NewInitiator msg) {
+  Phase handleNewInitiator(NewInitiator msg) {
     startNewHandshake();
+    return this;
   }
 
   @override
@@ -173,7 +175,11 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       // We expect a potential Close message, but only with a
       // CloseCode.noSharedTask reason.
       if (msg.reason == CloseCode.noSharedTask) {
-        throw events.NoSharedTaskFound.signalAndException(common.events);
+        logger.w('No shared task for ${initiator.id} found');
+        emitEvent(events.NoSharedTaskFound());
+        // no close code is used in this case
+        close(null, 'no shared task was found');
+        return this;
       }
     }
     if (msg is! AuthInitiator) {
@@ -195,8 +201,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
 
     final task = taskBuilder.buildResponderTask(msg.data[taskName]);
 
-    common.events
-        .add(events.ResponderAuthenticated(config.permanentKeys.publicKey));
+    emitEvent(events.ResponderAuthenticated(config.permanentKeys.publicKey));
 
     return ResponderTaskPhase(
         common, config, initiator.assertAuthenticated(), task);

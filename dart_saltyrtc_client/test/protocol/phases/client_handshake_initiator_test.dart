@@ -33,14 +33,7 @@ import 'package:test/test.dart';
 import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show EventQueue, MockSyncWebSocketSink;
 import '../../utils.dart'
-    show
-        Io,
-        PeerData,
-        TestTaskBuilder,
-        phaseAs,
-        runTest,
-        setUpTesting,
-        throwsSaltyRtcError;
+    show Io, PeerData, TestTaskBuilder, phaseAs, runTest, setUpTesting;
 
 void main() {
   setUpTesting();
@@ -236,25 +229,18 @@ void main() {
     group('send-error checks', () {
       test('send-error source is checked', () {
         final setup = _Setup.create(
-          responderIds: [12, 21],
           usePresetTrust: true,
         );
         final server = setup.server;
         final responder0 = setup.responders[0];
-        final responder1 = setup.responders[1];
 
         runTest(setup.initialPhase, [
           mkSendKeyTest(responder0),
           mkSendBadSendErrorTest(
-              server: server,
-              source: Id.peerId(32),
-              destination: responder0.address),
-          // We don't know if we dropped a responder, so
-          // we can't know that we didn't send a message ;)
-          mkSendBadSendErrorTest(
-              server: server,
-              source: Id.peerId(32),
-              destination: responder1.address),
+            server: server,
+            source: Id.peerId(32),
+            destination: responder0.address,
+          ),
         ]);
       });
 
@@ -266,9 +252,10 @@ void main() {
         runTest(setup.initialPhase, [
           mkSendKeyTest(responder0),
           mkSendBadSendErrorTest(
-              server: server,
-              source: Id.initiatorAddress,
-              destination: Id.initiatorAddress),
+            server: server,
+            source: Id.initiatorAddress,
+            destination: Id.initiatorAddress,
+          ),
         ]);
       });
     });
@@ -448,7 +435,7 @@ class _Setup {
   }
 }
 
-Phase Function(Phase, Io) mkSendTokenTest(PeerData mockPeer) {
+Phase? Function(Phase, Io) mkSendTokenTest(PeerData mockPeer) {
   assert(mockPeer.authToken != null);
   return (initialPhase, io) {
     final phase = mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
@@ -470,7 +457,7 @@ Phase Function(Phase, Io) mkSendTokenTest(PeerData mockPeer) {
   };
 }
 
-Phase Function(Phase, Io) mkSendBadTokenTest(
+Phase? Function(Phase, Io) mkSendBadTokenTest(
     {required PeerData responder, required PeerData server}) {
   assert(responder.authToken != null);
   return (initialPhase, io) {
@@ -492,7 +479,7 @@ Phase Function(Phase, Io) mkSendBadTokenTest(
   };
 }
 
-Phase Function(Phase, Io) mkSendKeyTest(PeerData responder) {
+Phase? Function(Phase, Io) mkSendKeyTest(PeerData responder) {
   return (initialPhase, io) {
     responder.testedPeer.ourSessionKey = crypto.createKeyStore();
     final sendPubKey = responder.testedPeer.ourSessionKey!.publicKey;
@@ -531,7 +518,7 @@ Phase Function(Phase, Io) mkSendKeyTest(PeerData responder) {
   };
 }
 
-Phase Function(Phase, Io) mkSendBadKeyTest(
+Phase? Function(Phase, Io) mkSendBadKeyTest(
     {required PeerData responder, required PeerData server}) {
   return (initialPhase, io) {
     responder.testedPeer.ourSessionKey = crypto.createKeyStore();
@@ -560,7 +547,7 @@ Phase Function(Phase, Io) mkSendBadKeyTest(
   };
 }
 
-Phase Function(Phase, Io) mkSendAuthNoSharedTaskTest({
+Phase? Function(Phase, Io) mkSendAuthNoSharedTaskTest({
   required PeerData responder,
   required List<TestTaskBuilder> supportedTasks,
   required List<TestTaskBuilder> responderTasks,
@@ -570,16 +557,17 @@ Phase Function(Phase, Io) mkSendAuthNoSharedTaskTest({
       for (final task in responderTasks)
         task.name: task.getInitialResponderData()
     };
-    expect(() {
-      phase = responder.sendAndTransitToPhase<TaskPhase>(
-        message: AuthResponder(responder.testedPeer.cookiePair.theirs!,
-            tasksData.keys.toList(), tasksData),
-        sendTo: phase,
-        encryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: responder.testedPeer.ourSessionKey!,
-            remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey),
-      );
-    }, throwsSaltyRtcError(closeCode: CloseCode.goingAway));
+
+    final closing = responder.sendAndClose(
+      message: AuthResponder(responder.testedPeer.cookiePair.theirs!,
+          tasksData.keys.toList(), tasksData),
+      sendTo: phase,
+      encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: responder.testedPeer.ourSessionKey!,
+          remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey),
+    );
+
+    expect(closing, equals(CloseCode.goingAway));
 
     io.expectEventOfType<events.NoSharedTaskFound>();
 
@@ -596,11 +584,11 @@ Phase Function(Phase, Io) mkSendAuthNoSharedTaskTest({
 
     expect(msg.reason, CloseCode.noSharedTask);
 
-    return phase;
+    return null;
   };
 }
 
-Phase Function(Phase, Io) mkSendAuthTest({
+Phase? Function(Phase, Io) mkSendAuthTest({
   required PeerData responder,
   required PeerData server,
   required List<TestTaskBuilder> supportedTasks,
@@ -678,7 +666,7 @@ Phase Function(Phase, Io) mkSendAuthTest({
   };
 }
 
-Phase Function(Phase, Io) mkDropOldOnNewReceiverTest({
+Phase? Function(Phase, Io) mkDropOldOnNewReceiverTest({
   required int newResponderId,
   required int droppedResponderId,
   required PeerData server,
@@ -712,7 +700,7 @@ Phase Function(Phase, Io) mkDropOldOnNewReceiverTest({
   };
 }
 
-Phase Function(Phase, Io) mkSendDisconnectedTest({
+Phase? Function(Phase, Io) mkSendDisconnectedTest({
   required int disconnect,
   required PeerData server,
   bool knownPeer = false,
@@ -745,7 +733,7 @@ Phase Function(Phase, Io) mkSendDisconnectedTest({
   };
 }
 
-Phase Function(Phase, Io) mkSendErrorTest({
+Phase? Function(Phase, Io) mkSendErrorTest({
   required PeerData server,
   required PeerData responder,
 }) {
@@ -780,22 +768,22 @@ Phase Function(Phase, Io) mkSendErrorTest({
   };
 }
 
-Phase Function(Phase, Io) mkSendBadSendErrorTest({
+Phase? Function(Phase, Io) mkSendBadSendErrorTest({
   required PeerData server,
   required Id source,
   required Id destination,
 }) {
-  return (phase, io) {
-    expect(() {
-      server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
-        message: SendError(Uint8List.fromList(
-            [source.value, destination.value, 0, 0, 1, 2, 3, 4])),
-        sendTo: phase,
-        encryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: server.testedPeer.ourSessionKey!,
-            remotePublicKey: server.testedPeer.theirSessionKey!.publicKey),
-      );
-    }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
-    return phase;
+  return (initialPhase, io) {
+    final closing = server.sendAndClose(
+      message: SendError(Uint8List.fromList(
+          [source.value, destination.value, 0, 0, 1, 2, 3, 4])),
+      sendTo: initialPhase,
+      encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey),
+    );
+
+    expect(closing, equals(CloseCode.protocolError));
+    return null;
   };
 }

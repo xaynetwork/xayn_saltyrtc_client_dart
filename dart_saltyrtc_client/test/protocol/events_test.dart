@@ -1,6 +1,5 @@
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
     show
-        HandoverOfSignalingChannel,
         IncompatibleServerKey,
         InitiatorCouldNotDecrypt,
         LikelyTemporaryFailure,
@@ -44,7 +43,7 @@ void main() {
     expect(
         eventFromStatus(1009),
         equals(UnexpectedStatus.unchecked(
-            UnexpectedStatusVariant.messageToBig, 1009)));
+            UnexpectedStatusVariant.messageTooBig, 1009)));
     expect(
         eventFromStatus(1010),
         equals(
@@ -75,7 +74,10 @@ void main() {
         eventFromStatus(3002),
         equals(UnexpectedStatus.unchecked(
             UnexpectedStatusVariant.internalError, 3002)));
-    expect(eventFromStatus(3003), equals(HandoverOfSignalingChannel()));
+    expect(
+        eventFromStatus(3003),
+        equals(
+            UnexpectedStatus.unchecked(UnexpectedStatusVariant.other, 3003)));
     expect(eventFromStatus(3004),
         equals(LikelyTemporaryFailure(TempFailureVariant.droppedByInitiator)));
     expect(eventFromStatus(3005), equals(InitiatorCouldNotDecrypt()));

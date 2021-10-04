@@ -11,7 +11,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError, ValidationError;
+    show ProtocolError, ValidationError;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
@@ -45,18 +45,6 @@ Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   }
 
   return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
-}
-
-Matcher throwsSaltyRtcError({CloseCode closeCode = CloseCode.protocolError}) {
-  bool errorHasExpectedState(Object? error) {
-    if (error is! SaltyRtcError) {
-      return true;
-    } else {
-      return error.closeCode == closeCode;
-    }
-  }
-
-  return throwsA(allOf(isA<SaltyRtcError>(), predicate(errorHasExpectedState)));
 }
 
 class MockKnowledgeAboutTestedPeer {
@@ -101,7 +89,28 @@ class PeerData {
     expect(sendTo.common.address, equals(testedPeer.address));
     final rawMessage = mapEncryptedMessage(_createRawMessage(message,
         encryptWith: encryptWith, mapNonce: mapNonce));
-    return phaseAs(sendTo.handleMessage(rawMessage));
+
+    final nextPhase = sendTo.handleMessage(rawMessage);
+    expect(nextPhase.isClosed, isFalse);
+    return phaseAs<N>(nextPhase);
+  }
+
+  CloseCode? sendAndClose({
+    required Message message,
+    required Phase sendTo,
+    required CryptoBox? encryptWith,
+    // use to e.g. create "bad" nonces
+    Nonce Function(Nonce) mapNonce = noChange,
+    // use to e.g. create "bad" encrypted messages"
+    Uint8List Function(Uint8List) mapEncryptedMessage = noChange,
+  }) {
+    expect(sendTo.common.address, equals(testedPeer.address));
+    final rawMessage = mapEncryptedMessage(_createRawMessage(message,
+        encryptWith: encryptWith, mapNonce: mapNonce));
+
+    final nextPhase = sendTo.handleMessage(rawMessage);
+    expect(nextPhase.isClosed, isTrue);
+    return nextPhase.closeCode;
   }
 
   Uint8List _createRawMessage(
@@ -149,19 +158,21 @@ class Io {
 
   Io(this.sendPackages, this.sendEvents);
 
-  T expectEventOfType<T extends Event>() {
-    final event = sendEvents.next();
+  T expectEventOfType<T extends Event>({bool? isClosingError}) {
+    final Event event = sendEvents.next(isError: isClosingError);
     expect(event, isA<T>());
     return event as T;
   }
 
-  T expectMessageOfType<T extends Message>({required PeerData sendTo, CryptoBox? decryptWith}) {
+  T expectMessageOfType<T extends Message>(
+      {required PeerData sendTo, CryptoBox? decryptWith}) {
     final package = sendPackages.next();
     final nonce = Nonce.fromBytes(package);
     expect(nonce.source, equals(sendTo.testedPeer.address));
     expect(nonce.destination, equals(sendTo.address));
     sendTo.testedPeer.cookiePair.updateAndCheck(nonce.cookie, nonce.source);
-    sendTo.testedPeer.csPair.updateAndCheck(nonce.combinedSequence, nonce.source);
+    sendTo.testedPeer.csPair
+        .updateAndCheck(nonce.combinedSequence, nonce.source);
     final payload = Uint8List.sublistView(package, Nonce.totalLength);
     final Message msg;
     if (decryptWith == null) {
@@ -178,17 +189,21 @@ class Io {
   }
 }
 
-void runTest(Phase phase, List<Phase Function(Phase, Io)> steps) {
+void runTest(Phase initialPhase, List<Phase? Function(Phase, Io)> steps) {
+  Phase? phase = initialPhase;
   final sink = phase.common.sink;
   final sendPackages = (sink as MockSyncWebSocketSink).queue;
   final sendEvents = phase.common.events as EventQueue;
   final io = Io(sendPackages, sendEvents);
   for (final step in steps) {
+    if (phase == null) {
+      throw AssertionError('closed before all test did run');
+    }
+    expect(phase.common.sink, same(sink));
+    expect(phase.common.events, same(sendEvents));
     phase = step(phase, io);
     expect(sendPackages, isEmpty);
-    expect(phase.common.sink, same(sink));
     expect(sendEvents, isEmpty);
-    expect(phase.common.events, same(sendEvents));
   }
 }
 
