@@ -12,9 +12,9 @@ void setUpLogging() {
   });
 
   tearDown(() async {
-    memoryOutput.buffer.forEach((event) {
+    for (final event in memoryOutput.buffer) {
       final output = event.lines.join('\n');
       printOnFailure(output);
-    });
+    }
   });
 }

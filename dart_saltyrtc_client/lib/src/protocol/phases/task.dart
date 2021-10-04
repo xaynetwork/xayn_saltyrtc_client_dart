@@ -133,6 +133,7 @@ class InitiatorTaskPhase extends TaskPhase
   @override
   final InitiatorConfig config;
   @override
+  // ignore: overridden_fields
   final AuthenticatedResponder pairedClient;
 
   InitiatorTaskPhase(
@@ -165,6 +166,7 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   @override
   final ResponderConfig config;
   @override
+  // ignore: overridden_fields
   final AuthenticatedInitiator pairedClient;
 
   ResponderTaskPhase(

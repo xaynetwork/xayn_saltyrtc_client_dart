@@ -1,4 +1,4 @@
-include: package:pedantic/analysis_options.1.11.0.yaml
+include: package:lints/recommended.yaml
 
 analyzer:
   strong-mode:
@@ -7,13 +7,17 @@ analyzer:
 
 linter:
   rules:
+    - always_declare_return_types
     - camel_case_types
     - camel_case_extensions
-    - library_names
+    - constant_identifier_names
+    - curly_braces_in_flow_control_structures
+    - directives_ordering
     - file_names
+    - library_names
     - library_prefixes
     - non_constant_identifier_names
-    - constant_identifier_names
-    - directives_ordering
-    - curly_braces_in_flow_control_structures
     - prefer_single_quotes
+    - sort_child_properties_last
+    - unawaited_futures
+    - unsafe_html

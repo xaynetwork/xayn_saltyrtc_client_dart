@@ -48,7 +48,7 @@ void main() async {
     return;
   }
 
-  final initiatorWithUntrustedResponder = ({Uint8List? expectedServerKey}) {
+  Setup initiatorWithUntrustedResponder({Uint8List? expectedServerKey}) {
     return Setup(
       InitiatorClient.withUntrustedResponder(
         serverUri,
@@ -60,9 +60,9 @@ void main() async {
       ),
       'initiator untrusted responder',
     );
-  };
+  }
 
-  final responderWithTrustedKey = ({Uint8List? expectedServerKey}) {
+  Setup responderWithTrustedKey({Uint8List? expectedServerKey}) {
     return Setup(
       ResponderClient.withTrustedKey(
         serverUri,
@@ -74,7 +74,7 @@ void main() async {
       ),
       'responder with trusted key',
     );
-  };
+  }
 
   group(
     'Client server handhshake',

@@ -34,7 +34,8 @@ void main() {
   final responderId1 = Id.responderId(23);
   final initiatorId = Id.initiatorAddress;
   final cookie = Cookie.fromRandom(crypto.randomBytes);
-  final mkCSN = () => CombinedSequence.fromRandom(crypto.randomBytes);
+
+  CombinedSequence mkCSN() => CombinedSequence.fromRandom(crypto.randomBytes);
 
   group('Responder.assertAuthenticated', () {
     test('creates a AuthenticatedResponder', () {
@@ -123,11 +124,11 @@ void main() {
   });
 
   group('CookiePair.updateAndCheck', () {
-    final mkPair = () {
+    CookiePair mkPair() {
       final pair = CookiePair.fromRandom(crypto);
       expect(pair.theirs, isNull);
       return pair;
-    };
+    }
 
     test('if their cookie is empty set it', () {
       final pair = mkPair();
@@ -152,11 +153,12 @@ void main() {
   });
 
   group('CombinedSequencePair.updateAndCheck', () {
-    final mkPair = () {
+    CombinedSequencePair mkPair() {
       final pair = CombinedSequencePair.fromRandom(crypto);
       expect(pair.theirs, isNull);
       return pair;
-    };
+    }
+
     test('if their CSN is empty set it', () {
       final pair = mkPair();
       final csn = CombinedSequence.fromRandom(crypto.randomBytes);

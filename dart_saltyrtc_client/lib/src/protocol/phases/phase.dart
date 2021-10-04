@@ -293,6 +293,7 @@ mixin InitiatorSendDropResponder on Phase {
 /// Mostly control messages from the server.
 abstract class AfterServerHandshakePhase extends Phase {
   @override
+  // ignore: overridden_fields
   final CommonAfterServerHandshake common;
 
   AfterServerHandshakePhase(this.common) : super(common);
@@ -322,10 +323,12 @@ class CommonAfterServerHandshake extends Common {
   /// After the server handshake the address is an IdClient and it cannot be
   /// modified anymore.
   @override
+  // ignore: overridden_fields
   final IdClient address;
 
   /// After the server handshake the session key cannot be nullable anymore.
   @override
+  // ignore: overridden_fields
   final AuthenticatedServer server;
 
   CommonAfterServerHandshake(
