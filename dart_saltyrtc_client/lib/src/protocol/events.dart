@@ -1,5 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'package:meta/meta.dart' show immutable;
 
@@ -11,13 +12,15 @@ abstract class Event extends Equatable {
 /// An event which will lead to the SaltyRtc client being closed.
 abstract class ClosingErrorEvent extends Event {}
 
-/// An event which can't be recovered from without a app update.
+/// An event which can't be recovered from without a software update (somewhere).
 ///
-/// Be aware that `UnexpectedStatus` might only implements `ClosingErrorEvent`
-/// but could very well be a `FatalErrorEvent` but we can't really tell.
+/// Through the software which might need updating might be the other devices
+/// app or the server (in case of a messed up public key update).
 ///
-/// (Through the app which might need updating might be the other
-/// app.)
+/// Be aware that `UnexpectedStatus` and `InternalError` only implement
+/// `ClosingErrorEvent` but could very well be a `FatalErrorEvent`
+/// but we can't really tell.
+///
 abstract class FatalErrorEvent extends ClosingErrorEvent {}
 
 @immutable
@@ -195,6 +198,9 @@ class LikelyTemporaryFailure extends ClosingErrorEvent {
 enum UnexpectedStatusVariant {
   /// The server or other client ran into a internal error.
   ///
+  /// *If we run into an internalError we use the InternalError event,
+  ///  which provides additional debug information.*
+  ///
   /// Either `1011` (WebRtc) or `3002` SaltyRtc.
   internalError,
 
@@ -260,6 +266,14 @@ class UnexpectedStatus extends ClosingErrorEvent {
   List<Object?> get props => [variant, closeCode];
 }
 
+/// A unexpected exception was thrown, this error is 100% indicating that we hit a bug.
+@immutable
+class InternalError extends ClosingErrorEvent {
+  final Object error;
+
+  InternalError(this.error);
+}
+
 /// Creates a event from an status code.
 ///
 /// This can be used with WebRtc on-close status codes or codes send with a
@@ -267,8 +281,9 @@ class UnexpectedStatus extends ClosingErrorEvent {
 /// This also means that a non (direct) error close code will not create an
 /// event (`normal` and `goingAway`).
 ///
-Event? eventFromStatus(int? closeCode) {
+Event? eventFromWSCloseCode(int? closeCode) {
   if (closeCode == null) {
+    logger.e('unexpectedly received no closeCode');
     return UnexpectedStatus.unchecked(UnexpectedStatusVariant.other, closeCode);
   }
   switch (closeCode) {

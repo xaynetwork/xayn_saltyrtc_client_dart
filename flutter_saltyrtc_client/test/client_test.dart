@@ -84,9 +84,9 @@ void main() async {
         responderWithTrustedKey()
       ]) {
         test('Client ${data.name} server handshake', () async {
-          data.client.run();
+          final events = data.client.run();
 
-          final serverHandshakeDone = await data.client.events.first;
+          final serverHandshakeDone = await events.first;
           expect(serverHandshakeDone, isA<ServerHandshakeDone>());
         });
       }
@@ -104,9 +104,9 @@ void main() async {
       responderWithTrustedKey(expectedServerKey: wrongServerKey),
     ]) {
       test('Client ${data.name} server handshake wrong key', () async {
-        data.client.run();
+        final events = data.client.run();
 
-        await data.client.events.isEmpty;
+        await events.isEmpty;
       });
     }
   });

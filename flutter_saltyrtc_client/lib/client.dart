@@ -16,11 +16,8 @@ import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
 
 abstract class SaltyRtcClient {
-  /// Events produced from the client.
-  Stream<saltyrtc.Event> get events;
-
-  /// Start listening to messages on the websocket.
-  void run();
+  /// Start the SaltyRtc client returning a stream of events about it's state.
+  Stream<saltyrtc.Event> run();
 
   /// Close the connection with the server, the client is not usable after
   /// this method has been called.
@@ -103,15 +100,9 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
     return InitiatorClient._(client);
   }
 
-  /// Events produced from the client.
+  /// Starts the SaltyRtc client returning a stream of events about it's state.
   @override
-  Stream<saltyrtc.Event> get events => _client.events;
-
-  /// Start listening to messages on the websocket.
-  @override
-  void run() {
-    _client.run();
-  }
+  Stream<saltyrtc.Event> run() => _client.run();
 
   /// Close the connection with the server, the client is not usable after
   /// this method has been called.
@@ -197,15 +188,9 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
     return ResponderClient._(client);
   }
 
-  /// Events produced from the client.
+  /// Start the SaltyRtc client returning a stream of events about it's state.
   @override
-  Stream<saltyrtc.Event> get events => _client.events;
-
-  /// Start listening to messages on the websocket.
-  @override
-  void run() {
-    _client.run();
-  }
+  Stream<saltyrtc.Event> run() => _client.run();
 
   /// Close the connection with the server, the client is not
   /// usable after this method has been called.

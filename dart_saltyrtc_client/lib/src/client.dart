@@ -6,13 +6,15 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show Event, InternalError, eventFromWSCloseCode;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Common, InitiatorConfig, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
+import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
 import 'package:meta/meta.dart' show immutable, protected;
 
 enum _ClientState {
@@ -34,30 +36,37 @@ abstract class Client {
   @protected
   Client(this._ws, this._phase, this._events);
 
-  Stream<Event> get events => _events.stream;
-
-  void run() {
+  /// Runs this Client returning a stream of events indicating the progress.
+  Stream<Event> run() {
     if (_state == _ClientState.running) {
       throw SaltyRtcClientError('SaltyRtc Client is already running');
     }
 
     _state = _ClientState.running;
 
-    _ws.stream.forEach((bytes) {
-      _onWsMessage(bytes);
-    }).whenComplete(() {
-      _close();
-    });
+    // Spawn run, run will add events to the stream and
+    // will close the stream once it ends.
+    _run();
+    return _events.stream;
   }
 
-  /// Actions to do always when we close the client.
-  Future<void> _close() async {
-    // TODO we need to send a close event before closing the stream.
-    await _events.close();
-  }
-
-  Future<void> close() async {
-    return _ws.sink.close(CloseCode.closingNormal.toInt(), '');
+  Future<void> _run() async {
+    try {
+      await for (final message in _ws.stream) {
+        // Taking out and reassigning phase makes sure we never have a
+        // corrupted phase, even if we await in the `catch` block.
+        _onWsMessage(message);
+      }
+      final event = eventFromWSCloseCode(_ws.closeCode);
+      if (event != null) {
+        _events.sink.emitEvent(event);
+      }
+    } catch (e, s) {
+      _events.sink.emitEvent(InternalError(e), s);
+      await _closeWsSink(CloseCode.internalError, 'Internal Error: $e\n$s');
+    } finally {
+      await _events.close();
+    }
   }
 
   void _onWsMessage(Uint8List bytes) {
@@ -65,23 +74,23 @@ abstract class Client {
       logger.e('phase received message after closing');
       return;
     }
-    try {
-      _phase = _phase.handleMessage(bytes);
-      if (_phase.isClosed) {
-        final closeCode = _phase.closeCode;
-        logger.i(
-            'closing SaltyRtc connection (code=$closeCode): ${_phase.closeReason}');
-        _ws.sink.close(closeCode?.toInt(), '');
-      }
-    } catch (e, s) {
-      _closeAndThrow(CloseCode.internalError, e, s);
+    _phase = _phase.handleMessage(bytes);
+    if (_phase.isClosed) {
+      _closeWsSink(_phase.closeCode, _phase.closeReason);
     }
   }
 
-  /// Close the web socket connection and raise and exception for the client.
-  void _closeAndThrow(CloseCode closeCode, Object error, StackTrace st) {
-    _ws.sink.close(closeCode.toInt(), '');
-    throw SaltyRtcClientError(error.toString(), st);
+  Future<void> _closeWsSink(CloseCode? closeCode, String? reason) {
+    logger.i('closing SaltyRtc connection (code=$closeCode): $reason');
+    return _ws.sink.close(closeCode?.toInt(), '');
+  }
+
+  Future<void> close() async {
+    //FIXME is that really normal, isn't that abort?
+    // Closing th sink will send a WS close frame to the server which will close
+    // cause the server to also close the stream.
+    //TODO: We might still add some mechanism to close the stream with an abort.
+    await _closeWsSink(CloseCode.closingNormal, 'Client.close called');
   }
 }
 
@@ -111,11 +120,11 @@ class InitiatorClient extends Client {
       );
     }
 
-    final events = StreamController<Event>.broadcast();
+    final eventsCtrl = StreamController<Event>.broadcast();
     final common = Common(
       crypto,
       ws.sink,
-      events.sink,
+      eventsCtrl.sink,
     );
     final authMethod = InitialClientAuthMethod.fromEither(
       crypto: crypto,
@@ -132,7 +141,7 @@ class InitiatorClient extends Client {
     );
     final phase = InitiatorServerHandshakePhase(common, config);
 
-    return InitiatorClient._(ws, phase, events);
+    return InitiatorClient._(ws, phase, eventsCtrl);
   }
 }
 

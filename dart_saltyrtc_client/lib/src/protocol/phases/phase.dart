@@ -20,14 +20,14 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ValidationError;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show ClosingErrorEvent, Event;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedServer, Client, Peer, Server;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
+import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
 import 'package:meta/meta.dart' show immutable, protected;
 
 /// The protocol goes through 3 different phases
@@ -212,13 +212,7 @@ abstract class Phase {
   }
 
   @protected
-  void emitEvent(Event event) {
-    if (event is ClosingErrorEvent) {
-      common.events.addError(event, StackTrace.current);
-    } else {
-      common.events.add(event);
-    }
-  }
+  void emitEvent(Event event) => common.events.emitEvent(event);
 
   /// Short form for `send(buildPacket(msg, to))`
   void sendMessage(
