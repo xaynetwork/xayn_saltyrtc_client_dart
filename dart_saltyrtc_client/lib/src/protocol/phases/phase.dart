@@ -169,8 +169,6 @@ abstract class Phase {
       onProtocolError(e, nonce?.source);
       logger.w('Dropping message(protocol error): $e');
       return this;
-    } on StateError catch (e) {
-      throw SaltyRtcError(CloseCode.internalError, e.message);
     }
   }
 

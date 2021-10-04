@@ -12,6 +12,18 @@ abstract class Event extends Equatable {
   List<Object?> get props => [];
 }
 
+/// An event which will lead to the SaltyRtc client being closed.
+abstract class ClosingErrorEvent extends Event {}
+
+/// An event which can't be recovered from without a app update.
+///
+/// Be aware that `UnexpectedStatus` might only implements `ClosingErrorEvent`
+/// but could very well be a `FatalErrorEvent` but we can't really tell.
+///
+/// (Through the app which might need updating might be the other
+/// app.)
+abstract class FatalErrorEvent extends ClosingErrorEvent {}
+
 @immutable
 class ServerHandshakeDone extends Event {}
 
@@ -92,7 +104,7 @@ class SendError extends Event {
 }
 
 @immutable
-class NoSharedTaskFound extends Event {
+class NoSharedTaskFound extends FatalErrorEvent {
   static Exception signalAndException(Sink<Event> eventOut) {
     eventOut.add(NoSharedTaskFound());
     return SaltyRtcError(
@@ -122,13 +134,12 @@ class NoSharedTaskFound extends Event {
 ///
 /// - Multiple devices somehow got the same auth token (e.g. they scanned the
 ///   same QR code).
-//TODO use when we detect closing if the could not decrypt close code.
 @immutable
-class InitiatorCouldNotDecrypt extends Event {}
+class InitiatorCouldNotDecrypt extends FatalErrorEvent {}
 
 /// The key we expect the server to use is not a key the server has.
 @immutable
-class IncompatibleServerKey extends Event {}
+class IncompatibleServerKey extends FatalErrorEvent {}
 
 enum TempFailureVariant {
   /// We didn't responds with a pong to the servers ping.
@@ -177,7 +188,7 @@ enum TempFailureVariant {
 /// recommended to use a form of "back-off" strategy an not retry immediately.
 ///
 @immutable
-class LikelyTemporaryFailure extends Event {
+class LikelyTemporaryFailure extends ClosingErrorEvent {
   final TempFailureVariant variant;
 
   LikelyTemporaryFailure(this.variant);
@@ -211,7 +222,7 @@ enum UnexpectedStatusVariant {
   /// It's very unlikely to happen with WebRtc, but one possible way
   /// could be if the task data shipped with an `auth` message became
   /// way to big.
-  messageToBig,
+  messageTooBig,
 
   /// Any other unexpected status code.
   ///
@@ -222,6 +233,7 @@ enum UnexpectedStatusVariant {
   /// - `1008`: Policy violation
   /// - `1010`: Missing Extension
   /// - `1014`: Bad Gateway
+  /// - ...
   other
 }
 
@@ -233,10 +245,13 @@ enum UnexpectedStatusVariant {
 /// Retrying is likely not going to help, through it might be worth to retry
 /// a single time with a larger time gap in case of internal error and
 /// other times after a huge time gap as the server might be fixed by then.
+///
+/// **If a `UnexpectedStatus` error repeats to appear then it should be
+/// treated like a `FatalErrorEvent`**
 @immutable
-class UnexpectedStatus extends Event {
+class UnexpectedStatus extends ClosingErrorEvent {
   final UnexpectedStatusVariant variant;
-  final int closeCode;
+  final int? closeCode;
 
   // Creates a instance, it doesn't check if `variant` matches `closeCode`.
   //
@@ -250,10 +265,6 @@ class UnexpectedStatus extends Event {
   List<Object?> get props => [variant, closeCode];
 }
 
-/// TODO: What exactly is this? It's currently unused? Or not?
-@immutable
-class HandoverOfSignalingChannel extends Event {}
-
 /// Creates a event from an status code.
 ///
 /// This can be used with WebRtc on-close status codes or codes send with a
@@ -261,7 +272,10 @@ class HandoverOfSignalingChannel extends Event {}
 /// This also means that a non (direct) error close code will not create an
 /// event (`normal` and `goingAway`).
 ///
-Event? eventFromStatus(int closeCode) {
+Event? eventFromStatus(int? closeCode) {
+  if (closeCode == null) {
+    return UnexpectedStatus.unchecked(UnexpectedStatusVariant.other, closeCode);
+  }
   switch (closeCode) {
     case 1000:
     case 1001:
@@ -276,7 +290,7 @@ Event? eventFromStatus(int closeCode) {
       return LikelyTemporaryFailure(TempFailureVariant.abnormalClosure);
     case 1009:
       return UnexpectedStatus.unchecked(
-          UnexpectedStatusVariant.messageToBig, closeCode);
+          UnexpectedStatusVariant.messageTooBig, closeCode);
     case 1011:
     case 3002:
       return UnexpectedStatus.unchecked(
@@ -290,8 +304,8 @@ Event? eventFromStatus(int closeCode) {
           UnexpectedStatusVariant.tlsHandshake, closeCode);
     case 3000:
       return LikelyTemporaryFailure(TempFailureVariant.pathFull);
-    case 3003:
-      return HandoverOfSignalingChannel();
+    // case 3003:
+    //   return HandoverOfSignalingChannel();
     case 3004:
       return LikelyTemporaryFailure(TempFailureVariant.droppedByInitiator);
     case 3005:
