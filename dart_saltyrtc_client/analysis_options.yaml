@@ -21,3 +21,4 @@ linter:
     - sort_child_properties_last
     - unawaited_futures
     - unsafe_html
+    - void_checks
