@@ -396,13 +396,21 @@ class _Setup {
 
     server.testedPeer.ourSessionKey = crypto.createKeyStore();
     server.testedPeer.theirSessionKey = crypto.createKeyStore();
+    final initiatorPermanentKeys = crypto.createKeyStore();
+    common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
+      ownKeyStore: initiatorPermanentKeys,
+      remotePublicKey: server.permanentKey.publicKey,
+    ));
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
       ownKeyStore: server.testedPeer.theirSessionKey!,
       remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
     ));
+    common.server.cookiePair
+        .updateAndCheck(server.testedPeer.cookiePair.ours, Id.serverAddress);
+    common.server.csPair
+        .updateAndCheck(server.testedPeer.csPair.ours, Id.serverAddress);
     common.address = Id.initiatorAddress;
 
-    final initiatorPermanentKeys = crypto.createKeyStore();
     final authMethod = InitialClientAuthMethod.fromEither(
       authToken: usePresetTrust ? null : goodAuthToken,
       trustedResponderPermanentPublicKey: usePresetTrust
@@ -424,10 +432,10 @@ class _Setup {
       config,
     );
 
-    server.testedPeer.permanentKey = phase.config.permanentKeys;
+    server.testedPeer.permanentKey = phase.config.permanentKey;
     for (final responder in responders) {
       // we know the initiators public key as it's in the path
-      responder.testedPeer.permanentKey = phase.config.permanentKeys;
+      responder.testedPeer.permanentKey = phase.config.permanentKey;
       phase.addNewResponder(responder.address.asResponder());
     }
 
@@ -450,7 +458,7 @@ Phase? Function(Phase, Io) mkSendTokenTest(PeerData mockPeer) {
     expect(responder.hasSessionSharedKey, isFalse);
     expect(responder.hasPermanentSharedKey, isTrue);
     final expectedKey = crypto.createSharedKeyStore(
-        ownKeyStore: phase.config.permanentKeys,
+        ownKeyStore: phase.config.permanentKey,
         remotePublicKey: mockPeer.permanentKey.publicKey);
     expect(responder.permanentSharedKey, same(expectedKey));
     return phase;
@@ -497,7 +505,7 @@ Phase? Function(Phase, Io) mkSendKeyTest(PeerData responder) {
     expect(responderFromPhase.id, equals(responder.address));
     expect(responderFromPhase.hasPermanentSharedKey, isTrue);
     final expectedSharedPermanentKey = crypto.createSharedKeyStore(
-        ownKeyStore: phase.config.permanentKeys,
+        ownKeyStore: phase.config.permanentKey,
         remotePublicKey: responder.permanentKey.publicKey);
     expect(responderFromPhase.permanentSharedKey,
         same(expectedSharedPermanentKey));

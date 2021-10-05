@@ -244,10 +244,19 @@ class _Setup {
 
     final events = EventQueue();
     final common = InitialCommon(crypto, MockSyncWebSocketSink(), events);
+    common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
+      ownKeyStore: responderPermanentKeys,
+      remotePublicKey: server.permanentKey.publicKey,
+    ));
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
       ownKeyStore: responderPermanentKeys,
       remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
     ));
+    common.server.cookiePair
+        .updateAndCheck(server.testedPeer.cookiePair.ours, Id.serverAddress);
+    common.server.csPair
+        .updateAndCheck(server.testedPeer.csPair.ours, Id.serverAddress);
+
     common.address = responderId;
 
     final config = ResponderConfig(
@@ -281,8 +290,8 @@ Phase? Function(Phase, Io) mkRecvTokenAndKeyTest(PeerData initiator) {
     final tokenMsg = io.expectMessageOfType<Token>(
         sendTo: initiator, decryptWith: initiator.authToken);
 
-    expect(tokenMsg.key, equals(initialPhase.config.permanentKeys.publicKey));
-    initiator.testedPeer.permanentKey = initialPhase.config.permanentKeys;
+    expect(tokenMsg.key, equals(initialPhase.config.permanentKey.publicKey));
+    initiator.testedPeer.permanentKey = initialPhase.config.permanentKey;
 
     return keyTest(phase, io);
   };
@@ -401,8 +410,7 @@ Phase? Function(Phase, Io) mkSendAuthTest({
     expect(taskObject.initData, equals(data[taskObject.name]));
 
     final authEvent = io.expectEventOfType<events.ResponderAuthenticated>();
-    expect(
-        authEvent.permanentKey, equals(phase.config.permanentKeys.publicKey));
+    expect(authEvent.permanentKey, equals(phase.config.permanentKey.publicKey));
     return phase;
   };
 }

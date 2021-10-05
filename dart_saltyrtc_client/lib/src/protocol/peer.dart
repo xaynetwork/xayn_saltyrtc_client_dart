@@ -138,7 +138,7 @@ class AuthenticatedServer extends Server with AuthenticatedPeer {
           cookiePair: unauthenticated.cookiePair,
           csPair: unauthenticated.csPair,
         ) {
-    if (/*!unauthenticated.isAuthenticated*/ !hasSessionSharedKey) {
+    if (!unauthenticated.isAuthenticated) {
       throw StateError('Server is not authenticated');
     }
   }

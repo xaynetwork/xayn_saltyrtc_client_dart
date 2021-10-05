@@ -103,22 +103,20 @@ class AfterServerHandshakeCommon extends Common {
 @immutable
 abstract class Config {
   /// The permanent keys of this client.
-  final KeyStore permanentKeys;
+  final KeyStore permanentKey;
   final int pingInterval;
 
   /// The expected server permanent public key.
-  final Uint8List? expectedServerPublicKey;
+  final Uint8List expectedServerPublicKey;
   final List<TaskBuilder> tasks;
 
   Config({
-    required this.permanentKeys,
+    required this.permanentKey,
     required this.tasks,
     required this.expectedServerPublicKey,
     required this.pingInterval,
   }) {
-    if (expectedServerPublicKey != null) {
-      Crypto.checkPublicKey(expectedServerPublicKey!);
-    }
+    Crypto.checkPublicKey(expectedServerPublicKey);
   }
 }
 
@@ -132,10 +130,10 @@ class InitiatorConfig extends Config {
     required this.authMethod,
     required KeyStore permanentKeys,
     required List<TaskBuilder> tasks,
-    Uint8List? expectedServerPublicKey,
+    required Uint8List expectedServerPublicKey,
     int pingInterval = 0,
   }) : super(
-          permanentKeys: permanentKeys,
+          permanentKey: permanentKeys,
           tasks: tasks,
           expectedServerPublicKey: expectedServerPublicKey,
           pingInterval: pingInterval,
@@ -160,11 +158,11 @@ class ResponderConfig extends Config {
     required KeyStore permanentKeys,
     required List<TaskBuilder> tasks,
     required this.initiatorPermanentPublicKey,
+    required Uint8List expectedServerPublicKey,
     this.authToken,
-    Uint8List? expectedServerPublicKey,
     int pingInterval = 0,
   }) : super(
-          permanentKeys: permanentKeys,
+          permanentKey: permanentKeys,
           tasks: tasks,
           expectedServerPublicKey: expectedServerPublicKey,
           pingInterval: pingInterval,

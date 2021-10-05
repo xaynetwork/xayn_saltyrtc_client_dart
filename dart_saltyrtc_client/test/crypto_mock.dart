@@ -25,16 +25,6 @@ class _MockKeyStore extends KeyStore {
     required Uint8List privateKey,
   })  : _keyId = crypto._nextKeyId(),
         super(publicKey: publicKey, privateKey: privateKey);
-
-  @override
-  Uint8List decrypt(
-      {required Uint8List remotePublicKey,
-      required Uint8List ciphertext,
-      required Uint8List nonce}) {
-    final sks = crypto.createSharedKeyStore(
-        ownKeyStore: this, remotePublicKey: remotePublicKey);
-    return sks.decrypt(ciphertext: ciphertext, nonce: nonce);
-  }
 }
 
 @immutable

@@ -65,7 +65,13 @@ abstract class ServerHandshakePhase extends Phase {
 
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
 
-  ServerHandshakePhase(this.common) : super();
+  ServerHandshakePhase(this.common) : super() {
+    // We can directly create the shared permanent key
+    common.server.setPermanentSharedKey(common.crypto.createSharedKeyStore(
+      ownKeyStore: config.permanentKey,
+      remotePublicKey: config.expectedServerPublicKey,
+    ));
+  }
 
   @protected
   Phase handleServerAuth(Message msg, Nonce nonce);
@@ -148,7 +154,7 @@ abstract class ServerHandshakePhase extends Phase {
 
   void handleServerHello(ServerHello msg, Nonce nonce) {
     final sks = common.crypto.createSharedKeyStore(
-        ownKeyStore: config.permanentKeys, remotePublicKey: msg.key);
+        ownKeyStore: config.permanentKey, remotePublicKey: msg.key);
     common.server.setSessionSharedKey(sks);
   }
 
@@ -171,23 +177,20 @@ abstract class ServerHandshakePhase extends Phase {
   void validateSignedKey({
     required Uint8List? signedKey,
     required Nonce nonce,
-    required Uint8List? expectedServerPublicKey,
   }) {
-    if (expectedServerPublicKey == null) return;
-
     if (signedKey == null) {
       throw ValidationError(
           'Server did not send ${MessageFields.signedKeys} in ${MessageType.serverAuth} message');
     }
 
+    final decrypted = common.server.permanentSharedKey!.decrypt(
+      ciphertext: signedKey,
+      nonce: nonce.toBytes(),
+    );
     final sks = common.server.sessionSharedKey!;
-    final decrypted = config.permanentKeys.decrypt(
-        remotePublicKey: expectedServerPublicKey,
-        ciphertext: signedKey,
-        nonce: nonce.toBytes());
     final expected = BytesBuilder(copy: false)
       ..add(sks.remotePublicKey)
-      ..add(config.permanentKeys.publicKey);
+      ..add(config.permanentKey.publicKey);
     if (!ListEquality<int>().equals(decrypted, expected.takeBytes())) {
       throw ValidationError(
           'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid');
@@ -233,10 +236,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
 
     validateRepeatedCookie(msg.yourCookie);
 
-    validateSignedKey(
-        signedKey: msg.signedKeys,
-        nonce: nonce,
-        expectedServerPublicKey: config.expectedServerPublicKey);
+    validateSignedKey(signedKey: msg.signedKeys, nonce: nonce);
 
     logger.d('Switching to initiator client handshake');
     final nextPhase = InitiatorClientHandshakePhase(
@@ -261,7 +261,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   @override
   void sendClientHello() {
     logger.d('Switching to responder client handshake');
-    sendMessage(ClientHello(config.permanentKeys.publicKey),
+    sendMessage(ClientHello(config.permanentKey.publicKey),
         to: common.server, encrypt: false);
     handshakeState = ServerHandshakeState.helloSent;
   }
@@ -281,10 +281,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
 
     validateRepeatedCookie(msg.yourCookie);
 
-    validateSignedKey(
-        signedKey: msg.signedKeys,
-        nonce: nonce,
-        expectedServerPublicKey: config.expectedServerPublicKey);
+    validateSignedKey(signedKey: msg.signedKeys, nonce: nonce);
 
     logger.d('Switching to responder client handshake');
     return ResponderClientHandshakePhase(

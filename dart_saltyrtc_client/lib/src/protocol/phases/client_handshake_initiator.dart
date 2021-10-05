@@ -214,7 +214,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
 
     responder.setPermanentSharedKey(
         InitialClientAuthMethod.createResponderSharedPermanentKey(
-            common.crypto, config.permanentKeys, msg.key));
+            common.crypto, config.permanentKey, msg.key));
 
     responderWithState.state = State.waitForKeyMsg;
 
