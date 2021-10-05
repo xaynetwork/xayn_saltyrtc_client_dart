@@ -65,6 +65,12 @@ abstract class Peer {
   void setPermanentSharedKey(SharedKeyStore sks) => _permanentSharedKey = sks;
 
   bool get hasPermanentSharedKey => _permanentSharedKey != null;
+
+  bool get isAuthenticated =>
+      hasSessionSharedKey &&
+      hasPermanentSharedKey &&
+      cookiePair.theirs != null &&
+      csPair.theirs != null;
 }
 
 class Server extends Peer {
@@ -77,45 +83,64 @@ class Server extends Peer {
   Server(CombinedSequencePair csPair, CookiePair cookiePair)
       : super(csPair, cookiePair);
 
+  Server._fromParts({
+    required SharedKeyStore? sessionSharedKey,
+    required SharedKeyStore? permanentSharedKey,
+    required CookiePair cookiePair,
+    required CombinedSequencePair csPair,
+  }) : super._fromParts(
+          sessionSharedKey: sessionSharedKey,
+          permanentSharedKey: permanentSharedKey,
+          cookiePair: cookiePair,
+          csPair: csPair,
+        );
+
   @override
   Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]) {
     return _encrypt(msg, nonce, sessionSharedKey!);
   }
 
   /// Return an AuthenticatedServer iff hasSessionSharedKey.
-  AuthenticatedServer asAuthenticated() {
-    if (!hasSessionSharedKey) {
-      throw StateError('Server is not authenticated');
-    }
-
-    return AuthenticatedServer(
-        csPair, cookiePair, permanentSharedKey, sessionSharedKey!);
-  }
+  AuthenticatedServer asAuthenticated() =>
+      AuthenticatedServer._fromUnauthenticated(this);
 }
 
-class AuthenticatedServer extends Server {
+mixin AuthenticatedPeer implements Peer {
   @override
-  final SharedKeyStore _sessionSharedKey;
-
-  AuthenticatedServer(
-    CombinedSequencePair csPair,
-    CookiePair cookiePair,
-    SharedKeyStore? permanentSharedKey,
-    this._sessionSharedKey,
-  ) : super(csPair, cookiePair) {
-    if (permanentSharedKey != null) {
-      setPermanentSharedKey(permanentSharedKey);
-    }
-  }
-
+  SharedKeyStore get sessionSharedKey => _sessionSharedKey!;
   @override
-  SharedKeyStore get sessionSharedKey => _sessionSharedKey;
+  SharedKeyStore get permanentSharedKey => _permanentSharedKey!;
 
   @override
   void setSessionSharedKey(SharedKeyStore sks) {
     throw StateError(
       'Cannot set session key on an already authenticated server',
     );
+  }
+
+  @override
+  void setPermanentSharedKey(SharedKeyStore sks) {
+    throw StateError(
+      'Cannot set permanent key on an already authenticated server',
+    );
+  }
+}
+
+class AuthenticatedServer extends Server with AuthenticatedPeer {
+  /// Creates an AuthenticatedServer (throw an exception if it's not possible).
+  ///
+  /// To create an `AuthenticatedServer` a *shallow* copy of the passed in
+  /// `Server` is made.
+  AuthenticatedServer._fromUnauthenticated(Server unauthenticated)
+      : super._fromParts(
+          sessionSharedKey: unauthenticated.sessionSharedKey,
+          permanentSharedKey: unauthenticated.permanentSharedKey,
+          cookiePair: unauthenticated.cookiePair,
+          csPair: unauthenticated.csPair,
+        ) {
+    if (/*!unauthenticated.isAuthenticated*/ !hasSessionSharedKey) {
+      throw StateError('Server is not authenticated');
+    }
   }
 }
 
@@ -145,13 +170,13 @@ class Responder extends Client {
 
   Responder(this.id, Crypto crypto) : super.fromRandom(crypto);
 
-  Responder._fromParts(
-      {required this.id,
-      required SharedKeyStore? sessionSharedKey,
-      required SharedKeyStore? permanentSharedKey,
-      required CookiePair cookiePair,
-      required CombinedSequencePair csPair})
-      : super._fromParts(
+  Responder._fromParts({
+    required this.id,
+    required SharedKeyStore? sessionSharedKey,
+    required SharedKeyStore? permanentSharedKey,
+    required CookiePair cookiePair,
+    required CombinedSequencePair csPair,
+  }) : super._fromParts(
           sessionSharedKey: sessionSharedKey,
           permanentSharedKey: permanentSharedKey,
           cookiePair: cookiePair,
@@ -220,13 +245,6 @@ Uint8List _encryptMsg(
   return _encrypt(msg, nonce, sks!);
 }
 
-mixin AuthenticatedPeer implements Peer {
-  @override
-  SharedKeyStore get sessionSharedKey => _sessionSharedKey!;
-  @override
-  SharedKeyStore get permanentSharedKey => _permanentSharedKey!;
-}
-
 class AuthenticatedResponder extends Responder with AuthenticatedPeer {
   /// Creates an AuthenticatedResponder (throw an exception if it's not possible).
   ///
@@ -240,10 +258,7 @@ class AuthenticatedResponder extends Responder with AuthenticatedPeer {
           csPair: unauthenticated.csPair,
           id: unauthenticated.id,
         ) {
-    if (unauthenticated.sessionSharedKey == null ||
-        unauthenticated.permanentSharedKey == null ||
-        unauthenticated.cookiePair.theirs == null ||
-        unauthenticated.csPair.theirs == null) {
+    if (!unauthenticated.isAuthenticated) {
       throw StateError('Responder is not authenticated');
     }
   }
@@ -261,10 +276,7 @@ class AuthenticatedInitiator extends Initiator with AuthenticatedPeer {
           cookiePair: unauthenticated.cookiePair,
           csPair: unauthenticated.csPair,
         ) {
-    if (unauthenticated.sessionSharedKey == null ||
-        unauthenticated.permanentSharedKey == null ||
-        unauthenticated.cookiePair.theirs == null ||
-        unauthenticated.csPair.theirs == null) {
+    if (!unauthenticated.isAuthenticated) {
       throw StateError('Initiator is not authenticated');
     }
   }
