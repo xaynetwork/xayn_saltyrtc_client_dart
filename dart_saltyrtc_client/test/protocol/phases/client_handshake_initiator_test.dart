@@ -170,8 +170,7 @@ void main() {
               sendTo: server,
               decryptWith: crypto.createSharedKeyStore(
                   ownKeyStore: server.testedPeer.ourSessionKey!,
-                  remotePublicKey:
-                      server.testedPeer.permanentKey!.publicKey));
+                  remotePublicKey: server.testedPeer.permanentKey!.publicKey));
 
           expect(dropMsg.id, equals(responder.address));
           return phase;
