@@ -26,17 +26,6 @@ class _DartSodiumKeyStore extends KeyStore {
   _DartSodiumKeyStore(
       {required Uint8List publicKey, required Uint8List privateKey})
       : super(publicKey: publicKey, privateKey: privateKey);
-
-  @override
-  Uint8List decrypt({
-    required Uint8List remotePublicKey,
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-  }) {
-    final sks = _DartSodiumSharedKeyStore(
-        ownPrivateKey: privateKey, remotePublicKey: remotePublicKey);
-    return sks.decrypt(ciphertext: ciphertext, nonce: nonce);
-  }
 }
 
 class _DartSodiumSharedKeyStore extends SharedKeyStore {

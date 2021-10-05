@@ -96,7 +96,7 @@ void main() async {
   group('Client server handhshake wrong server key,', () {
     final wrongServerKey = Uint8List.fromList(
       HEX.decode(
-          '0000000000000000000000000000000000000000000000000000000000000000'),
+          '0000000000000000000000000000000000000000000000000000000000000001'),
     );
 
     for (final data in [

@@ -34,27 +34,10 @@ T _wrapDecryptionFailure<T>(T Function() code) {
 }
 
 class _JSKeyStore extends KeyStore {
-  final LibSodiumJS _sodium;
-
-  _JSKeyStore(
-      {required LibSodiumJS sodium,
-      required Uint8List publicKey,
-      required Uint8List privateKey})
-      : _sodium = sodium,
-        super(publicKey: publicKey, privateKey: privateKey);
-
-  @override
-  Uint8List decrypt({
-    required Uint8List remotePublicKey,
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-  }) {
-    final sks = _JSSharedKeyStore(
-        sodium: _sodium,
-        ownPrivateKey: privateKey,
-        remotePublicKey: remotePublicKey);
-    return sks.decrypt(ciphertext: ciphertext, nonce: nonce);
-  }
+  _JSKeyStore({
+    required Uint8List publicKey,
+    required Uint8List privateKey,
+  }) : super(publicKey: publicKey, privateKey: privateKey);
 }
 
 class _JSSharedKeyStore extends SharedKeyStore {
@@ -136,9 +119,7 @@ class _JSCrypto extends Crypto {
   KeyStore createKeyStore() {
     final keyPair = _sodium.crypto_box_keypair();
     return _JSKeyStore(
-        sodium: _sodium,
-        privateKey: keyPair.privateKey,
-        publicKey: keyPair.publicKey);
+        privateKey: keyPair.privateKey, publicKey: keyPair.publicKey);
   }
 
   @override
@@ -146,8 +127,7 @@ class _JSCrypto extends Crypto {
     required Uint8List publicKey,
     required Uint8List privateKey,
   }) {
-    return _JSKeyStore(
-        sodium: _sodium, publicKey: publicKey, privateKey: privateKey);
+    return _JSKeyStore(publicKey: publicKey, privateKey: privateKey);
   }
 
   @override
