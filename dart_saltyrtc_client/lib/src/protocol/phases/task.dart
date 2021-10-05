@@ -48,12 +48,11 @@ import 'package:meta/meta.dart' show protected;
 
 abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
-  final Client pairedClient;
+  Client get pairedClient;
 
   final Task task;
 
-  TaskPhase(AfterServerHandshakeCommon common, this.pairedClient, this.task)
-      : super(common);
+  TaskPhase(AfterServerHandshakeCommon common, this.task) : super(common);
 
   @protected
   Phase handleServerMessage(Message msg);
@@ -132,7 +131,7 @@ class InitiatorTaskPhase extends TaskPhase
     this.config,
     this.pairedClient,
     Task task,
-  ) : super(common, pairedClient, task);
+  ) : super(common, task);
 
   @override
   Phase handleDisconnected(Disconnected msg) {
@@ -181,7 +180,7 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
     this.config,
     this.pairedClient,
     Task task,
-  ) : super(common, pairedClient, task);
+  ) : super(common, task);
 
   @override
   Phase handleDisconnected(Disconnected msg) {
