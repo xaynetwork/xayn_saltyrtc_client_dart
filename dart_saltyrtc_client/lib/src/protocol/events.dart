@@ -2,7 +2,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:equatable/equatable.dart' show Equatable;
-import 'package:meta/meta.dart' show immutable;
+import 'package:meta/meta.dart' show immutable, protected;
 
 abstract class Event extends Equatable {
   @override
@@ -281,6 +281,7 @@ class InternalError extends ClosingErrorEvent {
 /// This also means that a non (direct) error close code will not create an
 /// event (`normal` and `goingAway`).
 ///
+@protected
 Event? eventFromWSCloseCode(int? closeCode) {
   if (closeCode == null) {
     logger.e('unexpectedly received no closeCode');
