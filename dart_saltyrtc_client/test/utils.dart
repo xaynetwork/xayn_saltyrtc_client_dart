@@ -1,10 +1,10 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, CryptoBox, KeyStore;
+    show AuthToken, Crypto, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdClient;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, TaskData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -15,7 +15,8 @@ import 'package:dart_saltyrtc_client/src/protocol/error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
+import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
+    show AfterServerHandshakeCommon, InitialCommon, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart'
     show Task, TaskBuilder;
 import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
@@ -130,6 +131,36 @@ class PeerData {
     final old = testedPeer;
     testedPeer = MockKnowledgeAboutTestedPeer(address: old.address);
   }
+}
+
+Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
+  Crypto crypto,
+  IdClient clientAddress,
+) {
+  final server = PeerData(
+    address: Id.serverAddress,
+    testedPeerId: clientAddress,
+  );
+  server.testedPeer.ourSessionKey = crypto.createKeyStore();
+  server.testedPeer.permanentKey = crypto.createKeyStore();
+
+  final common = InitialCommon(crypto, MockSyncWebSocketSink(), EventQueue());
+  common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
+    ownKeyStore: server.testedPeer.permanentKey!,
+    remotePublicKey: server.permanentKey.publicKey,
+  ));
+  common.server.setSessionSharedKey(crypto.createSharedKeyStore(
+    ownKeyStore: server.testedPeer.permanentKey!,
+    remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
+  ));
+  common.server.cookiePair
+      .updateAndCheck(server.testedPeer.cookiePair.ours, Id.serverAddress);
+  common.server.csPair
+      .updateAndCheck(server.testedPeer.csPair.ours, Id.serverAddress);
+
+  common.address = clientAddress;
+
+  return Pair(server, AfterServerHandshakeCommon(common));
 }
 
 T messageAs<T extends Message>(Message? msg) {
