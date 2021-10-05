@@ -32,8 +32,8 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_respon
     show ResponderClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
-        Common,
-        CommonAfterServerHandshake,
+        AfterServerHandshakeCommon,
+        InitialCommon,
         InitiatorConfig,
         InitiatorIdentity,
         Phase,
@@ -60,9 +60,12 @@ enum ServerHandshakeState { start, helloSent, authSent }
 ///
 /// client-hello is only sent by the responder.
 abstract class ServerHandshakePhase extends Phase {
+  @override
+  final InitialCommon common;
+
   ServerHandshakeState handshakeState = ServerHandshakeState.start;
 
-  ServerHandshakePhase(Common common) : super(common);
+  ServerHandshakePhase(this.common) : super();
 
   @protected
   Phase handleServerAuth(Message msg, Nonce nonce);
@@ -205,7 +208,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
   final InitiatorConfig config;
 
   InitiatorServerHandshakePhase(
-    Common common,
+    InitialCommon common,
     this.config,
   ) : super(common);
 
@@ -237,7 +240,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
 
     logger.d('Switching to initiator client handshake');
     final nextPhase = InitiatorClientHandshakePhase(
-      CommonAfterServerHandshake(common),
+      AfterServerHandshakeCommon(common),
       config,
     );
     msg.responders.forEach(nextPhase.addNewResponder);
@@ -251,7 +254,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   final ResponderConfig config;
 
   ResponderServerHandshakePhase(
-    Common common,
+    InitialCommon common,
     this.config,
   ) : super(common);
 
@@ -285,7 +288,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
 
     logger.d('Switching to responder client handshake');
     return ResponderClientHandshakePhase(
-      CommonAfterServerHandshake(common),
+      AfterServerHandshakeCommon(common),
       config,
       initiatorConnected: msg.initiatorConnected,
     );

@@ -33,7 +33,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
-        CommonAfterServerHandshake,
+        AfterServerHandshakeCommon,
         InitiatorConfig,
         InitiatorIdentity,
         InitiatorSendDropResponder,
@@ -90,7 +90,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   int responderCounter = 0;
 
   InitiatorClientHandshakePhase(
-    CommonAfterServerHandshake common,
+    AfterServerHandshakeCommon common,
     this.config,
   ) : super(common);
 

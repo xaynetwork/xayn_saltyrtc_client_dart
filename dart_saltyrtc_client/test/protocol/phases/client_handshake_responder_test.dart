@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Common, CommonAfterServerHandshake, Phase, ResponderConfig;
+    show AfterServerHandshakeCommon, InitialCommon, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show ResponderTaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
@@ -243,7 +243,7 @@ class _Setup {
     server.testedPeer.permanentKey = responderPermanentKeys;
 
     final events = EventQueue();
-    final common = Common(crypto, MockSyncWebSocketSink(), events);
+    final common = InitialCommon(crypto, MockSyncWebSocketSink(), events);
     common.server.setSessionSharedKey(crypto.createSharedKeyStore(
       ownKeyStore: responderPermanentKeys,
       remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
@@ -259,7 +259,7 @@ class _Setup {
     );
 
     final phase = ResponderClientHandshakePhase(
-      CommonAfterServerHandshake(common),
+      AfterServerHandshakeCommon(common),
       config,
       initiatorConnected: initiatorIsKnown,
     );

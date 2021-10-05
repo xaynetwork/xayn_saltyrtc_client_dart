@@ -25,7 +25,7 @@ import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Common, CommonAfterServerHandshake, InitiatorConfig, Phase;
+    show AfterServerHandshakeCommon, InitialCommon, InitiatorConfig, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show TaskPhase;
 import 'package:test/test.dart';
@@ -388,7 +388,7 @@ class _Setup {
     );
 
     final events = EventQueue();
-    final common = Common(
+    final common = InitialCommon(
       crypto,
       MockSyncWebSocketSink(),
       events,
@@ -420,7 +420,7 @@ class _Setup {
     );
 
     final phase = InitiatorClientHandshakePhase(
-      CommonAfterServerHandshake(common),
+      AfterServerHandshakeCommon(common),
       config,
     );
 

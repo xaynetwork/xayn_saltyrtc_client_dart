@@ -95,7 +95,6 @@ class Server extends Peer {
 
 class AuthenticatedServer extends Server {
   @override
-  // ignore: overridden_fields
   final SharedKeyStore _sessionSharedKey;
 
   AuthenticatedServer(
