@@ -10,7 +10,7 @@ abstract class Event extends Equatable {
 }
 
 /// An event which will lead to the SaltyRtc client being closed.
-abstract class ClosingErrorEvent extends Event {}
+abstract class ClosingErrorEvent extends Event implements Exception {}
 
 /// An error which can't be recovered from.
 ///
@@ -238,6 +238,17 @@ enum UnexpectedStatusVariant {
   ///
   other
 }
+
+/// Emitted if the connection resets to a state before the task phase or the
+/// user canceled the client.
+///
+/// **This event must only be send to `Task` instances.**
+///
+/// When a task receives this event it will no longer be able to send messages
+/// or close the client.
+///
+@immutable
+class CancelTask extends ClosingErrorEvent {}
 
 /// A unexpected error occurred.
 ///
