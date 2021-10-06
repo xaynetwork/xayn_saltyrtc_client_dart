@@ -71,7 +71,7 @@ void main() {
         TestTaskBuilder('fe fe', initialResponderData: {
           'yo': [1, 4, 3]
         }),
-        TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+        TestTaskBuilder('example.v23', initialResponderData: {'xml': <int>[]}),
         TestTaskBuilder('bar', initialResponderData: {
           'yes': [0, 0, 0]
         }),
@@ -185,7 +185,7 @@ void main() {
         TestTaskBuilder('fe fe', initialResponderData: {
           'yo': [1, 4, 3]
         }),
-        TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+        TestTaskBuilder('example.v23', initialResponderData: {'xml': <int>[]}),
         TestTaskBuilder('bar', initialResponderData: {
           'yes': [0, 0, 0]
         }),
@@ -276,7 +276,7 @@ void main() {
       TestTaskBuilder('fe fe', initialResponderData: {
         'yo': [1, 4, 3]
       }),
-      TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+      TestTaskBuilder('example.v23', initialResponderData: {'xml': <int>[]}),
       TestTaskBuilder('bar', initialResponderData: {
         'yes': [0, 0, 0]
       }),

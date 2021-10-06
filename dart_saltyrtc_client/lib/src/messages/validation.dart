@@ -203,13 +203,13 @@ Map<String, Object?> validateStringMapType(Object? value, String name) {
   return value.cast<String, Object?>();
 }
 
-/// Check that `value` is a Map<String, List<int>>
+/// Check that `value` is a Map<String, Object?>
 TaskData? validateTaskDataType(Object? value, String name) {
   if (value == null) {
     return null;
   }
 
-  if (value is! Map<Object?, Object?>) {
+  if (value is! Map) {
     throw ValidationException('$name must be a Map');
   }
 
@@ -217,12 +217,9 @@ TaskData? validateTaskDataType(Object? value, String name) {
     if (e.key is! String) {
       throw ValidationException('$name must be a map with strings as keys');
     }
-    if (e.value != null && e.value is! List<int>) {
-      throw ValidationException('$name values must be an array of bytes');
-    }
   }
 
-  return value.cast<String, List<int>?>();
+  return value.cast<String, Object?>();
 }
 
 /// Check that `value` is a Map<String, Map<String, List<int>?>?>

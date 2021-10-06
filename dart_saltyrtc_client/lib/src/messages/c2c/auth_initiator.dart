@@ -1,5 +1,3 @@
-import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeDataTagWithTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
@@ -11,6 +9,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateTasksDataType,
         validateTasksData,
         validateStringType;
+import 'package:dart_saltyrtc_client/src/msgpack_ext.dart';
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -55,8 +54,8 @@ class AuthInitiator extends Message {
       ..packString(MessageFields.yourCookie)
       ..packBinary(yourCookie.toBytes())
       ..packString(MessageFields.task)
-      ..packString(task);
-
-    writeDataTagWithTasksData(msgPacker, data);
+      ..packString(task)
+      ..packString(MessageFields.data)
+      ..packAny(data);
   }
 }
