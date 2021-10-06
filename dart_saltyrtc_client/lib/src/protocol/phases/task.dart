@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateIdResponder, validateIdInitiator;
+    show validateResponderId, validateInitiatorId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
@@ -136,7 +136,7 @@ class InitiatorTaskPhase extends TaskPhase
   @override
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
-    validateIdResponder(id.value);
+    validateResponderId(id.value);
     if (id != pairedClient.id) {
       emitEvent(events.PeerDisconnected(events.PeerKind.unknownPeer));
       return this;
@@ -185,7 +185,7 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   @override
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
-    validateIdInitiator(id.value);
+    validateInitiatorId(id.value);
     emitEvent(events.PeerDisconnected(events.PeerKind.authenticatedPeer));
     return ResponderClientHandshakePhase(common, config,
         initiatorConnected: false);

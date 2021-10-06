@@ -23,7 +23,7 @@ const _type = MessageType.serverAuth;
 class ServerAuthInitiator extends Message {
   final Cookie yourCookie;
   final Uint8List? signedKeys;
-  final List<IdResponder> responders;
+  final List<ResponderId> responders;
 
   @override
   List<Object?> get props => [yourCookie, signedKeys, responders];

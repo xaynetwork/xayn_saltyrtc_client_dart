@@ -6,7 +6,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
-    show Id, IdResponder, IdServer, IdInitiator;
+    show Id, ResponderId, ServerId, InitiatorId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show CombinedSequence;
@@ -75,7 +75,7 @@ abstract class Peer {
 
 class Server extends Peer {
   @override
-  final IdServer id = Id.serverAddress;
+  final ServerId id = Id.serverAddress;
 
   Server.fromRandom(Crypto crypto) : super.fromRandom(crypto);
 
@@ -166,7 +166,7 @@ abstract class Client extends Peer {
 
 class Responder extends Client {
   @override
-  final IdResponder id;
+  final ResponderId id;
 
   Responder(this.id, Crypto crypto) : super.fromRandom(crypto);
 
@@ -194,7 +194,7 @@ class Responder extends Client {
 
 class Initiator extends Client {
   @override
-  final IdInitiator id = Id.initiatorAddress;
+  final InitiatorId id = Id.initiatorAddress;
 
   Initiator(Crypto crypto) : super.fromRandom(crypto);
 

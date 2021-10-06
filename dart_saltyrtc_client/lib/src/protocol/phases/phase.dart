@@ -7,7 +7,7 @@ import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
-    show Id, IdClient, IdResponder;
+    show Id, ClientId, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show OverflowException;
@@ -82,7 +82,7 @@ class AfterServerHandshakeCommon extends Common {
   /// After the server handshake the address is an IdClient and it cannot be
   /// modified anymore.
   @override
-  final IdClient address;
+  final ClientId address;
 
   /// After the server handshake the session key cannot be nullable anymore.
   @override
@@ -335,7 +335,7 @@ mixin WithPeer implements Phase {
 }
 
 mixin InitiatorSendDropResponder on Phase {
-  void sendDropResponder(IdResponder id, CloseCode closeCode) {
+  void sendDropResponder(ResponderId id, CloseCode closeCode) {
     logger.d('Dropping responder $id');
     sendMessage(DropResponder(id, closeCode), to: common.server);
   }

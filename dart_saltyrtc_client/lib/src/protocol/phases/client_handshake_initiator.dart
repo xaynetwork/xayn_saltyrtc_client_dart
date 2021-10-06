@@ -12,7 +12,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageType;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -23,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateIdResponder;
+    show validateResponderId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
@@ -78,7 +78,7 @@ enum State {
 
 class InitiatorClientHandshakePhase extends ClientHandshakePhase
     with InitiatorIdentity, InitiatorSendDropResponder {
-  final Map<IdResponder, ResponderWithState> responders = {};
+  final Map<ResponderId, ResponderWithState> responders = {};
 
   @override
   final InitiatorConfig config;
@@ -116,7 +116,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   @override
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
-    validateIdResponder(id.value);
+    validateResponderId(id.value);
     final removed = responders.remove(id);
     final events.PeerKind peerKind;
     if (removed?.receivedAnyMessage == true) {
@@ -146,7 +146,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   /// Adds a new responder the the container of known responders.
-  void addNewResponder(IdResponder id) {
+  void addNewResponder(ResponderId id) {
     // This will automatically override any previously set state.
     responders[id] = ResponderWithState(
       Responder(id, common.crypto),
@@ -308,7 +308,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     return task;
   }
 
-  void dropResponder(IdResponder responder, CloseCode closeCode) {
+  void dropResponder(ResponderId responder, CloseCode closeCode) {
     responders.remove(responder);
     sendDropResponder(responder, closeCode);
   }

@@ -21,7 +21,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_responder.dart
 import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateIdResponder;
+    show validateResponderId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
@@ -105,7 +105,7 @@ abstract class ServerHandshakePhase extends Phase {
         if (role == Role.initiator) {
           check(Id.initiatorAddress);
         } else {
-          validateIdResponder(destination.value, 'nonce destination');
+          validateResponderId(destination.value, 'nonce destination');
         }
         return;
     }

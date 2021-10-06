@@ -73,26 +73,26 @@ void validateId(int value, String name) {
   validateInteger(value, 0, 255, name);
 }
 
-bool checkIdClient(int value) {
+bool checkClientId(int value) {
   return checkInteger(value, 1, 255);
 }
 
 /// Check that `value` is a valid id of a client.
-void validateIdClient(int value) {
+void validateClientId(int value) {
   validateInteger(value, 1, 255, MessageFields.id);
 }
 
 /// Check that `value` is a valid id of a responder.
-void validateIdResponder(int value, [String name = MessageFields.id]) {
+void validateResponderId(int value, [String name = MessageFields.id]) {
   validateInteger(value, 2, 255, name);
 }
 
 /// Check that `value` is a valid id of a responder.
-void validateIdInitiator(int value, [String name = MessageFields.id]) {
+void validateInitiatorId(int value, [String name = MessageFields.id]) {
   validateInteger(value, 1, 1, name);
 }
 
-bool checkIdResponder(int value) {
+bool checkResponderId(int value) {
   return checkInteger(value, 2, 255);
 }
 

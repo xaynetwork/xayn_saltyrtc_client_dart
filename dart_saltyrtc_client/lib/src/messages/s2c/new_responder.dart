@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdResponder, Id;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show ResponderId, Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -10,7 +10,7 @@ const _type = MessageType.newResponder;
 
 @immutable
 class NewResponder extends Message {
-  final IdResponder id;
+  final ResponderId id;
 
   @override
   List<Object> get props => [id];

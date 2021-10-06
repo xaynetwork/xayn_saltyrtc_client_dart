@@ -4,7 +4,7 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdClient;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ClientId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, TaskData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -136,7 +136,7 @@ class PeerData {
 
 Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
   Crypto crypto,
-  IdClient clientAddress,
+  ClientId clientAddress,
 ) {
   final server = PeerData(
     address: Id.serverAddress,

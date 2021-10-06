@@ -1,10 +1,10 @@
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show
         validateId,
-        validateIdResponder,
-        validateIdClient,
-        checkIdClient,
-        checkIdResponder;
+        validateResponderId,
+        validateClientId,
+        checkClientId,
+        checkResponderId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolException;
 import 'package:equatable/equatable.dart' show EquatableMixin;
@@ -16,8 +16,8 @@ import 'package:meta/meta.dart' show immutable;
 abstract class Id with EquatableMixin {
   // unknown and server have the same address as specified in the protocol
   static final Id unknownAddress = _AnyId(0);
-  static final IdServer serverAddress = _AnyId(0);
-  static final IdInitiator initiatorAddress = _AnyId(1);
+  static final ServerId serverAddress = _AnyId(0);
+  static final InitiatorId initiatorAddress = _AnyId(1);
 
   /// This is the value of the id and it is guaranteed that it belongs to the range [0, 255]
   abstract final int value;
@@ -32,10 +32,10 @@ abstract class Id with EquatableMixin {
   bool isInitiator();
 
   /// Return the current Id as a client id or throw exception.
-  IdClient asClient();
+  ClientId asClient();
 
   /// Return the current Id as a responder id or throw exception.
-  IdResponder asResponder();
+  ResponderId asResponder();
 
   static Id peerId(int value) {
     validateId(value, 'id');
@@ -43,32 +43,32 @@ abstract class Id with EquatableMixin {
     return _AnyId(value);
   }
 
-  static IdClient clientId(int value) {
-    validateIdClient(value);
+  static ClientId clientId(int value) {
+    validateClientId(value);
 
     return _AnyId(value);
   }
 
-  static IdResponder responderId(int value) {
-    validateIdResponder(value);
+  static ResponderId responderId(int value) {
+    validateResponderId(value);
 
     return _AnyId(value);
   }
 }
 
 /// Represent the id of a server.
-abstract class IdServer implements Id {}
+abstract class ServerId implements Id {}
 
 /// Represent the id of a initiator or a responder.
-abstract class IdClient implements Id {}
+abstract class ClientId implements Id {}
 
 /// Represent the id of a initiator.
-abstract class IdInitiator implements IdClient {}
+abstract class InitiatorId implements ClientId {}
 
 /// Represent the id of a responder.
-abstract class IdResponder implements IdClient {}
+abstract class ResponderId implements ClientId {}
 
-class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
+class _AnyId with EquatableMixin implements ResponderId, InitiatorId, ServerId {
   @override
   final int value;
 
@@ -79,12 +79,12 @@ class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
 
   @override
   bool isClient() {
-    return checkIdClient(value);
+    return checkClientId(value);
   }
 
   @override
   bool isResponder() {
-    return checkIdResponder(value);
+    return checkResponderId(value);
   }
 
   @override
@@ -97,7 +97,7 @@ class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   bool isInitiator() => this == Id.initiatorAddress;
 
   @override
-  IdClient asClient() {
+  ClientId asClient() {
     if (!isClient()) {
       ProtocolException('Id must represent a client id but is $value');
     }
@@ -105,7 +105,7 @@ class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   }
 
   @override
-  IdResponder asResponder() {
+  ResponderId asResponder() {
     if (!isResponder()) {
       ProtocolException('Id must represent a responder id but is $value');
     }

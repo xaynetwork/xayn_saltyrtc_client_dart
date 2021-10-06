@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateIdInitiator;
+    show validateInitiatorId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
@@ -99,7 +99,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   @override
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
-    validateIdInitiator(id.value);
+    validateInitiatorId(id.value);
     initiatorWithState = null;
     emitEvent(
         events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
