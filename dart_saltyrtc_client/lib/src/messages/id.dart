@@ -6,7 +6,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         checkIdClient,
         checkIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError;
+    show ProtocolException;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
@@ -99,7 +99,7 @@ class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   @override
   IdClient asClient() {
     if (!isClient()) {
-      ProtocolError('Id must represent a client id but is $value');
+      ProtocolException('Id must represent a client id but is $value');
     }
     return this;
   }
@@ -107,7 +107,7 @@ class _AnyId with EquatableMixin implements IdResponder, IdInitiator, IdServer {
   @override
   IdResponder asResponder() {
     if (!isResponder()) {
-      ProtocolError('Id must represent a responder id but is $value');
+      ProtocolException('Id must represent a responder id but is $value');
     }
     return this;
   }

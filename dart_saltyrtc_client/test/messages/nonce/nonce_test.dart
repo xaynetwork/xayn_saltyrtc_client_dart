@@ -6,7 +6,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationError;
+    show ValidationException;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:test/test.dart';
 
@@ -24,12 +24,12 @@ void main() {
 
     expect(
       () => Cookie(Uint8List(Cookie.cookieLength - 1)),
-      throwsA(isA<ValidationError>()),
+      throwsA(isA<ValidationException>()),
     );
 
     expect(
       () => Cookie(Uint8List(Cookie.cookieLength + 1)),
-      throwsA(isA<ValidationError>()),
+      throwsA(isA<ValidationException>()),
     );
 
     Nonce(
@@ -42,11 +42,11 @@ void main() {
 
     expect(
       () => Nonce(cookie, Id.peerId(-1), Id.peerId(1), cs),
-      throwsA(isA<ValidationError>()),
+      throwsA(isA<ValidationException>()),
     );
     expect(
       () => Nonce(cookie, Id.peerId(256), Id.peerId(1), cs),
-      throwsA(isA<ValidationError>()),
+      throwsA(isA<ValidationException>()),
     );
 
     for (final source in List.generate(255, (i) => Id.peerId(i))) {
@@ -59,9 +59,9 @@ void main() {
     final cookie = Cookie(Uint8List(Cookie.cookieLength));
 
     expect(() => Nonce(cookie, Id.peerId(1), Id.peerId(-1), cs),
-        throwsA(isA<ValidationError>()));
+        throwsA(isA<ValidationException>()));
     expect(() => Nonce(cookie, Id.peerId(1), Id.peerId(256), cs),
-        throwsA(isA<ValidationError>()));
+        throwsA(isA<ValidationException>()));
 
     for (final destination in List.generate(255, (i) => Id.peerId(i))) {
       Nonce(cookie, Id.peerId(1), destination, cs);
@@ -122,6 +122,6 @@ void main() {
 
   test('fromBytes too short', () {
     expect(() => Nonce.fromBytes(Uint8List(Nonce.totalLength - 1)),
-        throwsA(isA<ValidationError>()));
+        throwsA(isA<ValidationException>()));
   });
 }

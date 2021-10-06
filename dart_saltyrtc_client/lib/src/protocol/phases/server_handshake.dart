@@ -23,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
@@ -85,7 +85,7 @@ abstract class ServerHandshakePhase extends Phase {
 
     void check(Id expected) {
       if (destination != expected) {
-        throw ValidationError(
+        throw ValidationException(
           'Receive message with invalid nonce destination. '
           'Expected $expected, found $destination',
         );
@@ -137,13 +137,13 @@ abstract class ServerHandshakePhase extends Phase {
           sendClientHello();
           sendClientAuth();
         } else {
-          throw ProtocolError(
+          throw ProtocolException(
               'Expected ${MessageType.serverHello}, but got ${msg.type}');
         }
         logger.v('Current server handshake status $handshakeState');
         return this;
       case ServerHandshakeState.helloSent:
-        throw ProtocolError(
+        throw ProtocolException(
             'Received ${msg.type} message before sending ${MessageType.clientAuth}');
       case ServerHandshakeState.authSent:
         final clientPhase = handleServerAuth(msg, nonce);
@@ -179,7 +179,7 @@ abstract class ServerHandshakePhase extends Phase {
     required Nonce nonce,
   }) {
     if (signedKey == null) {
-      throw ValidationError(
+      throw ValidationException(
           'Server did not send ${MessageFields.signedKeys} in ${MessageType.serverAuth} message');
     }
 
@@ -192,14 +192,14 @@ abstract class ServerHandshakePhase extends Phase {
       ..add(sks.remotePublicKey)
       ..add(config.permanentKey.publicKey);
     if (!ListEquality<int>().equals(decrypted, expected.takeBytes())) {
-      throw ValidationError(
+      throw ValidationException(
           'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid');
     }
   }
 
   void validateRepeatedCookie(Cookie cookie) {
     if (cookie != common.server.cookiePair.ours) {
-      throw ProtocolError(
+      throw ProtocolException(
           'Bad repeated cookie in ${MessageType.serverAuth} message');
     }
   }
@@ -225,11 +225,12 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     logger.d('Initiator server handshake handling server-auth');
 
     if (msg is! ServerAuthInitiator) {
-      throw ProtocolError('Message is not ${MessageType.serverAuth}');
+      throw ProtocolException('Message is not ${MessageType.serverAuth}');
     }
 
     if (!nonce.destination.isInitiator()) {
-      throw ValidationError('Invalid none destination ${nonce.destination}');
+      throw ValidationException(
+          'Invalid none destination ${nonce.destination}');
     }
 
     common.address = Id.initiatorAddress;
@@ -269,11 +270,12 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   @override
   Phase handleServerAuth(Message msg, Nonce nonce) {
     if (msg is! ServerAuthResponder) {
-      throw ProtocolError('Message is not ${MessageType.serverAuth}');
+      throw ProtocolException('Message is not ${MessageType.serverAuth}');
     }
 
     if (!nonce.destination.isResponder()) {
-      throw ValidationError('Invalid none destination ${nonce.destination}');
+      throw ValidationException(
+          'Invalid none destination ${nonce.destination}');
     }
 
     // this is our address from the server

@@ -13,7 +13,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateListType,
         validateTypeWithNull;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationError;
+    show ValidationException;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -34,7 +34,7 @@ class ServerAuthInitiator extends Message {
           signedKeys!, signedKeysLength, MessageFields.signedKeys);
     }
     if (responders.length != responders.toSet().length) {
-      throw ValidationError(
+      throw ValidationException(
           '${MessageFields.responders} must not contain duplicates');
     }
   }

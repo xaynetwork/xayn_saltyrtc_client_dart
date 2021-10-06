@@ -24,7 +24,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError;
+    show ProtocolException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -183,12 +183,12 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       }
     }
     if (msg is! AuthInitiator) {
-      throw ProtocolError(
+      throw ProtocolException(
           'Unexpected message of type ${msg.type}, expected auth');
     }
 
     if (msg.yourCookie != initiator.cookiePair.ours) {
-      throw ProtocolError('Bad your_cookie in ${MessageType.auth} message');
+      throw ProtocolException('Bad your_cookie in ${MessageType.auth} message');
     }
 
     final taskName = msg.task;
@@ -196,7 +196,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     try {
       taskBuilder = config.tasks.firstWhere((task) => task.name == taskName);
     } on StateError {
-      throw ProtocolError('unknown selected task ${msg.task}');
+      throw ProtocolException('unknown selected task ${msg.task}');
     }
 
     final task = taskBuilder.buildResponderTask(msg.data[taskName]);

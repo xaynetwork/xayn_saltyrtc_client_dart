@@ -19,7 +19,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
@@ -218,13 +218,13 @@ abstract class Phase {
       final msgBytes = Uint8List.sublistView(bytes, Nonce.totalLength);
 
       return run(peer, msgBytes, nonce);
-    } on ProtocolError catch (e) {
+    } on ProtocolException catch (e) {
       return onProtocolError(e, nonce?.source);
     }
   }
 
   @protected
-  Phase onProtocolError(ProtocolError e, Id? source) {
+  Phase onProtocolError(ProtocolException e, Id? source) {
     close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
     return this;
   }
@@ -242,7 +242,7 @@ abstract class Phase {
     final address = common.address;
     final destination = nonce.destination;
     if (destination != address) {
-      throw ValidationError(
+      throw ValidationException(
         'Invalid nonce destination.'
         'Expected $address, found $destination',
       );
@@ -270,7 +270,7 @@ abstract class Phase {
     try {
       cs.next();
     } on OverflowException {
-      throw ProtocolError('CSN overflow');
+      throw ProtocolException('CSN overflow');
     }
 
     final nonce =
@@ -351,14 +351,14 @@ abstract class AfterServerHandshakePhase extends Phase {
 
   Phase handleSendError(SendError msg) {
     if (msg.source != common.address) {
-      throw ProtocolError('received send-error for message not send by us');
+      throw ProtocolException('received send-error for message not send by us');
     }
     final destination = msg.destination;
     final viableDestination = role == Role.initiator
         ? msg.destination.isResponder()
         : msg.destination.isInitiator();
     if (!viableDestination) {
-      throw ProtocolError(
+      throw ProtocolException(
           'received send-error for unexpected destination $destination');
     }
     return handleSendErrorByDestination(destination);

@@ -5,22 +5,22 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show MessageFields, TaskData, TasksData;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationError;
+    show ValidationException;
 
 /// Check that `value` represent a `type`.
 void validateType(Object? value, String type) {
   if (value is! String) {
-    throw ValidationError('Type must be a string');
+    throw ValidationException('Type must be a string');
   }
   if (value != type) {
-    throw ValidationError('Type must be $type');
+    throw ValidationException('Type must be $type');
   }
 }
 
 /// Check that `value` represent a string.
 String validateTypeType(Object? value) {
   if (value is! String) {
-    throw ValidationError('Type must be a string');
+    throw ValidationException('Type must be a string');
   }
 
   return value;
@@ -29,7 +29,7 @@ String validateTypeType(Object? value) {
 /// Check that `value` is a byte array of the expected length.
 void validateByteArray(Uint8List value, int expectedLength, String name) {
   if (value.length != expectedLength) {
-    throw ValidationError(
+    throw ValidationException(
         '$name must be $expectedLength bytes long, not ${value.length}');
   }
 }
@@ -37,7 +37,7 @@ void validateByteArray(Uint8List value, int expectedLength, String name) {
 /// Check that `value` is a byte array.
 Uint8List validateByteArrayType(Object? value, String name) {
   if (value is! List<int>) {
-    throw ValidationError('$name must be a byte array');
+    throw ValidationException('$name must be a byte array');
   }
   return Uint8List.fromList(value);
 }
@@ -45,11 +45,11 @@ Uint8List validateByteArrayType(Object? value, String name) {
 /// Check that `value` is a list of `T`.
 List<T> validateListType<T>(Object? value, String name) {
   if (value is! List) {
-    throw ValidationError('$name must be a list');
+    throw ValidationException('$name must be a list');
   }
   for (final e in value) {
     if (e is! T) {
-      throw ValidationError('$name must be a ${T.toString()}');
+      throw ValidationException('$name must be a ${T.toString()}');
     }
   }
 
@@ -64,7 +64,7 @@ bool checkInteger(int value, int min, int max) {
 /// Check that `value` belongs to the interval [min, max].
 void validateInteger(int value, int min, int max, String name) {
   if (!checkInteger(value, min, max)) {
-    throw ValidationError('$name must be >= $min and <= $max');
+    throw ValidationException('$name must be >= $min and <= $max');
   }
 }
 
@@ -99,14 +99,14 @@ bool checkIdResponder(int value) {
 /// Check that `value` belongs to `valid`.
 void validateIntegerFromList(int value, List<int> valid, String name) {
   if (!valid.contains(value)) {
-    throw ValidationError('$name is not valid');
+    throw ValidationException('$name is not valid');
   }
 }
 
 /// Check that `value` is an integer.
 int validateIntegerType(Object? value, String name) {
   if (value is! int) {
-    throw ValidationError('$name must be an integer');
+    throw ValidationException('$name must be an integer');
   }
   return value;
 }
@@ -124,7 +124,7 @@ T? validateTypeWithNull<T>(
 /// Check that `value` is an bool.
 bool validateBoolType(Object? value, String name) {
   if (value is! bool) {
-    throw ValidationError('$name must be a bool');
+    throw ValidationException('$name must be a bool');
   }
   return value;
 }
@@ -136,7 +136,7 @@ bool validateBoolType(Object? value, String name) {
 CloseCode validateCloseCodeType(
     Object? value, bool dropResponder, String name) {
   if (value is! int) {
-    throw ValidationError('$name must be an integer');
+    throw ValidationException('$name must be an integer');
   }
 
   final code = CloseCodeToFromInt.fromInt(value);
@@ -150,7 +150,7 @@ CloseCode validateCloseCodeType(
     ];
 
     if (!closeCodesDropResponder.contains(code)) {
-      throw ValidationError(
+      throw ValidationException(
           '$name must be a valid ${dropResponder ? 'drop responder' : ''} close code');
     }
   }
@@ -163,23 +163,23 @@ CloseCode validateCloseCodeType(
 /// all the keys of `data` must be in `tasks`.
 void validateTasksData(List<String> tasks, TasksData data) {
   if (tasks.isEmpty) {
-    throw ValidationError('Task names must not be empty');
+    throw ValidationException('Task names must not be empty');
   }
   if (data.isEmpty) {
-    throw ValidationError('Task data must not be empty');
+    throw ValidationException('Task data must not be empty');
   }
   if (data.length != tasks.length) {
-    throw ValidationError('Task data must contain an entry for every task');
+    throw ValidationException('Task data must contain an entry for every task');
   }
   if (!tasks.every(data.containsKey)) {
-    throw ValidationError('Task data must contain an entry for every task');
+    throw ValidationException('Task data must contain an entry for every task');
   }
 }
 
 /// Check that `value` is a string.
 String validateStringType(Object? value, String name) {
   if (value is! String) {
-    throw ValidationError('$name must be a string');
+    throw ValidationException('$name must be a string');
   }
 
   return value;
@@ -188,15 +188,15 @@ String validateStringType(Object? value, String name) {
 /// Check that `value` is a Map<String, Object?>
 Map<String, Object?> validateStringMapType(Object? value, String name) {
   if (value is! Map<Object?, Object?>) {
-    throw ValidationError('$name must be a Map');
+    throw ValidationException('$name must be a Map');
   }
 
   for (final e in value.entries) {
     if (e.key is! String) {
-      throw ValidationError('$name must be a map with strings as keys');
+      throw ValidationException('$name must be a map with strings as keys');
     }
     if (e.value == null) {
-      throw ValidationError('$name cannot be null');
+      throw ValidationException('$name cannot be null');
     }
   }
 
@@ -210,15 +210,15 @@ TaskData? validateTaskDataType(Object? value, String name) {
   }
 
   if (value is! Map<Object?, Object?>) {
-    throw ValidationError('$name must be a Map');
+    throw ValidationException('$name must be a Map');
   }
 
   for (final e in value.entries) {
     if (e.key is! String) {
-      throw ValidationError('$name must be a map with strings as keys');
+      throw ValidationException('$name must be a map with strings as keys');
     }
     if (e.value != null && e.value is! List<int>) {
-      throw ValidationError('$name values must be an array of bytes');
+      throw ValidationException('$name values must be an array of bytes');
     }
   }
 
@@ -230,13 +230,13 @@ TasksData validateTasksDataType(Object? value, String name) {
   final map = <String, TaskData?>{};
 
   if (value is! Map<Object?, Object?>) {
-    throw ValidationError('$name must be a Map');
+    throw ValidationException('$name must be a Map');
   }
 
   for (final e in value.entries) {
     final key = e.key;
     if (key is! String) {
-      throw ValidationError('$name must be a map with strings as keys');
+      throw ValidationException('$name must be a map with strings as keys');
     }
 
     map[key] = validateTaskDataType(e.value, '$name inner');
