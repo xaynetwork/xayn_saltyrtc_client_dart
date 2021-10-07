@@ -40,7 +40,12 @@ abstract class Task {
   /// The custom message types that the task use.
   List<String> get supportedTypes;
 
-  /// Runs the Task
+  /// Runs the Task.
+  ///
+  /// This should listen on `events` and interact with `link` based on that.
+  ///
+  /// Once the task it done resolve the returned future with an appropriate
+  /// `CloseCode`, this will cause a `Close` message to be send to the peer.
   Future<void> run(SaltyRtcTaskLink link) async {
     try {
       await for (final recvEvent in link.events) {

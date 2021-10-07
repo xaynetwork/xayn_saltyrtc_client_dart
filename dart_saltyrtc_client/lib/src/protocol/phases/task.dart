@@ -1,3 +1,4 @@
+import 'dart:async' show EventSink, StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
@@ -7,7 +8,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
+    show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -26,6 +27,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
@@ -43,16 +45,66 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         ResponderConfig,
         ResponderIdentity,
         WithPeer;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart'
+    show SaltyRtcTaskLink, Task, TaskRecvEvent;
 import 'package:meta/meta.dart' show protected;
+
+class _Link extends SaltyRtcTaskLink {
+  final TaskPhase taskPhase;
+
+  _Link(this.taskPhase);
+
+  @override
+  void close(CloseCode closeCode) {
+    taskPhase.closed = true;
+    taskPhase.sendMessage(Close(closeCode), to: taskPhase.pairedClient);
+    taskPhase.common.sink.close(CloseCode.goingAway.toInt());
+  }
+
+  @override
+  void emitEvent(Event event) {
+    // by-pass `TaskPhase.emitEvent` to prevent even re-receiving
+    taskPhase.common.events.emitEvent(event);
+  }
+
+  @override
+  void sendMessage(TaskMessage msg) {
+    taskPhase.sendMessage(msg, to: taskPhase.pairedClient);
+  }
+
+  @override
+  Stream<TaskRecvEvent> get events => taskPhase.taskEventSink.stream;
+}
 
 abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
   Client get pairedClient;
 
+  bool closed = false;
   final Task task;
+  final StreamController<TaskRecvEvent> taskEventSink;
 
-  TaskPhase(AfterServerHandshakeCommon common, this.task) : super(common);
+  TaskPhase(AfterServerHandshakeCommon common, this.task)
+      : taskEventSink = StreamController(),
+        super(common) {
+    // start and link task
+    task.run(_Link(this)).then((value) {
+      //foo
+    }, onError: (Object error, StackTrace st) {
+      common.events.addError(error, st);
+    });
+  }
+
+  @override
+  void emitEvent(Event event) {
+    super.emitEvent(event);
+    if (event is events.ClosingErrorEvent) {
+      taskEventSink.sink.addError(event);
+    } else {
+      taskEventSink.sink.add(TaskRecvEvent(event, null));
+    }
+  }
 
   @protected
   Phase handleServerMessage(Message msg);

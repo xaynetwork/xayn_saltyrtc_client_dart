@@ -216,7 +216,9 @@ abstract class Phase {
 
       return run(peer, msgBytes, nonce);
     } on ProtocolErrorException catch (e) {
-      return onProtocolError(e, nonce?.source);
+      final source = nonce?.source;
+      logger.e('ProtocolException(source=$source): $e');
+      return onProtocolError(e, source);
     }
   }
 
