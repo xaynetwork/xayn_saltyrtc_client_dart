@@ -1,13 +1,14 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, KeyStore, AuthToken, InitialClientAuthMethod;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode, CloseCodeToFromInt;
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, InternalError, eventFromWSCloseCode;
+    show Event, InternalError;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show InitialCommon, InitiatorConfig, Phase, ResponderConfig;
@@ -17,11 +18,6 @@ import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
 import 'package:meta/meta.dart' show immutable, protected;
 
-enum _ClientState {
-  initialized,
-  running,
-}
-
 extension BytesToAuthToken on Uint8List {
   AuthToken toAuthToken(Crypto crypto) =>
       crypto.createAuthTokenFromToken(token: this);
@@ -30,61 +26,56 @@ extension BytesToAuthToken on Uint8List {
 abstract class Client {
   final WebSocket _ws;
   final StreamController<Event> _events;
-  Phase _phase;
-  _ClientState _state = _ClientState.initialized;
+  final Closer closer;
+  Phase? _phase;
 
   @protected
-  Client(this._ws, this._phase, this._events);
+  Client(this._ws, Phase this._phase, this._events)
+      : closer = _phase.common.closer;
 
   /// Runs this Client returning a stream of events indicating the progress.
   Stream<Event> run() {
-    if (_state == _ClientState.running) {
+    final phase = _phase;
+    if (phase == null) {
       throw SaltyRtcClientError('SaltyRtc Client is already running');
     }
-
-    _state = _ClientState.running;
-
-    // Spawn run, run will add events to the stream and
-    // will close the stream once it ends.
-    _run();
+    // We should(must) only access the phase from the run loop.
+    _phase = null;
+    _run(phase);
     return _events.stream;
   }
 
-  Future<void> _run() async {
+  Future<void> _run(Phase phase) async {
     try {
+      /// We will(must) only use phase directly in this loop.
       await for (final message in _ws.stream) {
-        _onWsMessage(message);
-      }
-      final event = eventFromWSCloseCode(_ws.closeCode);
-      if (event != null) {
-        _events.sink.emitEvent(event);
+        if (closer.isClosing) {
+          // Can happen as closing the sink doesn't drop any pending incoming
+          // messages, isClosing SHOULD only be true after `doClose` was called
+          // on the `Phase`.
+          logger.w('phase received message after closing');
+          break;
+        }
+        // Taking out and reassigning phase makes sure we never have a
+        // corrupted phase, even if we await in the `catch` block.
+        phase = phase.handleMessage(message);
       }
     } catch (e, s) {
       _events.sink.emitEvent(InternalError(e), s);
-      await _closeWsSink(CloseCode.internalError, 'Internal Error: $e\n$s');
+      closer.close(CloseCode.internalError);
     } finally {
       await _events.close();
     }
   }
 
-  void _onWsMessage(Uint8List bytes) {
-    if (_phase.isClosed) {
-      logger.e('phase received message after closing');
-      return;
-    }
-    _phase = _phase.handleMessage(bytes);
-    if (_phase.isClosed) {
-      _closeWsSink(_phase.closeCode, _phase.closeReason);
-    }
-  }
-
-  Future<void> _closeWsSink(CloseCode? closeCode, String? reason) {
-    logger.i('closing SaltyRtc connection (code=$closeCode): $reason');
-    return _ws.sink.close(closeCode?.toInt(), '');
-  }
-
-  Future<void> close() async {
-    await _closeWsSink(CloseCode.goingAway, 'Client.close called');
+  /// Closes the client from the outside.
+  ///
+  /// This is useful for applications using this client to e.g. enforce
+  /// timeouts or user cancellation.
+  Future<void> cancel() {
+    // There is no "canceled" close code, phases can remap it in `doClose`.
+    closer.close(CloseCode.timeout, wasCanceled: true);
+    return closer.onClosed;
   }
 }
 

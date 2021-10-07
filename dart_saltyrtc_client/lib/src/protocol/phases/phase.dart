@@ -1,11 +1,12 @@
 import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
+import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod, Crypto, AuthToken, KeyStore;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
+    show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
     show Id, ClientId, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
@@ -49,6 +50,9 @@ abstract class Common {
   /// This should not be used directly, use `send` instead.
   WebSocketSink sink;
 
+  /// Mechanism to allow handle all the different ways of closing.
+  Closer closer;
+
   /// Event stream to send to the client.
   EventSink<Event> events;
 
@@ -56,6 +60,7 @@ abstract class Common {
     this.crypto,
     this.sink,
     this.events,
+    this.closer,
   );
 }
 
@@ -73,8 +78,9 @@ class InitialCommon extends Common {
     Crypto crypto,
     WebSocketSink sink,
     EventSink<Event> events,
+    Closer closer,
   )   : server = Server.fromRandom(crypto),
-        super(crypto, sink, events);
+        super(crypto, sink, events, closer);
 }
 
 /// Data that is common to all phases and roles after the server handshake.
@@ -96,6 +102,7 @@ class AfterServerHandshakeCommon extends Common {
           common.crypto,
           common.sink,
           common.events,
+          common.closer,
         );
 }
 
@@ -195,7 +202,9 @@ abstract class Phase {
   /// Use `config` provided by `InitiatorIdentity`/`ResponderIdentity` instead.
   Config get config;
 
-  Phase();
+  Phase() {
+    common.closer.setCurrentPhase(this);
+  }
 
   Role get role;
 
@@ -307,6 +316,12 @@ abstract class Phase {
     peer.csPair.updateAndCheck(nonce.combinedSequence, source);
     peer.cookiePair.updateAndCheck(nonce.cookie, source);
   }
+
+  /// Called when we are in the process of being closed.
+  ///
+  /// The returned `int?` is the status code used as close code for
+  /// the WebSocket connection.
+  int? doClose(CloseCode closeCode, bool wasCanceled) => closeCode.toInt();
 }
 
 mixin InitiatorIdentity implements Phase {
