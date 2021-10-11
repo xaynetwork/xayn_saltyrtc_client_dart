@@ -61,7 +61,9 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source == pairedClient.id) {
       sendMessage(Close(e.closeCode), to: pairedClient);
-      close(CloseCode.closingNormal, 'closing after c2c protocol error');
+      common.closer
+          .close(CloseCode.closingNormal, 'closing after c2c protocol error');
+      //TODO event + reset (TY-2032)
       return this;
     } else {
       return super.onProtocolError(e, source);
@@ -204,7 +206,9 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
       // if a new initiator connected the current session is not valid anymore
       logger.d('A new initiator connected');
       // we could also go back to `ResponderClientHandshakePhase`, but we also need to notify the Task
-      close(CloseCode.closingNormal, 'Another initiator connected');
+      common.closer
+          .close(CloseCode.closingNormal, 'Another initiator connected');
+      //TODO event + task (TY-2032)
       return this;
     } else {
       logger.w('Unexpected server message type: ${msg.type}');

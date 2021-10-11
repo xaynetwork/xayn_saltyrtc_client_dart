@@ -26,12 +26,12 @@ extension BytesToAuthToken on Uint8List {
 abstract class Client {
   final WebSocket _ws;
   final StreamController<Event> _events;
-  final Closer closer;
+  final Closer _closer;
   Phase? _phase;
 
   @protected
   Client(this._ws, Phase this._phase, this._events)
-      : closer = _phase.common.closer;
+      : _closer = _phase.common.closer;
 
   /// Runs this Client returning a stream of events indicating the progress.
   Stream<Event> run() {
@@ -49,7 +49,7 @@ abstract class Client {
     try {
       /// We will(must) only use phase directly in this loop.
       await for (final message in _ws.stream) {
-        if (closer.isClosing) {
+        if (_closer.isClosing) {
           // Can happen as closing the sink doesn't drop any pending incoming
           // messages, isClosing SHOULD only be true after `doClose` was called
           // on the `Phase`.
@@ -62,9 +62,9 @@ abstract class Client {
       }
     } catch (e, s) {
       _events.sink.emitEvent(InternalError(e), s);
-      closer.close(CloseCode.internalError);
+      _closer.close(CloseCode.internalError, e.toString());
     } finally {
-      await _events.close();
+      _closer.notifyConnectionClosed();
     }
   }
 
@@ -74,8 +74,8 @@ abstract class Client {
   /// timeouts or user cancellation.
   Future<void> cancel() {
     // There is no "canceled" close code, phases can remap it in `doClose`.
-    closer.close(CloseCode.timeout, wasCanceled: true);
-    return closer.onClosed;
+    _closer.close(CloseCode.timeout, 'cancel', wasCanceled: true);
+    return _closer.onClosed;
   }
 }
 
@@ -105,12 +105,9 @@ class InitiatorClient extends Client {
       );
     }
 
-    final eventsCtrl = StreamController<Event>.broadcast();
-    final common = InitialCommon(
-      crypto,
-      ws.sink,
-      eventsCtrl.sink,
-    );
+    final events = StreamController<Event>.broadcast();
+    final common =
+        InitialCommon(crypto, ws.sink, events.sink, Closer(ws, events.sink));
     final authMethod = InitialClientAuthMethod.fromEither(
       crypto: crypto,
       authToken: sharedAuthToken?.toAuthToken(crypto),
@@ -126,7 +123,7 @@ class InitiatorClient extends Client {
     );
     final phase = InitiatorServerHandshakePhase(common, config);
 
-    return InitiatorClient._(ws, phase, eventsCtrl);
+    return InitiatorClient._(ws, phase, events);
   }
 }
 
@@ -145,11 +142,8 @@ class ResponderClient extends Client {
     Uint8List? sharedAuthToken,
   }) {
     final events = StreamController<Event>.broadcast();
-    final common = InitialCommon(
-      crypto,
-      ws.sink,
-      events.sink,
-    );
+    final common =
+        InitialCommon(crypto, ws.sink, events.sink, Closer(ws, events));
 
     final config = ResponderConfig(
       permanentKeys: ourPermanentKeys,

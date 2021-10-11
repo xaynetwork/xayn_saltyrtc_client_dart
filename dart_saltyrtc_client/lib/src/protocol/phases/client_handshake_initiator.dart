@@ -266,7 +266,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       logger.w('No shared task for ${responder.id} found');
       sendMessage(Close(CloseCode.noSharedTask), to: responder);
       emitEvent(events.NoSharedTaskFound());
-      close(CloseCode.goingAway, 'no shared task was found');
+      common.closer.close(CloseCode.goingAway, 'no shared task was found');
       return this;
     }
     logger.i('Selected task ${taskBuilder.name}');

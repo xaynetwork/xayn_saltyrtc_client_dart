@@ -21,7 +21,7 @@ abstract class SaltyRtcClient {
 
   /// Close the connection with the server, the client is not usable after
   /// this method has been called.
-  Future<void> close();
+  Future<void> cancel();
 }
 
 /// Client for an initiator.

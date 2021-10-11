@@ -177,8 +177,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       if (msg.reason == CloseCode.noSharedTask) {
         logger.w('No shared task for ${initiator.id} found');
         emitEvent(events.NoSharedTaskFound());
-        // no close code is used in this case
-        close(null, 'no shared task was found');
+        common.closer.close(null, 'no shared task was found');
         return this;
       }
     }

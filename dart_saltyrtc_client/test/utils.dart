@@ -1,5 +1,7 @@
+import 'dart:async' show Completer;
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
@@ -93,7 +95,7 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect(nextPhase.isClosed, isFalse);
+    expect((nextPhase.common.closer as NoOpCloser).closeWasCalled, isFalse);
     return phaseAs<N>(nextPhase);
   }
 
@@ -111,8 +113,9 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect(nextPhase.isClosed, isTrue);
-    return nextPhase.closeCode;
+    final noOpCloser = nextPhase.common.closer as NoOpCloser;
+    expect(noOpCloser.closeWasCalled, isTrue);
+    return noOpCloser.closeCode;
   }
 
   Uint8List _createRawMessage(
@@ -145,7 +148,8 @@ Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
   server.testedPeer.ourSessionKey = crypto.createKeyStore();
   server.testedPeer.permanentKey = crypto.createKeyStore();
 
-  final common = InitialCommon(crypto, MockSyncWebSocketSink(), EventQueue());
+  final common = InitialCommon(
+      crypto, MockSyncWebSocketSink(), EventQueue(), NoOpCloser());
   common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
     ownKeyStore: server.testedPeer.permanentKey!,
     remotePublicKey: server.permanentKey.publicKey,
@@ -286,4 +290,39 @@ class TestTask extends Task {
   final List<String> supportedTypes;
 
   TestTask(this.name, {this.initData, this.supportedTypes = const ['magic']});
+}
+
+/// Doesn't do any of the thinks the closer is supposed to do.
+class NoOpCloser implements Closer {
+  final Completer<void> _onClose = Completer();
+  final Completer<void> _onClosed = Completer();
+  bool notifyStreamClosedWasCalled = false;
+  bool closeWasCalled = false;
+  CloseCode? closeCode;
+  String? closeReason;
+  bool wasCanceled = false;
+
+  @override
+  void close(CloseCode? closeCode, String? reason, {bool wasCanceled = false}) {
+    closeWasCalled = true;
+    this.closeCode = closeCode;
+    closeReason = reason;
+    this.wasCanceled = wasCanceled;
+    _onClose.complete();
+  }
+
+  @override
+  bool get isClosing => closeWasCalled;
+
+  @override
+  void setCurrentPhase(Phase current) {}
+
+  @override
+  Future<void> get onClosed => _onClosed.future;
+
+  @override
+  void notifyConnectionClosed() {
+    notifyStreamClosedWasCalled = true;
+    _onClosed.complete();
+  }
 }

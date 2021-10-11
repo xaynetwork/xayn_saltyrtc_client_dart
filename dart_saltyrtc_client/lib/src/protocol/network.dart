@@ -16,18 +16,13 @@ abstract class WebSocketSink implements Sink<Uint8List> {
   Future<void> close([int? closeCode, String? closeReason]);
 }
 
-/// A stream of binary packages.
-///
-/// The `done` future must support broadcasting, but the stream on itself
-/// can be a non-broadcasting stream.
-abstract class WebSocketStream implements Stream<Uint8List> {
-  Future<void> get done;
-}
+typedef WebSocketStream = Stream<Uint8List>;
 
 abstract class WebSocket {
   /// The code used to close the web socket (if there was one and if the
   /// socket was closed)
   int? get closeCode;
+
   WebSocketSink get sink;
   WebSocketStream get stream;
 }

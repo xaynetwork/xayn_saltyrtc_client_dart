@@ -181,19 +181,6 @@ class ResponderConfig extends Config {
 /// A phase can handle a message and returns the next phase.
 /// This also contains common and auxiliary code.
 abstract class Phase {
-  // Temporary until TY-2125
-  bool isClosed = false;
-  // Temporary until TY-2125
-  CloseCode? closeCode;
-  // Temporary until TY-2125
-  String? closeReason;
-  // Temporary until TY-2125
-  void close(CloseCode? closeCode, String? closeReason) {
-    isClosed = true;
-    this.closeCode = closeCode;
-    this.closeReason = closeReason;
-  }
-
   /// Data common to all phases and role.
   Common get common;
 
@@ -234,7 +221,9 @@ abstract class Phase {
 
   @protected
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
-    close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
+    common.closer
+        .close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
+    //TODO emit event
     return this;
   }
 
@@ -321,7 +310,7 @@ abstract class Phase {
   ///
   /// The returned `int?` is the status code used as close code for
   /// the WebSocket connection.
-  int? doClose(CloseCode closeCode, bool wasCanceled) => closeCode.toInt();
+  int? doClose(CloseCode? closeCode, bool wasCanceled) => closeCode?.toInt();
 }
 
 mixin InitiatorIdentity implements Phase {

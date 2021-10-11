@@ -1,4 +1,4 @@
-import 'dart:async' show EventSink, StreamController;
+import 'dart:async' show Completer, EventSink, StreamController;
 import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
@@ -58,6 +58,12 @@ class MockAsyncWebSocketSink implements WebSocketSink {
 }
 
 class MockWebSocket implements WebSocket {
+  final Completer<void> _streamDone = Completer();
+
+  MockWebSocket() {
+    stream.listen(null, onDone: () => _streamDone.complete());
+  }
+
   @override
   int? get closeCode => sink.closeCode;
 
