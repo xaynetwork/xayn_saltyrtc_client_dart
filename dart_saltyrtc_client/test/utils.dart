@@ -11,7 +11,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolException, ValidationException;
+    show ProtocolErrorException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
@@ -38,7 +38,7 @@ Matcher throwsValidationError() {
 
 Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   bool errorHasExpectedState(Object? error) {
-    if (error is! ProtocolException) {
+    if (error is! ProtocolErrorException) {
       return true;
     } else {
       return error.closeCode == closeCode;
@@ -46,7 +46,7 @@ Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   }
 
   return throwsA(
-      allOf(isA<ProtocolException>(), predicate(errorHasExpectedState)));
+      allOf(isA<ProtocolErrorException>(), predicate(errorHasExpectedState)));
 }
 
 class MockKnowledgeAboutTestedPeer {

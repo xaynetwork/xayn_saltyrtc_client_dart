@@ -24,7 +24,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId, validateInitiatorId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolException;
+    show ProtocolErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
@@ -58,7 +58,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   Phase handleServerMessage(Message msg);
 
   @override
-  Phase onProtocolError(ProtocolException e, Id? source) {
+  Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source == pairedClient.id) {
       sendMessage(Close(e.closeCode), to: pairedClient);
       close(CloseCode.closingNormal, 'closing after c2c protocol error');
@@ -97,7 +97,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     } else if (msg is Application) {
       return handleApplicationMessage(msg);
     } else {
-      throw ProtocolException(
+      throw ProtocolErrorException(
         'Invalid message during task phase. Message type: ${msg.type}',
       );
     }

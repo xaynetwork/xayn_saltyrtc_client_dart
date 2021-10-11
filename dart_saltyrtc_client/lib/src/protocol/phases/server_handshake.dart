@@ -23,7 +23,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolException, ValidationException;
+    show ProtocolErrorException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
@@ -137,13 +137,13 @@ abstract class ServerHandshakePhase extends Phase {
           sendClientHello();
           sendClientAuth();
         } else {
-          throw ProtocolException(
+          throw ProtocolErrorException(
               'Expected ${MessageType.serverHello}, but got ${msg.type}');
         }
         logger.v('Current server handshake status $handshakeState');
         return this;
       case ServerHandshakeState.helloSent:
-        throw ProtocolException(
+        throw ProtocolErrorException(
             'Received ${msg.type} message before sending ${MessageType.clientAuth}');
       case ServerHandshakeState.authSent:
         final clientPhase = handleServerAuth(msg, nonce);
@@ -199,7 +199,7 @@ abstract class ServerHandshakePhase extends Phase {
 
   void validateRepeatedCookie(Cookie cookie) {
     if (cookie != common.server.cookiePair.ours) {
-      throw ProtocolException(
+      throw ProtocolErrorException(
           'Bad repeated cookie in ${MessageType.serverAuth} message');
     }
   }
@@ -225,7 +225,7 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     logger.d('Initiator server handshake handling server-auth');
 
     if (msg is! ServerAuthInitiator) {
-      throw ProtocolException('Message is not ${MessageType.serverAuth}');
+      throw ProtocolErrorException('Message is not ${MessageType.serverAuth}');
     }
 
     if (!nonce.destination.isInitiator()) {
@@ -270,7 +270,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   @override
   Phase handleServerAuth(Message msg, Nonce nonce) {
     if (msg is! ServerAuthResponder) {
-      throw ProtocolException('Message is not ${MessageType.serverAuth}');
+      throw ProtocolErrorException('Message is not ${MessageType.serverAuth}');
     }
 
     if (!nonce.destination.isResponder()) {

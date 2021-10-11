@@ -25,7 +25,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolException;
+    show ProtocolErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
@@ -104,7 +104,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
-  Phase onProtocolError(ProtocolException e, Id? source) {
+  Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source != null && source.isResponder()) {
       dropResponder(source.asResponder(), e.closeCode);
       return this;
@@ -257,7 +257,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     );
 
     if (msg.yourCookie != responder.cookiePair.ours) {
-      throw ProtocolException('Bad your_cookie in ${MessageType.auth} message');
+      throw ProtocolErrorException(
+          'Bad your_cookie in ${MessageType.auth} message');
     }
 
     final taskBuilder = _selectTaskBuilder(msg.tasks, responder);

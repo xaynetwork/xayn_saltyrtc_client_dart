@@ -2,8 +2,10 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:meta/meta.dart' show immutable;
 
+/// It's an Exception representing a ProtocolError.
+///
 @immutable
-class ProtocolException implements Exception {
+class ProtocolErrorException implements Exception {
   /// The close code which should be used.
   ///
   /// Default to `protocolError`.
@@ -13,17 +15,17 @@ class ProtocolException implements Exception {
   final CloseCode closeCode;
   final String _msg;
 
-  ProtocolException(this._msg, {this.closeCode = CloseCode.protocolError});
+  ProtocolErrorException(this._msg, {this.closeCode = CloseCode.protocolError});
 
   @override
   String toString() => _msg;
 
-  ProtocolException withCloseCode(CloseCode code) =>
-      ProtocolException(_msg, closeCode: code);
+  ProtocolErrorException withCloseCode(CloseCode code) =>
+      ProtocolErrorException(_msg, closeCode: code);
 }
 
 /// Data to instantiate a message is invalid.
 @immutable
-class ValidationException extends ProtocolException {
+class ValidationException extends ProtocolErrorException {
   ValidationException(String msg) : super(msg);
 }

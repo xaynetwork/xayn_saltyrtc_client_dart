@@ -42,7 +42,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateTypeType, validateStringMapType;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolException, ValidationException;
+    show ProtocolErrorException, ValidationException;
 import 'package:messagepack/messagepack.dart' show Unpacker;
 
 extension MessageDecryptionExt on CryptoBox {
@@ -92,7 +92,7 @@ extension MessageDecryptionExt on CryptoBox {
       decryptionErrorCloseCode: decryptionErrorCloseCode,
     );
     if (msg is! T) {
-      throw ProtocolException(
+      throw ProtocolErrorException(
           'Unexpected message of type ${msg.type}, expected $msgType');
     }
     return msg as T;

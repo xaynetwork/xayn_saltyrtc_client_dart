@@ -14,7 +14,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolException, ValidationException;
+    show ProtocolErrorException, ValidationException;
 import 'package:meta/meta.dart' show protected;
 
 /// A peer can be the server, the initiator or a responder
@@ -50,7 +50,7 @@ abstract class Peer {
   void setSessionSharedKey(SharedKeyStore sks) {
     // we need to check that permanent and session are different
     if (sks.remotePublicKey == permanentSharedKey?.remotePublicKey) {
-      throw ProtocolException(
+      throw ProtocolErrorException(
           'Server session key is the same as the permanent key');
     }
     _sessionSharedKey = sks;
@@ -215,7 +215,7 @@ class Initiator extends Client {
     // if it's a Token message we need to use authToken
     if (msg is Token) {
       if (token == null) {
-        throw ProtocolException(
+        throw ProtocolErrorException(
             'Cannot encrypt token message for peer: auth token is null');
       }
       return _encrypt(msg, nonce, token);
