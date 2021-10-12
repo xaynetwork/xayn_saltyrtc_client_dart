@@ -43,6 +43,24 @@ class ResponderAuthenticated extends Event {
   List<Object?> get props => [permanentKey];
 }
 
+/// Events produced by responders which have not yet started authentication.
+///
+/// Besides for some statistics around e.g. spam or DoS attacks it has not
+/// much use.
+///
+/// This will not contains events from responders which are unauthenticated
+/// but have successfully started the authentication process (which required
+/// them to have provided either a valid auth token or have the trusted key).
+@immutable
+class UnknownResponderEvent extends Event {
+  final Event event;
+
+  UnknownResponderEvent(this.event);
+
+  @override
+  List<Object?> get props => event.props;
+}
+
 /// Event emitted when a client disconnects from the path.
 ///
 /// We diverge from the spec here as we don't report the client ID, the
@@ -66,27 +84,18 @@ class PeerDisconnected extends Event {
   final PeerKind peerKind;
 
   PeerDisconnected(this.peerKind);
+
+  @override
+  List<Object?> get props => [peerKind];
 }
 
 enum PeerKind {
-  /// A peer about we don't really know anything.
+  /// A peer which has not yet fully completed the authentication process.
   ///
-  /// With the current version of SaltyRtc this can only be a responder which
-  /// connected to the server but has not yet send any message to the client.
-  unknownPeer,
-
-  /// A peer from which we know that we will (probably) authenticate with it,
-  /// but have not yet authenticated.
-  ///
-  /// For responders this is the initiator.
-  ///
-  /// For initiators this are responders from which they successfully received
-  /// a message (which implies the responder either has the valid auth token or
-  /// the private key for the trusted public key).
-  unauthenticatedTargetPeer,
+  unauthenticated,
 
   /// A peer with which we completed a client to client handshake.
-  authenticatedPeer,
+  authenticated,
 }
 
 /// Event emitted when sending a message to a client failed.
@@ -98,9 +107,12 @@ enum PeerKind {
 @immutable
 class SendingMessageToPeerFailed extends Event {
   /// True if we already completed the client to client handshake.
-  final bool wasAuthenticated;
+  final PeerKind peerKind;
 
-  SendingMessageToPeerFailed({required this.wasAuthenticated});
+  SendingMessageToPeerFailed(this.peerKind);
+
+  @override
+  List<Object?> get props => [peerKind];
 }
 
 /// No shared task was found between the initiator and responder.
@@ -254,6 +266,22 @@ class InternalError extends ClosingErrorEvent {
   final Object error;
 
   InternalError(this.error);
+}
+
+/// Protocol Error with the Server
+///
+@immutable
+class ProtocolErrorWithServer extends ClosingErrorEvent {}
+
+/// Protocol Error with peer.
+@immutable
+class ProtocolErrorWithPeer extends Event {
+  final PeerKind peerKind;
+
+  ProtocolErrorWithPeer(this.peerKind);
+
+  @override
+  List<Object?> get props => [peerKind];
 }
 
 /// Creates a event from an status code.

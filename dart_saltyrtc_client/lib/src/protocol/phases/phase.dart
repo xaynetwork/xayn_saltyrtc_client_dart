@@ -21,7 +21,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException, ValidationException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+    show Event, ProtocolErrorWithServer;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
@@ -223,7 +224,7 @@ abstract class Phase {
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     common.closer
         .close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
-    //TODO emit event
+    emitEvent(ProtocolErrorWithServer());
     return this;
   }
 

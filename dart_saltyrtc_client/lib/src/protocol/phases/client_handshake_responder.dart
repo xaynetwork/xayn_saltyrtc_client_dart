@@ -97,19 +97,29 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
+  Phase onProtocolError(ProtocolErrorException e, Id? source) {
+    if (source != null && source.isInitiator()) {
+      emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated));
+      return this;
+    } else {
+      return super.onProtocolError(e, source);
+    }
+  }
+
+  @override
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateInitiatorId(id.value);
     initiatorWithState = null;
-    emitEvent(
-        events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
+    emitEvent(events.PeerDisconnected(events.PeerKind.unauthenticated));
     return this;
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
-    emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
+    emitEvent(
+        events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated));
     return this;
   }
 

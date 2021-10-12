@@ -106,7 +106,14 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   @override
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source != null && source.isResponder()) {
-      dropResponder(source.asResponder(), e.closeCode);
+      final event =
+          events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated);
+      final wasKnown = dropResponder(source.asResponder(), e.closeCode);
+      if (wasKnown) {
+        emitEvent(event);
+      } else {
+        emitEvent(events.UnknownResponderEvent(event));
+      }
       return this;
     } else {
       return super.onProtocolError(e, source);
@@ -118,13 +125,12 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     final id = msg.id;
     validateResponderId(id.value);
     final removed = responders.remove(id);
-    final events.PeerKind peerKind;
+    final event = events.PeerDisconnected(events.PeerKind.unauthenticated);
     if (removed?.receivedAnyMessage == true) {
-      peerKind = events.PeerKind.unauthenticatedTargetPeer;
+      emitEvent(event);
     } else {
-      peerKind = events.PeerKind.unknownPeer;
+      emitEvent(events.UnknownResponderEvent(event));
     }
-    emitEvent(events.PeerDisconnected(peerKind));
     return this;
   }
 
@@ -132,7 +138,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   Phase handleSendErrorByDestination(Id destination) {
     final removed = responders.remove(destination);
     if (removed != null) {
-      emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
+      emitEvent(
+          events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated));
     } else {
       logger.d('send-error from already removed destination');
     }
@@ -309,8 +316,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     return task;
   }
 
-  void dropResponder(ResponderId responder, CloseCode closeCode) {
-    responders.remove(responder);
+  bool dropResponder(ResponderId responder, CloseCode closeCode) {
+    final known = responders.remove(responder)?.receivedAnyMessage ?? false;
     sendDropResponder(responder, closeCode);
+    return known;
   }
 }
