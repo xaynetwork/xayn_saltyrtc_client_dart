@@ -108,21 +108,23 @@ void main() {
     final initiator = setup.initiator;
     runTest(setup.initialPhase, [
       mkRecvTokenAndKeyTest(initiator),
-      (phase, io) {
-        //bad test
-        final closing = initiator.sendAndClose(
+      (initialPhase, io) {
+        final phase =
+            initiator.sendAndTransitToPhase<ResponderClientHandshakePhase>(
           message: Token(crypto.createAuthToken().bytes),
-          sendTo: phase,
+          sendTo: initialPhase,
           encryptWith: crypto.createSharedKeyStore(
             ownKeyStore: initiator.permanentKey,
             remotePublicKey: initiator.testedPeer.permanentKey!.publicKey,
           ),
         );
-        expect(closing, equals(CloseCode.protocolError));
-        return null;
+        expect(phase.initiatorWithState, isNull);
+        final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
+        expect(event.peerKind, events.PeerKind.unauthenticated);
+        return phase;
       }
     ]);
-  }, skip: true);
+  });
 
   test('auth -> no task found', () {
     final tasks = [TestTaskBuilder('example.v23')];
@@ -186,7 +188,8 @@ void main() {
         tasks: tasks,
       ),
       (initialPhase, io) {
-        final closing = initiator.sendAndClose(
+        final phase =
+            initiator.sendAndTransitToPhase<ResponderClientHandshakePhase>(
           message: AuthInitiator(initiator.testedPeer.cookiePair.ours,
               'example.v23', {'example.v23': null}),
           sendTo: initialPhase,
@@ -195,11 +198,13 @@ void main() {
               remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
         );
 
-        expect(closing, equals(CloseCode.protocolError));
+        expect(phase.initiatorWithState, isNull);
+        final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
+        expect(event.peerKind, events.PeerKind.unauthenticated);
         return null;
       }
     ]);
-  }, skip: true);
+  });
 }
 
 class _Setup {
