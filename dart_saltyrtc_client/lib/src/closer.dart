@@ -68,8 +68,6 @@ class Closer {
         logger.w('close called before we started the SaltyRtc protocol');
         wsCloseCode = closeCode?.toInt();
       }
-      // Only set it after calling `doClose`.
-      _isClosing = true;
       webSocket.sink.close(wsCloseCode);
     }).onError((error, stackTrace) {
       events.emitEvent(InternalError(error ?? 'unknown error'), stackTrace);
@@ -92,6 +90,7 @@ class Closer {
 
   /// Close the client.
   void close(CloseCode? closeCode, String? reason, {bool wasCanceled = false}) {
+    _isClosing = true;
     _doCloseCompleter.complete(_CloseWith(closeCode, reason, wasCanceled));
   }
 
