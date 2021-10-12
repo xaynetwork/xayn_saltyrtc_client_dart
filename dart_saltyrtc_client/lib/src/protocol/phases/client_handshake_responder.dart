@@ -100,6 +100,8 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source != null && source.isInitiator()) {
       emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated));
+      //FIXME circuit breaker, or only retry if new initiator
+      startNewHandshake();
       return this;
     } else {
       return super.onProtocolError(e, source);

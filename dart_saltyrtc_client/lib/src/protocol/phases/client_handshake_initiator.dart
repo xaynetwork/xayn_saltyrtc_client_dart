@@ -106,13 +106,17 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   @override
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source != null && source.isResponder()) {
-      final event =
-          events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated);
       final wasKnown = dropResponder(source.asResponder(), e.closeCode);
-      if (wasKnown) {
-        emitEvent(event);
+      if (e.closeCode == CloseCode.initiatorCouldNotDecrypt) {
+        emitEvent(events.InitiatorCouldNotDecrypt());
       } else {
-        emitEvent(events.UnknownResponderEvent(event));
+        final event =
+            events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated);
+        if (wasKnown) {
+          emitEvent(event);
+        } else {
+          emitEvent(events.UnknownResponderEvent(event));
+        }
       }
       return this;
     } else {

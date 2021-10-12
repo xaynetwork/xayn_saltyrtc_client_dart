@@ -171,6 +171,8 @@ void main() {
               decryptWith: crypto.createSharedKeyStore(
                   ownKeyStore: server.testedPeer.ourSessionKey!,
                   remotePublicKey: server.testedPeer.permanentKey!.publicKey));
+          final pev = io.expectEventOfType<events.ProtocolErrorWithPeer>();
+          expect(pev.peerKind, events.PeerKind.unauthenticated);
 
           expect(dropMsg.id, equals(responder.address));
           return phase;
@@ -218,6 +220,8 @@ void main() {
           );
 
           expect(phase.responders[responder.address], isNull);
+          final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
+          expect(event.peerKind, events.PeerKind.unauthenticated);
 
           final dropMsg = io.expectMessageOfType<DropResponder>(
             sendTo: server,
@@ -462,6 +466,7 @@ Phase? Function(Phase, Io) mkSendBadTokenTest(
             remotePublicKey: server.testedPeer.ourSessionKey!.publicKey));
     expect(dropMsg.id, equals(responder.address));
     expect(dropMsg.reason, equals(CloseCode.initiatorCouldNotDecrypt));
+    io.expectEventOfType<events.InitiatorCouldNotDecrypt>();
     return phase;
   };
 }
@@ -530,6 +535,7 @@ Phase? Function(Phase, Io) mkSendBadKeyTest(
             remotePublicKey: server.testedPeer.ourSessionKey!.publicKey));
     expect(dropMsg.id, equals(responder.address));
     expect(dropMsg.reason, equals(CloseCode.initiatorCouldNotDecrypt));
+    io.expectEventOfType<events.InitiatorCouldNotDecrypt>();
     return phase;
   };
 }
@@ -709,12 +715,16 @@ Phase? Function(Phase, Io) mkSendDisconnectedTest({
     );
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[disconnect], isNull);
-    final disconnectedMsg = io.expectEventOfType<events.PeerDisconnected>();
     if (knownPeer) {
-      expect(
-          disconnectedMsg.peerKind, events.PeerKind.unauthenticatedTargetPeer);
+      final disconnectedMsg = io.expectEventOfType<events.PeerDisconnected>();
+      expect(disconnectedMsg.peerKind, events.PeerKind.unauthenticated);
     } else {
-      expect(disconnectedMsg.peerKind, events.PeerKind.unknownPeer);
+      final disconnectedMsg =
+          io.expectEventOfType<events.UnknownResponderEvent>();
+      expect(disconnectedMsg.event, isA<events.PeerDisconnected>());
+
+      expect((disconnectedMsg.event as events.PeerDisconnected).peerKind,
+          events.PeerKind.unauthenticated);
     }
     return phase;
   };
@@ -750,7 +760,7 @@ Phase? Function(Phase, Io) mkSendErrorTest({
     expect(phase.responders[responder.address], isNull);
 
     final errEvent = io.expectEventOfType<events.SendingMessageToPeerFailed>();
-    expect(errEvent.wasAuthenticated, isFalse);
+    expect(errEvent.peerKind, events.PeerKind.unauthenticated);
     return phase;
   };
 }
@@ -769,8 +779,9 @@ Phase? Function(Phase, Io) mkSendBadSendErrorTest({
           ownKeyStore: server.testedPeer.ourSessionKey!,
           remotePublicKey: server.testedPeer.permanentKey!.publicKey),
     );
-
     expect(closing, equals(CloseCode.protocolError));
+
+    io.expectEventOfType<events.ProtocolErrorWithServer>();
     return null;
   };
 }
