@@ -47,9 +47,8 @@ class Closer {
     _doCloseCompleter.future.then((closeWith) {
       _closedByUs = true;
       final closeCode = closeWith.closeCode;
-      final wasCanceled = closeWith.wasCanceled;
-      logger.i(
-          'Closing connection (closeCode=$closeCode, wasCanceled=$wasCanceled): ${closeWith.reason}');
+      logger
+          .i('Closing connection (closeCode=$closeCode): ${closeWith.reason}');
       final phase = _currentPhase;
       int? wsCloseCode;
       if (phase != null) {
@@ -57,7 +56,7 @@ class Closer {
         // Also allow Phase to determine the closeCode/status used to close the
         // WebRtc Connection.
         try {
-          wsCloseCode = phase.doClose(closeCode, wasCanceled);
+          wsCloseCode = phase.doClose(closeCode);
         } catch (e, s) {
           events.emitEvent(InternalError(e), s);
           wsCloseCode = CloseCode.internalError.toInt();
@@ -89,9 +88,9 @@ class Closer {
   }
 
   /// Close the client.
-  void close(CloseCode? closeCode, String? reason, {bool wasCanceled = false}) {
+  void close(CloseCode? closeCode, String? reason) {
     _isClosing = true;
-    _doCloseCompleter.complete(_CloseWith(closeCode, reason, wasCanceled));
+    _doCloseCompleter.complete(_CloseWith(closeCode, reason));
   }
 
   /// Notify the closer that the connection is closed.
@@ -111,7 +110,6 @@ class Closer {
 class _CloseWith {
   final CloseCode? closeCode;
   final String? reason;
-  final bool wasCanceled;
 
-  _CloseWith(this.closeCode, this.reason, this.wasCanceled);
+  _CloseWith(this.closeCode, this.reason);
 }

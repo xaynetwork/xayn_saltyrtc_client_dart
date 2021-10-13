@@ -311,7 +311,7 @@ abstract class Phase {
   ///
   /// The returned `int?` is the status code used as close code for
   /// the WebSocket connection.
-  int? doClose(CloseCode? closeCode, bool wasCanceled) => closeCode?.toInt();
+  int? doClose(CloseCode? closeCode) => closeCode?.toInt();
 }
 
 mixin InitiatorIdentity implements Phase {

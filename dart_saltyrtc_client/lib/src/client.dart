@@ -73,8 +73,7 @@ abstract class Client {
   /// This is useful for applications using this client to e.g. enforce
   /// timeouts or user cancellation.
   Future<void> cancel() {
-    // There is no "canceled" close code, phases can remap it in `doClose`.
-    _closer.close(CloseCode.timeout, 'cancel', wasCanceled: true);
+    _closer.close(CloseCode.goingAway, 'cancel');
     return _closer.onClosed;
   }
 }
