@@ -29,26 +29,40 @@ class Closer {
   bool _closedByUs = false;
   Phase? _currentPhase;
 
-  /// Future which resolves when we are already in the process of closing.
-  ///
-  /// It's used to clean up thinks.
-  final Completer<_CloseWith> _doCloseCompleter = Completer();
+  final WebSocket _webSocket;
+  final EventSink<Event> _events;
 
   // We could pass in a ClosingStatus { bool byUs, int? closeCode} in the future
   /// Future resolving when the client is more or less closed.
   final Completer<void> _closedCompleter = Completer();
 
+  /// Future resolving once the WebSocket stream is closed and we did
+  /// close the events skink, and emitted a event based on the close code
+  /// if necessary.
   late Future<void> _onClosed;
 
-  Closer(WebSocket webSocket, EventSink<Event> events) {
-    // Running this code directly on the close() method call
-    // is a bad idea as it's prone to lead to thinks like
-    // "collection modified while iterating" problems etc.
-    _doCloseCompleter.future.then((closeWith) {
+  Closer(this._webSocket, this._events) {
+    _onClosed = _closedCompleter.future.whenComplete(() async {
+      _isClosing = true;
+      if (!_closedByUs) {
+        final event = eventFromWSCloseCode(_webSocket.closeCode);
+        if (event != null) {
+          _events.emitEvent(event);
+        }
+      }
+      _events.close();
+    });
+  }
+
+  /// Close the client.
+  ///
+  /// The will immediately call `doClose` on the current phase and close the
+  /// `WebSocket` afterwards.
+  void close(CloseCode? closeCode, String? reason) {
+    if (!_isClosing) {
+      _isClosing = true;
       _closedByUs = true;
-      final closeCode = closeWith.closeCode;
-      logger
-          .i('Closing connection (closeCode=$closeCode): ${closeWith.reason}');
+      logger.i('Closing connection (closeCode=$closeCode): $reason');
       final phase = _currentPhase;
       int? wsCloseCode;
       if (phase != null) {
@@ -58,7 +72,7 @@ class Closer {
         try {
           wsCloseCode = phase.doClose(closeCode);
         } catch (e, s) {
-          events.emitEvent(InternalError(e), s);
+          _events.emitEvent(InternalError(e), s);
           wsCloseCode = CloseCode.internalError.toInt();
         }
       } else {
@@ -67,30 +81,8 @@ class Closer {
         logger.w('close called before we started the SaltyRtc protocol');
         wsCloseCode = closeCode?.toInt();
       }
-      webSocket.sink.close(wsCloseCode);
-    }).onError((error, stackTrace) {
-      events.emitEvent(InternalError(error ?? 'unknown error'), stackTrace);
-    });
-
-    _onClosed = _closedCompleter.future.whenComplete(() async {
-      // If we get closed from WebRtc (instead of closing ourself), then
-      // `_doCloseCompleter` is never completed and as such `_isClosing` was
-      // never set.
-      _isClosing = true;
-      if (!_closedByUs) {
-        final event = eventFromWSCloseCode(webSocket.closeCode);
-        if (event != null) {
-          events.emitEvent(event);
-        }
-      }
-      events.close();
-    });
-  }
-
-  /// Close the client.
-  void close(CloseCode? closeCode, String? reason) {
-    _isClosing = true;
-    _doCloseCompleter.complete(_CloseWith(closeCode, reason));
+      _webSocket.sink.close(wsCloseCode);
+    }
   }
 
   /// Notify the closer that the connection is closed.
@@ -105,11 +97,4 @@ class Closer {
   bool get isClosing => _isClosing;
 
   Future<void> get onClosed => _onClosed;
-}
-
-class _CloseWith {
-  final CloseCode? closeCode;
-  final String? reason;
-
-  _CloseWith(this.closeCode, this.reason);
 }
