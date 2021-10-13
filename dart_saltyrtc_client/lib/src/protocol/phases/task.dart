@@ -130,7 +130,6 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source == pairedClient.id) {
-      sendMessage(Close(e.closeCode), to: pairedClient);
       common.closer
           .close(CloseCode.closingNormal, 'closing after c2c protocol error');
       emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.authenticated));
@@ -203,6 +202,14 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     _link.disconnect();
     return onlyCreateClientHandshakePhase(
         initiatorOverrid: newInitiator, responderOverride: responderOverride);
+  }
+
+  @override
+  int? doClose(CloseCode? closeCode, bool wasCanceled) {
+    if (closeCode != null) {
+      sendMessage(Close(closeCode), to: pairedClient);
+    }
+    return CloseCode.closingNormal.toInt();
   }
 
   @protected
