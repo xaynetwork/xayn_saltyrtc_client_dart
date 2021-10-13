@@ -100,8 +100,8 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source != null && source.isInitiator()) {
       emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated));
-      // Reset to beginning, this will not automatically continue the handshake.
-      // Through if, e.g. a new initiator connects, we do try again.
+      // Reset to beginning of this phase. We will try again when a new
+      // initiator connects.
       initiatorWithState = null;
       return this;
     } else {

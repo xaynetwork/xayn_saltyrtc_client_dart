@@ -1,6 +1,6 @@
 import 'dart:async' show Completer, EventSink;
 
-import 'package:dart_saltyrtc_client/src/logger.dart';
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
@@ -14,7 +14,7 @@ import 'package:meta/meta.dart' show protected;
 ///
 /// - do want to close from the inside
 /// - do want to close from a task
-/// - do want to close from the outside (e.g. canceling)
+/// - do want to close from the outside
 /// - realized we are closing (e.g. WS is closing)
 /// - many of the think can happen in a async manner
 ///
@@ -68,7 +68,7 @@ class Closer {
       if (phase != null) {
         // Give Phase a chance to send some remaining messages (e.g. `close`).
         // Also allow Phase to determine the closeCode/status used to close the
-        // WebRtc Connection.
+        // WebSocket Connection.
         try {
           wsCloseCode = phase.doClose(closeCode);
         } catch (e, s) {
@@ -76,8 +76,6 @@ class Closer {
           wsCloseCode = CloseCode.internalError.toInt();
         }
       } else {
-        // Probably impossible, but it's better to be on the safe side and
-        // make it not blow up due to some unrelated changes to the client.
         logger.w('close called before we started the SaltyRtc protocol');
         wsCloseCode = closeCode?.toInt();
       }

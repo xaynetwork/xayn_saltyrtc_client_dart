@@ -39,7 +39,7 @@ abstract class Client {
     if (phase == null) {
       throw SaltyRtcClientError('SaltyRtc Client is already running');
     }
-    // We should(must) only access the phase from the run loop.
+    // We must only access the phase from the run loop.
     _phase = null;
     _run(phase);
     return _events.stream;
@@ -47,7 +47,6 @@ abstract class Client {
 
   Future<void> _run(Phase phase) async {
     try {
-      /// We will(must) only use phase directly in this loop.
       await for (final message in _ws.stream) {
         if (_closer.isClosing) {
           // Can happen as closing the sink doesn't drop any pending incoming
@@ -56,8 +55,6 @@ abstract class Client {
           logger.w('phase received message after closing');
           break;
         }
-        // Taking out and reassigning phase makes sure we never have a
-        // corrupted phase, even if we await in the `catch` block.
         phase = phase.handleMessage(message);
       }
     } catch (e, s) {
@@ -68,10 +65,8 @@ abstract class Client {
     }
   }
 
-  /// Closes the client from the outside.
-  ///
-  /// This is useful for applications using this client to e.g. enforce
-  /// timeouts or user cancellation.
+  /// Closes the client and disconnect from the server canceling any ongoing
+  /// task.
   Future<void> cancel() {
     _closer.close(CloseCode.goingAway, 'cancel');
     return _closer.onClosed;
