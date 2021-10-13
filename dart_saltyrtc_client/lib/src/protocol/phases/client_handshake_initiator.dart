@@ -94,6 +94,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     this.config,
   ) : super(common);
 
+  bool thereIsAOngoingHandshake() {
+    return responders.values.any((responder) => responder.receivedAnyMessage);
+  }
+
   @override
   Peer? getPeerWithId(Id id) {
     if (id.isServer()) return common.server;
@@ -112,10 +116,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       } else {
         final event =
             events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated);
-        if (wasKnown) {
+        if (wasKnown || !thereIsAOngoingHandshake()) {
           emitEvent(event);
         } else {
-          emitEvent(events.UnknownResponderEvent(event));
+          emitEvent(events.AdditionalResponderEvent(event));
         }
       }
       return this;
@@ -130,10 +134,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     validateResponderId(id.value);
     final removed = responders.remove(id);
     final event = events.PeerDisconnected(events.PeerKind.unauthenticated);
-    if (removed?.receivedAnyMessage == true) {
+    if (removed?.receivedAnyMessage == true || !thereIsAOngoingHandshake()) {
       emitEvent(event);
     } else {
-      emitEvent(events.UnknownResponderEvent(event));
+      emitEvent(events.AdditionalResponderEvent(event));
     }
     return this;
   }

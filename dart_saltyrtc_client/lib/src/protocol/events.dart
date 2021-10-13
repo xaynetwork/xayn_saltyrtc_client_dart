@@ -43,19 +43,20 @@ class ResponderAuthenticated extends Event {
   List<Object?> get props => [permanentKey];
 }
 
-/// Events produced by responders which have not yet started authentication.
+/// Events produced by "additional" responders on the path.
 ///
-/// Besides for some statistics around e.g. spam or DoS attacks it has not
-/// much use.
+/// If we have a successfully started client to client handshake or are in
+/// the task phase then events produced by other responders will be wrapped
+/// into this type.
 ///
-/// This will not contains events from responders which are unauthenticated
-/// but have successfully started the authentication process (which required
-/// them to have provided either a valid auth token or have the trusted key).
+/// Besides for some statistics around e.g. spam or DoS attacks or people
+/// scanning QR codes multiple times this events have not much use.
+///
 @immutable
-class UnknownResponderEvent extends Event {
+class AdditionalResponderEvent extends Event {
   final Event event;
 
-  UnknownResponderEvent(this.event);
+  AdditionalResponderEvent(this.event);
 
   @override
   List<Object?> get props => event.props;

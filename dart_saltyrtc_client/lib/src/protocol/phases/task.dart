@@ -140,7 +140,7 @@ class InitiatorTaskPhase extends TaskPhase
     final id = msg.id;
     validateResponderId(id.value);
     if (id != pairedClient.id) {
-      emitEvent(events.UnknownResponderEvent(
+      emitEvent(events.AdditionalResponderEvent(
           events.PeerDisconnected(events.PeerKind.unauthenticated)));
       return this;
     } else {
@@ -152,7 +152,7 @@ class InitiatorTaskPhase extends TaskPhase
   @override
   Phase handleSendErrorByDestination(Id destination) {
     if (destination != pairedClient.id) {
-      emitEvent(events.UnknownResponderEvent(
+      emitEvent(events.AdditionalResponderEvent(
           events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated)));
       return this;
     } else {
