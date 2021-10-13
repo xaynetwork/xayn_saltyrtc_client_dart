@@ -722,7 +722,7 @@ Phase? Function(Phase, Io) mkSendDisconnectedTest({
     );
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[disconnect], isNull);
-    final disconnectedMsg = io.expectEventOfType<events.Disconnected>();
+    final disconnectedMsg = io.expectEventOfType<events.PeerDisconnected>();
     if (knownPeer) {
       expect(
           disconnectedMsg.peerKind, events.PeerKind.unauthenticatedTargetPeer);
@@ -762,7 +762,7 @@ Phase? Function(Phase, Io) mkSendErrorTest({
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[responder.address], isNull);
 
-    final errEvent = io.expectEventOfType<events.SendError>();
+    final errEvent = io.expectEventOfType<events.SendingMessageToPeerFailed>();
     expect(errEvent.wasAuthenticated, isFalse);
     return phase;
   };

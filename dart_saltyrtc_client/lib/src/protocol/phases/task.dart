@@ -140,10 +140,10 @@ class InitiatorTaskPhase extends TaskPhase
     final id = msg.id;
     validateIdResponder(id.value);
     if (id != pairedClient.id) {
-      emitEvent(events.Disconnected(events.PeerKind.unknownPeer));
+      emitEvent(events.PeerDisconnected(events.PeerKind.unknownPeer));
       return this;
     } else {
-      emitEvent(events.Disconnected(events.PeerKind.authenticatedPeer));
+      emitEvent(events.PeerDisconnected(events.PeerKind.authenticatedPeer));
       return InitiatorClientHandshakePhase(common, config);
     }
   }
@@ -151,10 +151,10 @@ class InitiatorTaskPhase extends TaskPhase
   @override
   Phase handleSendErrorByDestination(Id destination) {
     if (destination != pairedClient.id) {
-      emitEvent(events.SendError(wasAuthenticated: false));
+      emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
       return this;
     } else {
-      emitEvent(events.SendError(wasAuthenticated: true));
+      emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: true));
       return InitiatorClientHandshakePhase(common, config);
     }
   }
@@ -189,14 +189,14 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdInitiator(id.value);
-    emitEvent(events.Disconnected(events.PeerKind.authenticatedPeer));
+    emitEvent(events.PeerDisconnected(events.PeerKind.authenticatedPeer));
     return ResponderClientHandshakePhase(common, config,
         initiatorConnected: false);
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
-    emitEvent(events.SendError(wasAuthenticated: true));
+    emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: true));
     return ResponderClientHandshakePhase(common, config,
         initiatorConnected: false);
   }

@@ -61,10 +61,10 @@ class ResponderAuthenticated extends Event {
 /// it doesn't imply that the connection will be closed.
 ///
 @immutable
-class Disconnected extends Event {
+class PeerDisconnected extends Event {
   final PeerKind peerKind;
 
-  Disconnected(this.peerKind);
+  PeerDisconnected(this.peerKind);
 }
 
 enum PeerKind {
@@ -95,11 +95,11 @@ enum PeerKind {
 /// the client to client handshake, it doesn't imply that the connection
 /// will be closed.
 @immutable
-class SendError extends Event {
+class SendingMessageToPeerFailed extends Event {
   /// True if we already completed the client to client handshake.
   final bool wasAuthenticated;
 
-  SendError({required this.wasAuthenticated});
+  SendingMessageToPeerFailed({required this.wasAuthenticated});
 }
 
 /// No shared task was found between the initiator and responder.

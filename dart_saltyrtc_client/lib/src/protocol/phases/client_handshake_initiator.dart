@@ -124,7 +124,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     } else {
       peerKind = events.PeerKind.unknownPeer;
     }
-    emitEvent(events.Disconnected(peerKind));
+    emitEvent(events.PeerDisconnected(peerKind));
     return this;
   }
 
@@ -132,7 +132,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   Phase handleSendErrorByDestination(Id destination) {
     final removed = responders.remove(destination);
     if (removed != null) {
-      emitEvent(events.SendError(wasAuthenticated: false));
+      emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
     } else {
       logger.d('send-error from already removed destination');
     }

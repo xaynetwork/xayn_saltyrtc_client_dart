@@ -102,14 +102,14 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     final id = msg.id;
     validateIdInitiator(id.value);
     initiatorWithState = null;
-    emitEvent(events.Disconnected(events.PeerKind.unauthenticatedTargetPeer));
+    emitEvent(events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
     return this;
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
-    emitEvent(events.SendError(wasAuthenticated: false));
+    emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
     return this;
   }
 

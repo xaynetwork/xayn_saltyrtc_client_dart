@@ -435,7 +435,7 @@ Phase? Function(Phase, Io) mkInitiatorDisconnectedTest({
           ownKeyStore: server.testedPeer.ourSessionKey!,
           remotePublicKey: server.testedPeer.permanentKey!.publicKey),
     );
-    final disconnectedEvent = io.expectEventOfType<events.Disconnected>();
+    final disconnectedEvent = io.expectEventOfType<events.PeerDisconnected>();
     expect(
         disconnectedEvent.peerKind, events.PeerKind.unauthenticatedTargetPeer);
     expect(phase.initiatorWithState, isNull);
@@ -468,7 +468,7 @@ Phase? Function(Phase, Io) mkSendErrorTest({
     expect(phase.initiatorWithState, isNull);
     resetInitiatorData(initiator);
 
-    final errEvent = io.expectEventOfType<events.SendError>();
+    final errEvent = io.expectEventOfType<events.SendingMessageToPeerFailed>();
     expect(errEvent.wasAuthenticated, isFalse);
 
     return phase;
