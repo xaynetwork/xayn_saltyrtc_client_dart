@@ -13,7 +13,10 @@ import 'package:test/test.dart';
 void main() {
   test('eventFromCloseCode', () {
     expect(eventFromWSCloseCode(1000), isNull);
-    expect(eventFromWSCloseCode(1001), isNull);
+    expect(
+        eventFromWSCloseCode(1001),
+        equals(
+            UnexpectedStatus.unchecked(UnexpectedStatusVariant.other, 1001)));
     expect(
         eventFromWSCloseCode(1002),
         equals(UnexpectedStatus.unchecked(

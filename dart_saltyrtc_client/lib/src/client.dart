@@ -53,8 +53,6 @@ abstract class Client {
   Future<void> _run() async {
     try {
       await for (final message in _ws.stream) {
-        // Taking out and reassigning phase makes sure we never have a
-        // corrupted phase, even if we await in the `catch` block.
         _onWsMessage(message);
       }
       final event = eventFromWSCloseCode(_ws.closeCode);
@@ -86,11 +84,7 @@ abstract class Client {
   }
 
   Future<void> close() async {
-    //FIXME is that really normal, isn't that abort?
-    // Closing th sink will send a WS close frame to the server which will close
-    // cause the server to also close the stream.
-    //TODO: We might still add some mechanism to close the stream with an abort.
-    await _closeWsSink(CloseCode.closingNormal, 'Client.close called');
+    await _closeWsSink(CloseCode.goingAway, 'Client.close called');
   }
 }
 

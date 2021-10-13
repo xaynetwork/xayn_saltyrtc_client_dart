@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show KeyStore;
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
     show AuthInitiator;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
@@ -38,8 +39,6 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show ResponderTaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
-
-import '../../logger.dart';
 
 /// State of the handshake with the initiator.
 enum State {
@@ -102,7 +101,8 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     final id = msg.id;
     validateIdInitiator(id.value);
     initiatorWithState = null;
-    emitEvent(events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
+    emitEvent(
+        events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
     return this;
   }
 

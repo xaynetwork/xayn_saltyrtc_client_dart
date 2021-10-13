@@ -12,10 +12,11 @@ abstract class Event extends Equatable {
 /// An event which will lead to the SaltyRtc client being closed.
 abstract class ClosingErrorEvent extends Event {}
 
-/// An event which can't be recovered from without a software update (somewhere).
+/// An error which can't be recovered from.
 ///
-/// Through the software which might need updating might be the other devices
-/// app or the server (in case of a messed up public key update).
+/// If an error of this kind is received also all future connections with the
+/// same configuration of this client, the server and the peer will fail
+/// with this error.
 ///
 /// Be aware that `UnexpectedStatus` and `InternalError` only implement
 /// `ClosingErrorEvent` but could very well be a `FatalErrorEvent`
@@ -104,13 +105,12 @@ class SendingMessageToPeerFailed extends Event {
 
 /// No shared task was found between the initiator and responder.
 ///
-/// This means that both clients are incompatible, which might be fixed
-/// through a software update. Or might mean that two unrelated applications
-/// try to accidentally connect with each other.
+/// This means that the clients are incompatible and they do not have a common
+/// task that can be used to communicate between them.
 @immutable
 class NoSharedTaskFound extends FatalErrorEvent {}
 
-/// Event indicating that the initiator could not decrypt the message send from us.
+/// Event indicating that the initiator could not decrypt the message sent from us.
 ///
 /// This is only produced by responder clients during the client to client
 /// handshake.
@@ -125,7 +125,7 @@ class NoSharedTaskFound extends FatalErrorEvent {}
 ///
 /// Some (but not all) potential situations in which this can happen are:
 ///
-/// - The responder did "fall over" (e.g. disconnect) during a previous handshake
+/// - The responder did disconnected during a previous handshake
 ///   and is already trusted, but believes it's not yet trusted (as the initiator
 ///   potentially trusts the client once it receives the auth msg, but before it
 ///   responded with an auth msg).
@@ -143,9 +143,9 @@ enum TempFailureVariant {
   /// We didn't responds with a pong to the servers ping.
   timeout,
 
-  /// The WebRtc connection was closed without sending a close frame.
+  /// The WebSocket connection was closed without sending a close frame.
   ///
-  /// This can e.g. happen in case of TCP realizing the connection
+  /// This can happen in case of TCP realizing the connection
   /// to the server is gone, it's inherently similar to `timeout`.
   ///
   /// While this is not part of the SaltyRtc protocol it can happen anyway.
@@ -156,17 +156,14 @@ enum TempFailureVariant {
 
   /// The initiator dropped us.
   ///
-  /// This can happen in two cases:
+  /// This mainly happens if the responder tries to connect to a path and is
+  /// are dropped as part of the path cleaning.
   ///
-  /// - Many responder try to connect to the path and we are dropped as part of
-  ///   the path cleaning.
+  /// It also could happen if the initiator is already peered, which should only
+  /// happen if somehow multiple devices got the same auth token, e.g. by
+  /// scanning the same QR code. We can not differentiate this case from the
+  /// other case.
   ///
-  /// - The initiator is (was) paired with another responder, this should only be
-  ///   possible if multiple devices/responder have the same auth data (same auth
-  ///   token or same permanent keys). This case should normally not happen.
-  ///
-  /// While this error variant is likely temporary in case of the 2nd way it can
-  /// happen it would be potential permanent, but we can't detect it.
   droppedByInitiator,
 
   /// The service is restarting and will be available again soon.
@@ -201,16 +198,16 @@ enum UnexpectedStatusVariant {
   /// *If we run into an internalError we use the InternalError event,
   ///  which provides additional debug information.*
   ///
-  /// Either `1011` (WebRtc) or `3002` SaltyRtc.
+  /// Either `1011` (WebSocket) or `3002` SaltyRtc.
   internalError,
 
   /// The server or other client found we breached to protocol.
   ///
   /// This can be a
   ///
-  /// - `1002`: WebRtc protocol error
-  /// - `1003`: WebRtc unsupported data (should have been `3001`)
-  /// - `1007`: WebRtc invalid frame payload data (should have been `3001`)
+  /// - `1002`: WebSocket protocol error
+  /// - `1003`: WebSocket unsupported data (should have been `3001`)
+  /// - `1007`: WebSocket invalid frame payload data (should have been `3001`)
   /// - `3001`: SaltyRtc protocol error
   ///
   protocolError,
@@ -218,37 +215,22 @@ enum UnexpectedStatusVariant {
   /// The TLS Handshake failed
   tlsHandshake,
 
-  /// A received data frame was to large. (`1009`, WebRtc)
+  /// A received data frame was to large.
   ///
-  /// It's very unlikely to happen with WebRtc, but one possible way
-  /// could be if the task data shipped with an `auth` message became
-  /// way to big.
+  /// This could happen if the task data shipped with an `auth` message is
+  /// too big, or if a task send to much data in one message.
   messageTooBig,
 
   /// Any other unexpected status code.
   ///
-  /// This includes following status codes, which all shouldn't happen
-  /// (at least in our use case):
-  ///
-  /// - `1005`: No Status Received
-  /// - `1008`: Policy violation
-  /// - `1010`: Missing Extension
-  /// - `1014`: Bad Gateway
-  /// - ...
   other
 }
 
 /// A unexpected error occurred.
 ///
 /// This is most likely a bug on at least one side, but in rare cases can also
-/// be caused by bad `pingInterval` settings and/or unusual network conditions.
+/// be caused by bad settings and/or unusual network conditions.
 ///
-/// Retrying is likely not going to help, through it might be worth to retry
-/// a single time with a larger time gap in case of internal error and
-/// other times after a huge time gap as the server might be fixed by then.
-///
-/// **If a `UnexpectedStatus` error repeats to appear then it should be
-/// treated like a `FatalErrorEvent`**
 @immutable
 class UnexpectedStatus extends ClosingErrorEvent {
   final UnexpectedStatusVariant variant;
@@ -276,11 +258,8 @@ class InternalError extends ClosingErrorEvent {
 
 /// Creates a event from an status code.
 ///
-/// This can be used with WebRtc on-close status codes or codes send with a
-/// `close` message, because of that this will not create `Closed` events.
-/// This also means that a non (direct) error close code will not create an
-/// event (`normal` and `goingAway`).
-///
+/// This should be used if the `WebSocket` was closed without us closing it,
+/// to determine if we need to emit another event.
 @protected
 Event? eventFromWSCloseCode(int? closeCode) {
   if (closeCode == null) {
@@ -289,7 +268,6 @@ Event? eventFromWSCloseCode(int? closeCode) {
   }
   switch (closeCode) {
     case 1000:
-    case 1001:
       return null;
     case 1002:
     case 1003:
