@@ -19,11 +19,12 @@ SALTYRTC_SAFETY_OFF='yes-and-i-know-what-im-doing' ./venv/bin/saltyrtc-server -v
 ### SaltyRtc spec compliance/completion
 
 This implementation is currently focused on our use case and
-does (for now) not implemented certain parts of the spec we
-do not use.
+does not implement certain parts of the spec we
 
 #### Known missing parts
 
 - The `application` message is currently not supported.
 - Using a server without a knowing it's public key is
   currently not supported.
+
+Please open a PR if you are interested in implementing this.

@@ -102,7 +102,7 @@ class AfterServerHandshakeCommon extends Common {
 /// Config values shared by all people.
 @immutable
 abstract class Config {
-  /// The permanent keys of this client.
+  /// The permanent key of this client.
   final KeyStore permanentKey;
   final int pingInterval;
 
