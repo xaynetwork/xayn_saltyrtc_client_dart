@@ -205,11 +205,13 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   }
 
   @override
-  int? doClose(CloseCode? closeCode, bool wasCanceled) {
+  int? doClose(CloseCode? closeCode) {
     if (closeCode != null) {
       sendMessage(Close(closeCode), to: pairedClient);
+      return CloseCode.closingNormal.toInt();
+    } else {
+      return super.doClose(closeCode);
     }
-    return CloseCode.closingNormal.toInt();
   }
 
   @protected
