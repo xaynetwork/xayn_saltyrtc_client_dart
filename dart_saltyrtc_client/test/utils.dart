@@ -4,6 +4,8 @@ import 'dart:typed_data' show Uint8List;
 import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, CryptoBox, KeyStore;
+import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
+    show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ClientId;
@@ -20,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show AfterServerHandshakeCommon, InitialCommon, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart'
-    show Task, TaskBuilder;
+    show Task, TaskBuilder, SaltyRtcTaskLink, CancelReason;
 import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/expect.dart';
 
@@ -290,6 +292,34 @@ class TestTask extends Task {
   final List<String> supportedTypes;
 
   TestTask(this.name, {this.initData, this.supportedTypes = const ['magic']});
+
+  @override
+  void handleCancel(CancelReason reason) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void handleClose(CloseCode code) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void handleClosed() {
+    throw UnimplementedError();
+  }
+
+  @override
+  void handleEvent(Event event) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void handleMessage(TaskMessage msg) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void start(SaltyRtcTaskLink link) {}
 }
 
 /// Doesn't do any of the thinks the closer is supposed to do.
