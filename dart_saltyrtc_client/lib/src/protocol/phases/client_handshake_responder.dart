@@ -100,9 +100,12 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source != null && source.isInitiator()) {
       emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated));
-      // Reset to beginning of this phase. We will try again when a new
-      // initiator connects.
       initiatorWithState = null;
+      // We can't just reset the initiator state as we can't tell the initiator
+      // that we did so. To again communicate with the initiator we need a new
+      // address, so we need to close the connection. As the protocol error was
+      // not with the server we close the connection with `goingAway`.
+      common.closer.close(CloseCode.goingAway, 'c2c protocol error');
       return this;
     } else {
       return super.onProtocolError(e, source);

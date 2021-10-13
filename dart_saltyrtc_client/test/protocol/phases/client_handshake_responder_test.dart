@@ -109,8 +109,7 @@ void main() {
     runTest(setup.initialPhase, [
       mkRecvTokenAndKeyTest(initiator),
       (initialPhase, io) {
-        final phase =
-            initiator.sendAndTransitToPhase<ResponderClientHandshakePhase>(
+        final closeCode = initiator.sendAndClose(
           message: Token(crypto.createAuthToken().bytes),
           sendTo: initialPhase,
           encryptWith: crypto.createSharedKeyStore(
@@ -118,10 +117,10 @@ void main() {
             remotePublicKey: initiator.testedPeer.permanentKey!.publicKey,
           ),
         );
-        expect(phase.initiatorWithState, isNull);
+        expect(closeCode, equals(CloseCode.goingAway));
         final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
         expect(event.peerKind, events.PeerKind.unauthenticated);
-        return phase;
+        return null;
       }
     ]);
   });
@@ -188,8 +187,7 @@ void main() {
         tasks: tasks,
       ),
       (initialPhase, io) {
-        final phase =
-            initiator.sendAndTransitToPhase<ResponderClientHandshakePhase>(
+        final closeCode = initiator.sendAndClose(
           message: AuthInitiator(initiator.testedPeer.cookiePair.ours,
               'example.v23', {'example.v23': null}),
           sendTo: initialPhase,
@@ -198,7 +196,7 @@ void main() {
               remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
         );
 
-        expect(phase.initiatorWithState, isNull);
+        expect(closeCode, equals(CloseCode.goingAway));
         final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
         expect(event.peerKind, events.PeerKind.unauthenticated);
         return null;
