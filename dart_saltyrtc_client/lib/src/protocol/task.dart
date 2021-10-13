@@ -1,3 +1,5 @@
+import 'dart:async' show EventSink;
+
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
@@ -41,22 +43,27 @@ abstract class Task {
   /// Start given task
   void start(SaltyRtcTaskLink link);
 
-  /// Called by the default `run` impl. when a `TaskMessage` is received.
+  /// Called when a `TaskMessage` is received.
   void handleMessage(TaskMessage msg);
 
-  /// Called by the default `run` impl. when a `Event` was emitted.
+  /// Called when a `Event` was emitted.
   void handleEvent(Event event);
 
-  /// Called by the default `run` impl. once the input `events` stream ended.
+  /// Called once the input `events` stream ended.
   ///
-  /// This is guaranteed to be called.
-  void handleClosed();
-
-  /// Called once a close message is received.
-  void handleClose(CloseCode code);
+  /// This is guaranteed to be called when the original
+  /// WebSocket is closed, even if it's on context of a
+  /// handover. (But [handleHandover] will be called first.)
+  void handleWSClosed();
 
   /// Called when the task needs to stop, but the connection is not closed.
   void handleCancel(CancelReason reason);
+
+  /// Called when a handover is started.
+  ///
+  /// From now on the task is responsible for closing events when it's done or
+  /// failed.
+  void handleHandover(EventSink<Event> events);
 }
 
 enum CancelReason { disconnected, sendError }
@@ -94,4 +101,12 @@ abstract class SaltyRtcTaskLink {
   /// If the event is a instance of `ClosingErrorEvent` the task should
   /// call (or have called) close.
   void emitEvent(Event event);
+
+  /// Trigger a handover.
+  ///
+  /// This will load to [Task.handleHandover] being called. It might be called
+  /// before [requestHandover] returns or it might be called from a later micro
+  /// task.
+  ///
+  void requestHandover();
 }

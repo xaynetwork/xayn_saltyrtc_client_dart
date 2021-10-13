@@ -296,6 +296,15 @@ class ProtocolErrorWithPeer extends Event {
   List<Object?> get props => [peerKind];
 }
 
+/// Event emitted when all responsibility is handed over to the task and the
+/// original WebSocket is closed because it's no longer needed.
+@immutable
+class HandoverToTask extends Event {}
+
+/// Emitted by tasks when they are done.
+@immutable
+class TaskDone extends Event {}
+
 /// Creates a event from an status code.
 ///
 /// This should be used if the `WebSocket` was closed without us closing it,
@@ -333,8 +342,6 @@ Event? eventFromWSCloseCode(int? closeCode) {
           UnexpectedStatusVariant.tlsHandshake, closeCode);
     case 3000:
       return LikelyTemporaryFailure(TempFailureVariant.pathFull);
-    // case 3003:
-    //   return HandoverOfSignalingChannel();
     case 3004:
       return LikelyTemporaryFailure(TempFailureVariant.droppedByInitiator);
     case 3005:
@@ -345,6 +352,10 @@ Event? eventFromWSCloseCode(int? closeCode) {
       return IncompatibleServerKey();
     case 3008:
       return LikelyTemporaryFailure(TempFailureVariant.timeout);
+
+    /// Handover should only be send via `Close` message and as such
+    /// shouldn't appear here.
+    case 3003:
     default:
       return UnexpectedStatus.unchecked(
           UnexpectedStatusVariant.other, closeCode);

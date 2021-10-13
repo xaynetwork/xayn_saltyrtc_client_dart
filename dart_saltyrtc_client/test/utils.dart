@@ -1,4 +1,4 @@
-import 'dart:async' show Completer;
+import 'dart:async' show Completer, EventSink;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
@@ -299,12 +299,7 @@ class TestTask extends Task {
   }
 
   @override
-  void handleClose(CloseCode code) {
-    throw UnimplementedError();
-  }
-
-  @override
-  void handleClosed() {
+  void handleWSClosed() {
     throw UnimplementedError();
   }
 
@@ -320,6 +315,11 @@ class TestTask extends Task {
 
   @override
   void start(SaltyRtcTaskLink link) {}
+
+  @override
+  void handleHandover(EventSink<Event> events) {
+    throw UnimplementedError();
+  }
 }
 
 /// Doesn't do any of the thinks the closer is supposed to do.
@@ -354,5 +354,10 @@ class NoOpCloser implements Closer {
   void notifyConnectionClosed() {
     notifyStreamClosedWasCalled = true;
     _onClosed.complete();
+  }
+
+  @override
+  void handover() {
+    throw UnimplementedError();
   }
 }

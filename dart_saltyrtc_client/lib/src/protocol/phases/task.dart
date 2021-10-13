@@ -80,6 +80,16 @@ class _Link extends SaltyRtcTaskLink {
     }
   }
 
+  @override
+  void requestHandover() {
+    final phase = _phase;
+    if (phase != null) {
+      phase.doHandoverToTask();
+    } else {
+      throw StateError('already disconnected from phase');
+    }
+  }
+
   void disconnect() {
     _phase = null;
   }
@@ -102,7 +112,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     });
     common.closer.onClosed.whenComplete(() {
       taskCallGuard(() {
-        task.handleClosed();
+        task.handleWSClosed();
       });
     });
   }
@@ -179,16 +189,31 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @protected
   Phase handleClose(Close msg) {
-    taskCallGuard(() {
-      task.handleClose(msg.reason);
-    });
-    common.closer.close(null, 'close msg');
+    final closeCode = msg.reason;
+    if (closeCode == CloseCode.handover) {
+      doHandoverToTask();
+    } else {
+      final event = events.eventFromWSCloseCode(closeCode.toInt());
+      if (event != null) {
+        emitEvent(event);
+      }
+      common.closer.close(null, 'close msg');
+    }
     return this;
   }
 
   @protected
+  void doHandoverToTask() {
+    taskCallGuard(() {
+      task.handleHandover(common.events);
+    });
+    common.closer.handover();
+    _link.disconnect();
+    emitEvent(events.HandoverToTask());
+  }
+
+  @protected
   Phase handleApplicationMessage(Application msg) {
-    //FIXME emit event
     logger.e('application messages are currently not supported');
     return this;
   }
@@ -206,6 +231,9 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @override
   int? doClose(CloseCode? closeCode) {
+    // WARNING: Do not move any task cancellation/closing logic in here.
+    //          It would mess with handovers, instead use the `onClosed`
+    //          future.
     if (closeCode != null) {
       sendMessage(Close(closeCode), to: pairedClient);
       return CloseCode.closingNormal.toInt();

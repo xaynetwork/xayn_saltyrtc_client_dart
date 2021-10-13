@@ -28,6 +28,7 @@ class Closer {
   bool _isClosing = false;
   bool _closedByUs = false;
   Phase? _currentPhase;
+  bool _doHandover = false;
 
   final WebSocket _webSocket;
   final EventSink<Event> _events;
@@ -50,7 +51,9 @@ class Closer {
           _events.emitEvent(event);
         }
       }
-      _events.close();
+      if (!_doHandover) {
+        _events.close();
+      }
     });
   }
 
@@ -81,6 +84,15 @@ class Closer {
       }
       _webSocket.sink.close(wsCloseCode);
     }
+  }
+
+  /// Closes the WebSocket for a task handover.
+  ///
+  /// This will prevent `events` from being closed when the
+  /// `WebSocket` is closed.
+  void handover() {
+    _doHandover = true;
+    close(CloseCode.handover, 'handover');
   }
 
   /// Notify the closer that the connection is closed.

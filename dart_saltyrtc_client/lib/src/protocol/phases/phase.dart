@@ -251,7 +251,8 @@ abstract class Phase {
   }
 
   @protected
-  void emitEvent(Event event, [StackTrace? st]) => common.events.emitEvent(event, st);
+  void emitEvent(Event event, [StackTrace? st]) =>
+      common.events.emitEvent(event, st);
 
   /// Short form for `send(buildPacket(msg, to))`
   void sendMessage(
