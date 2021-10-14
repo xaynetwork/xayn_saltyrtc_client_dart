@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show KeyStore;
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
     show AuthInitiator;
 import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
@@ -23,7 +24,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdInitiator;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError, SendErrorException;
+    show ProtocolError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
@@ -67,9 +69,9 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
 
   ResponderClientHandshakePhase(
     CommonAfterServerHandshake common,
-    this.config,
-    bool initiatorConnected,
-  ) : super(common) {
+    this.config, {
+    required bool initiatorConnected,
+  }) : super(common) {
     if (initiatorConnected) {
       startNewHandshake();
     }
@@ -95,22 +97,26 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
-  void handleDisconnected(Disconnected msg) {
+  Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdInitiator(id.value);
     initiatorWithState = null;
-    //TODO notify client/application
+    emitEvent(
+        events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
+    return this;
   }
 
   @override
-  void handleSendErrorByDestination(Id destination) {
+  Phase handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
-    throw SendErrorException(destination);
+    emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
+    return this;
   }
 
   @override
-  void handleNewInitiator(NewInitiator msg) {
+  Phase handleNewInitiator(NewInitiator msg) {
     startNewHandshake();
+    return this;
   }
 
   @override
@@ -169,7 +175,11 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       // We expect a potential Close message, but only with a
       // CloseCode.noSharedTask reason.
       if (msg.reason == CloseCode.noSharedTask) {
-        throw NoSharedTaskError();
+        logger.w('No shared task for ${initiator.id} found');
+        emitEvent(events.NoSharedTaskFound());
+        // no close code is used in this case
+        close(null, 'no shared task was found');
+        return this;
       }
     }
     if (msg is! AuthInitiator) {
@@ -190,6 +200,9 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     }
 
     final task = taskBuilder.buildResponderTask(msg.data[taskName]);
+
+    emitEvent(events.ResponderAuthenticated(config.permanentKeys.publicKey));
+
     return ResponderTaskPhase(
         common, config, initiator.assertAuthenticated(), task);
   }

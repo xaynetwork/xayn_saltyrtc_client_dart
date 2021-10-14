@@ -24,8 +24,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolError, ValidationError;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show ServerHandshakeDone;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
@@ -139,7 +138,7 @@ abstract class ServerHandshakePhase extends Phase {
             'Received ${msg.type} message before sending ${MessageType.clientAuth}');
       case ServerHandshakeState.authSent:
         final clientPhase = handleServerAuth(msg, nonce);
-        common.events.add(ServerHandshakeDone());
+        emitEvent(events.ServerHandshakeDone());
         return clientPhase;
     }
   }
@@ -288,7 +287,7 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
     return ResponderClientHandshakePhase(
       CommonAfterServerHandshake(common),
       config,
-      msg.initiatorConnected,
+      initiatorConnected: msg.initiatorConnected,
     );
   }
 }

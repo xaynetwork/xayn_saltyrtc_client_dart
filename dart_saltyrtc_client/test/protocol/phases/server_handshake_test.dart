@@ -47,7 +47,7 @@ void main() {
 
     // after server-hello we expect a client-hello
     final clientHello = checkClientHello(
-        bytes: outMsgs.nextPackage(),
+        bytes: outMsgs.next(),
         clientPermanentPublicKey: setupData.clientPermanentKeys.publicKey);
 
     // set the client key as if the server received a client-hello message
@@ -55,7 +55,7 @@ void main() {
 
     // the responder must also send a client-auth
     checkClientAuth(
-      bytes: outMsgs.nextPackage(),
+      bytes: outMsgs.next(),
       decrypt: server.decrypt,
       pingInterval: setupData.pingInterval,
       yourCookie: serverHelloResult.msgSentToClient.nonce.cookie,
@@ -103,7 +103,7 @@ void main() {
     // the threshold is 252 so we expect 2 drop message with id 2,3 (older are dropped first)
     for (final expectedId in responders.take(2).toList()) {
       final data = NonceAndMessage<DropResponder>.fromBytes(
-        setupData.outMsgs.nextPackage(),
+        setupData.outMsgs.next(),
         setupData.server.decrypt,
       );
       expect(data.nonce.source, equals(Id.initiatorAddress));
@@ -167,7 +167,7 @@ IntermediateState<ClientAuth> initiatorHandShakeTillClientAuth(
 
   // the initiator must send a client-auth
   final clientAuth = checkClientAuth(
-    bytes: outMsgs.nextPackage(),
+    bytes: outMsgs.next(),
     decrypt: server.decrypt,
     pingInterval: setupData.pingInterval,
     yourCookie: serverHelloResult.msgSentToClient.nonce.cookie,

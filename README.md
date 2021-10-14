@@ -4,7 +4,7 @@ To run integration tests we need the server.
 
 Installation:
 ```bash
-python3 -m virtualenv venv
+python3 -m venv venv
 venv/bin/pip install "saltyrtc.server[logging]"
 ```
 

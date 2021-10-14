@@ -25,7 +25,8 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateIdResponder;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, ProtocolError, SendErrorException;
+    show ProtocolError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -103,35 +104,45 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
-  void onProtocolError(ProtocolError e, Id? source) {
+  Phase onProtocolError(ProtocolError e, Id? source) {
     if (source != null && source.isResponder()) {
       dropResponder(source.asResponder(), e.closeCode);
+      return this;
     } else {
-      super.onProtocolError(e, source);
+      return super.onProtocolError(e, source);
     }
   }
 
   @override
-  void handleDisconnected(Disconnected msg) {
+  Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateIdResponder(id.value);
-    responders.remove(id);
-    //TODO potentially inform client
+    final removed = responders.remove(id);
+    final events.PeerKind peerKind;
+    if (removed?.receivedAnyMessage == true) {
+      peerKind = events.PeerKind.unauthenticatedTargetPeer;
+    } else {
+      peerKind = events.PeerKind.unknownPeer;
+    }
+    emitEvent(events.PeerDisconnected(peerKind));
+    return this;
   }
 
   @override
-  void handleSendErrorByDestination(Id destination) {
+  Phase handleSendErrorByDestination(Id destination) {
     final removed = responders.remove(destination);
     if (removed != null) {
-      throw SendErrorException(destination);
+      emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
     } else {
       logger.d('send-error from already removed destination');
     }
+    return this;
   }
 
   @override
-  void handleNewResponder(NewResponder msg) {
+  Phase handleNewResponder(NewResponder msg) {
     addNewResponder(msg.id);
+    return this;
   }
 
   /// Adds a new responder the the container of known responders.
@@ -201,8 +212,6 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       decryptionErrorCloseCode: CloseCode.initiatorCouldNotDecrypt,
     );
 
-    //TODO[trusted responder]: But once we want to "trust" responder we
-    //      need to report it back to the client in some way.
     responder.setPermanentSharedKey(
         InitialClientAuthMethod.createResponderSharedPermanentKey(
             common.crypto, config.permanentKeys, msg.key));
@@ -252,6 +261,13 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     }
 
     final taskBuilder = _selectTaskBuilder(msg.tasks, responder);
+    if (taskBuilder == null) {
+      logger.w('No shared task for ${responder.id} found');
+      sendMessage(Close(CloseCode.noSharedTask), to: responder);
+      emitEvent(events.NoSharedTaskFound());
+      close(CloseCode.goingAway, 'no shared task was found');
+      return this;
+    }
     logger.i('Selected task ${taskBuilder.name}');
 
     /// AuthResponder parsing already validates integrity.
@@ -273,24 +289,20 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    //TODO notify application about potentially tursted authenticator
+    emitEvent(events.ResponderAuthenticated(
+        responder.permanentSharedKey!.remotePublicKey));
+
     return InitiatorTaskPhase(
         common, config, responder.assertAuthenticated(), taskAndData.first);
   }
 
   /// Selects a task if possible, initiates connection termination if not.
-  TaskBuilder _selectTaskBuilder(List<String> tasks, Responder forResponder) {
+  TaskBuilder? _selectTaskBuilder(List<String> tasks, Responder forResponder) {
     TaskBuilder? task;
     for (final ourTask in config.tasks) {
       if (tasks.contains(ourTask.name)) {
         task = ourTask;
       }
-    }
-
-    if (task == null) {
-      logger.w('No shared task for ${forResponder.id} found');
-      sendMessage(Close(CloseCode.noSharedTask), to: forResponder);
-      throw NoSharedTaskError();
     }
 
     return task;

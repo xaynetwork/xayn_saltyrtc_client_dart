@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show ServerHandshakeDone;
+    show IncompatibleServerKey, ServerHandshakeDone;
 import 'package:flutter_saltyrtc_client/client.dart'
     show InitiatorClient, ResponderClient, SaltyRtcClient;
 import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
@@ -58,7 +58,7 @@ void main() async {
         pingInterval: pingInterval,
         sharedAuthToken: crypto.createAuthToken().bytes,
       ),
-      'initiator untrusted responder',
+      'initiator(untrusted responder)',
     );
   }
 
@@ -69,10 +69,10 @@ void main() async {
         crypto.createKeyStore(),
         [],
         pingInterval: pingInterval,
-        expectedServerKey: serverPublicKey,
+        expectedServerKey: expectedServerKey ?? serverPublicKey,
         initiatorTrustedKey: crypto.createKeyStore().publicKey,
       ),
-      'responder with trusted key',
+      'responder(with trusted key)',
     );
   }
 
@@ -84,16 +84,16 @@ void main() async {
         responderWithTrustedKey()
       ]) {
         test('Client ${data.name} server handshake', () async {
-          data.client.run();
+          final events = data.client.run();
 
-          final serverHandshakeDone = await data.client.events.first;
+          final serverHandshakeDone = await events.first;
           expect(serverHandshakeDone, isA<ServerHandshakeDone>());
         });
       }
     },
   );
 
-  group('Client server handhshake wrong server key', () {
+  group('Client server handhshake wrong server key,', () {
     final wrongServerKey = Uint8List.fromList(
       HEX.decode(
           '0000000000000000000000000000000000000000000000000000000000000000'),
@@ -103,10 +103,12 @@ void main() async {
       initiatorWithUntrustedResponder(expectedServerKey: wrongServerKey),
       responderWithTrustedKey(expectedServerKey: wrongServerKey),
     ]) {
-      test('Client ${data.name} server handshake wrong key', () async {
-        data.client.run();
+      test('with a ${data.name} client', () async {
+        final events = data.client.run();
 
-        await data.client.events.isEmpty;
+        expect(() async {
+          await events.first;
+        }, throwsA(isA<IncompatibleServerKey>()));
       });
     }
   });

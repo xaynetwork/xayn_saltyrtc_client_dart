@@ -11,7 +11,8 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, SaltyRtcError, ValidationError;
+    show ProtocolError, ValidationError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
@@ -22,7 +23,7 @@ import 'package:test/expect.dart';
 
 import 'crypto_mock.dart' show crypto, setUpCrypto;
 import 'logging.dart' show setUpLogging;
-import 'network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
+import 'network_mock.dart' show EventQueue, MockSyncWebSocketSink, PackageQueue;
 
 // Setups logging and crypto.
 void setUpTesting() {
@@ -44,18 +45,6 @@ Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   }
 
   return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
-}
-
-Matcher throwsSaltyRtcError({CloseCode closeCode = CloseCode.protocolError}) {
-  bool errorHasExpectedState(Object? error) {
-    if (error is! SaltyRtcError) {
-      return true;
-    } else {
-      return error.closeCode == closeCode;
-    }
-  }
-
-  return throwsA(allOf(isA<SaltyRtcError>(), predicate(errorHasExpectedState)));
 }
 
 class MockKnowledgeAboutTestedPeer {
@@ -100,7 +89,28 @@ class PeerData {
     expect(sendTo.common.address, equals(testedPeer.address));
     final rawMessage = mapEncryptedMessage(_createRawMessage(message,
         encryptWith: encryptWith, mapNonce: mapNonce));
-    return phaseAs(sendTo.handleMessage(rawMessage));
+
+    final nextPhase = sendTo.handleMessage(rawMessage);
+    expect(nextPhase.isClosed, isFalse);
+    return phaseAs<N>(nextPhase);
+  }
+
+  CloseCode? sendAndClose({
+    required Message message,
+    required Phase sendTo,
+    required CryptoBox? encryptWith,
+    // use to e.g. create "bad" nonces
+    Nonce Function(Nonce) mapNonce = noChange,
+    // use to e.g. create "bad" encrypted messages"
+    Uint8List Function(Uint8List) mapEncryptedMessage = noChange,
+  }) {
+    expect(sendTo.common.address, equals(testedPeer.address));
+    final rawMessage = mapEncryptedMessage(_createRawMessage(message,
+        encryptWith: encryptWith, mapNonce: mapNonce));
+
+    final nextPhase = sendTo.handleMessage(rawMessage);
+    expect(nextPhase.isClosed, isTrue);
+    return nextPhase.closeCode;
   }
 
   Uint8List _createRawMessage(
@@ -114,29 +124,6 @@ class PeerData {
     final nonce = mapNonce(
         Nonce(testedPeer.cookiePair.ours, address, testedPeer.address, csn));
     return message.buildPackage(nonce, encryptWith: encryptWith);
-  }
-
-  T expectMessageOfType<T extends Message>(PackageQueue packages,
-      {CryptoBox? decryptWith}) {
-    final package = packages.nextPackage();
-    final nonce = Nonce.fromBytes(package);
-    expect(nonce.source, equals(testedPeer.address));
-    expect(nonce.destination, equals(address));
-    testedPeer.cookiePair.updateAndCheck(nonce.cookie, nonce.source);
-    testedPeer.csPair.updateAndCheck(nonce.combinedSequence, nonce.source);
-    final payload = Uint8List.sublistView(package, Nonce.totalLength);
-    final Message msg;
-    if (decryptWith == null) {
-      msg = readMessage(payload);
-    } else {
-      msg = decryptWith.readEncryptedMessageOfType<T>(
-        msgBytes: payload,
-        nonce: nonce,
-        msgType: T.runtimeType.toString(),
-      );
-    }
-    expect(msg, isA<T>());
-    return msg as T;
   }
 
   void resetTestedClientKnowledge() {
@@ -165,13 +152,58 @@ T phaseAs<T extends Phase>(Phase phase) {
 
 T noChange<T>(T v) => v;
 
-void runTest(Phase phase, List<Phase Function(Phase, PackageQueue)> steps) {
+class Io {
+  PackageQueue sendPackages;
+  EventQueue sendEvents;
+
+  Io(this.sendPackages, this.sendEvents);
+
+  T expectEventOfType<T extends Event>({bool? isClosingError}) {
+    final Event event = sendEvents.next(isError: isClosingError);
+    expect(event, isA<T>());
+    return event as T;
+  }
+
+  T expectMessageOfType<T extends Message>(
+      {required PeerData sendTo, CryptoBox? decryptWith}) {
+    final package = sendPackages.next();
+    final nonce = Nonce.fromBytes(package);
+    expect(nonce.source, equals(sendTo.testedPeer.address));
+    expect(nonce.destination, equals(sendTo.address));
+    sendTo.testedPeer.cookiePair.updateAndCheck(nonce.cookie, nonce.source);
+    sendTo.testedPeer.csPair
+        .updateAndCheck(nonce.combinedSequence, nonce.source);
+    final payload = Uint8List.sublistView(package, Nonce.totalLength);
+    final Message msg;
+    if (decryptWith == null) {
+      msg = readMessage(payload);
+    } else {
+      msg = decryptWith.readEncryptedMessageOfType<T>(
+        msgBytes: payload,
+        nonce: nonce,
+        msgType: T.runtimeType.toString(),
+      );
+    }
+    expect(msg, isA<T>());
+    return msg as T;
+  }
+}
+
+void runTest(Phase initialPhase, List<Phase? Function(Phase, Io)> steps) {
+  Phase? phase = initialPhase;
   final sink = phase.common.sink;
-  var packageQueue = (sink as MockSyncWebSocketSink).queue;
+  final sendPackages = (sink as MockSyncWebSocketSink).queue;
+  final sendEvents = phase.common.events as EventQueue;
+  final io = Io(sendPackages, sendEvents);
   for (final step in steps) {
-    phase = step(phase, packageQueue);
-    expect(packageQueue, isEmpty);
+    if (phase == null) {
+      throw AssertionError('closed before all test did run');
+    }
     expect(phase.common.sink, same(sink));
+    expect(phase.common.events, same(sendEvents));
+    phase = step(phase, io);
+    expect(sendPackages, isEmpty);
+    expect(sendEvents, isEmpty);
   }
 }
 
@@ -213,7 +245,6 @@ class TestTaskBuilder extends TaskBuilder {
   TaskData? getInitialResponderData() => initialResponderData;
 }
 
-//FIXME check older usages of TestTask
 class TestTask extends Task {
   final String name;
 

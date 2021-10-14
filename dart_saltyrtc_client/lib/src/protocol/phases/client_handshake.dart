@@ -43,29 +43,23 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
     );
 
     if (msg is SendError) {
-      handleSendError(msg);
+      return handleSendError(msg);
     } else if (msg is Disconnected) {
-      handleDisconnected(msg);
+      return handleDisconnected(msg);
     } else if (msg is NewResponder) {
-      handleNewResponder(msg);
+      return handleNewResponder(msg);
     } else if (msg is NewInitiator) {
-      handleNewInitiator(msg);
+      return handleNewInitiator(msg);
     } else {
-      handleUnexpectedMessage(msg);
+      return handleUnexpectedMessage(msg);
     }
-
-    return this;
   }
 
-  void handleNewResponder(NewResponder msg) {
-    handleUnexpectedMessage(msg);
-  }
+  Phase handleNewResponder(NewResponder msg) => handleUnexpectedMessage(msg);
 
-  void handleNewInitiator(NewInitiator msg) {
-    handleUnexpectedMessage(msg);
-  }
+  Phase handleNewInitiator(NewInitiator msg) => handleUnexpectedMessage(msg);
 
-  void handleUnexpectedMessage(Message msg) {
+  Phase handleUnexpectedMessage(Message msg) {
     throw ProtocolError('Unexpected message of type ${msg.type}');
   }
 

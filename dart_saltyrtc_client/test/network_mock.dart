@@ -1,12 +1,14 @@
-import 'dart:async' show StreamController;
+import 'dart:async' show EventSink, StreamController;
 import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:async/async.dart' show StreamQueue;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink, WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketStream;
+import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/test.dart';
 
 class MockSyncWebSocketSink implements WebSocketSink {
@@ -16,7 +18,7 @@ class MockSyncWebSocketSink implements WebSocketSink {
 
   @override
   void add(Uint8List package) {
-    queue.sendPackage(package);
+    queue.add(package);
   }
 
   @override
@@ -56,6 +58,9 @@ class MockAsyncWebSocketSink implements WebSocketSink {
 }
 
 class MockWebSocket implements WebSocket {
+  @override
+  int? get closeCode => sink.closeCode;
+
   final controller = StreamController<Uint8List>.broadcast();
 
   /// This is the sink that the client use to send messages to the server.
@@ -69,20 +74,53 @@ class MockWebSocket implements WebSocket {
   Sink<Uint8List> get sinkToClient => controller.sink;
 }
 
-class PackageQueue {
-  final Queue<Uint8List> queue = Queue();
-
-  void sendPackage(Uint8List package) {
-    queue.add(package);
-  }
-
-  Uint8List nextPackage() {
-    expect(queue, isNotEmpty);
-    return queue.removeFirst();
-  }
-
-  bool get isEmpty => queue.isEmpty;
+class QueueSink<T> implements EventSink<T> {
+  final Queue<Pair<T, bool>> _queue = Queue();
+  bool isClosed = false;
 
   @override
-  String toString() => 'PackageQueue($queue)';
+  void add(T data) {
+    if (isClosed) {
+      throw StateError('QueueSink was already closed');
+    }
+    _queue.add(Pair(data, false));
+  }
+
+  @override
+  void addError(Object data, [StackTrace? stackTrace]) {
+    if (isClosed) {
+      throw StateError('QueueSink was already closed');
+    }
+    expect(data, isA<T>());
+    expect(stackTrace, isNotNull);
+    _queue.add(Pair(data as T, true));
+  }
+
+  @override
+  void close() {
+    isClosed = true;
+  }
+
+  T next({bool? isError}) {
+    final pair = _queue.removeFirst();
+    if (isError != null) {
+      expect(pair.second, equals(isError));
+    }
+    return pair.first;
+  }
+
+  bool get isEmpty => _queue.isEmpty;
+
+  @override
+  String toString() => 'QueueSink($_queue)';
+}
+
+class PackageQueue extends QueueSink<Uint8List> {
+  @override
+  String toString() => 'PackageQueue($_queue)';
+}
+
+class EventQueue extends QueueSink<Event> {
+  @override
+  String toString() => 'EventQueue($_queue)';
 }

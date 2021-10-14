@@ -8,8 +8,8 @@ export 'src/client.dart'
 export 'src/crypto/crypto.dart'
     show Crypto, KeyStore, SharedKeyStore, AuthToken, DecryptionFailedException;
 export 'src/logger.dart' show initLogger;
-export 'src/protocol/events.dart'
-    show Event, ServerHandshakeDone, ResponderAuthenticated;
+// export all of events (all events, their variants, etc.)
+export 'src/protocol/events.dart';
 export 'src/protocol/network.dart'
     show WebSocket, WebSocketSink, WebSocketStream;
 export 'src/protocol/task.dart' show Task, TaskBuilder;

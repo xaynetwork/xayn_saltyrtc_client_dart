@@ -1,4 +1,3 @@
-import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
@@ -22,9 +21,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show NoSharedTaskError, SendErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
@@ -34,15 +31,9 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
+import '../../network_mock.dart' show EventQueue, MockSyncWebSocketSink;
 import '../../utils.dart'
-    show
-        PeerData,
-        TestTaskBuilder,
-        phaseAs,
-        runTest,
-        setUpTesting,
-        throwsSaltyRtcError;
+    show Io, PeerData, TestTaskBuilder, phaseAs, runTest, setUpTesting;
 
 void main() {
   setUpTesting();
@@ -109,7 +100,7 @@ void main() {
         mkSendBadTokenTest(responder: setup.responders[0], server: server),
         mkSendTokenTest(setup.responders[1]),
         mkSendBadTokenTest(responder: setup.responders[2], server: server),
-        (phaseUntyped, packages) {
+        (phaseUntyped, io) {
           final phase = phaseAs<InitiatorClientHandshakePhase>(phaseUntyped);
           expect(phase.responders.length, equals(1));
           expect(phase.responders, contains(setup.responders[1].address));
@@ -128,7 +119,7 @@ void main() {
         mkSendBadKeyTest(responder: setup.responders[0], server: server),
         mkSendKeyTest(setup.responders[1]),
         mkSendBadKeyTest(responder: setup.responders[2], server: server),
-        (phaseUntyped, packages) {
+        (phaseUntyped, io) {
           final phase = phaseAs<InitiatorClientHandshakePhase>(phaseUntyped);
           expect(phase.responders.length, equals(1));
           expect(phase.responders, contains(setup.responders[1].address));
@@ -143,7 +134,7 @@ void main() {
         mkSendTokenTest(setup.responders.first),
         mkSendBadKeyTest(
             responder: setup.responders.first, server: setup.server),
-        (phaseUntyped, packages) {
+        (phaseUntyped, io) {
           final phase = phaseAs<InitiatorClientHandshakePhase>(phaseUntyped);
           expect(phase.responders, isEmpty);
           return phase;
@@ -158,7 +149,7 @@ void main() {
       runTest(setup.initialPhase, [
         mkSendTokenTest(responder),
         mkSendKeyTest(responder),
-        (initialPhase, packages) {
+        (initialPhase, io) {
           final phase =
               responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
                   message: Close(CloseCode.goingAway),
@@ -168,7 +159,8 @@ void main() {
                       remotePublicKey:
                           responder.testedPeer.theirSessionKey!.publicKey));
 
-          final dropMsg = server.expectMessageOfType<DropResponder>(packages,
+          final dropMsg = io.expectMessageOfType<DropResponder>(
+              sendTo: server,
               decryptWith: crypto.createSharedKeyStore(
                   ownKeyStore: server.testedPeer.ourSessionKey!,
                   remotePublicKey:
@@ -202,7 +194,7 @@ void main() {
       runTest(setup.initialPhase, [
         mkSendTokenTest(responder),
         mkSendKeyTest(responder),
-        (initialPhase, packages) {
+        (initialPhase, io) {
           final tasksData = {
             for (final task in responderTasks)
               task.name: task.getInitialResponderData()
@@ -221,8 +213,8 @@ void main() {
 
           expect(phase.responders[responder.address], isNull);
 
-          final dropMsg = server.expectMessageOfType<DropResponder>(
-            packages,
+          final dropMsg = io.expectMessageOfType<DropResponder>(
+            sendTo: server,
             decryptWith: crypto.createSharedKeyStore(
                 ownKeyStore: server.testedPeer.theirSessionKey!,
                 remotePublicKey: server.testedPeer.ourSessionKey!.publicKey),
@@ -237,25 +229,18 @@ void main() {
     group('send-error checks', () {
       test('send-error source is checked', () {
         final setup = _Setup.create(
-          responderIds: [12, 21],
           usePresetTrust: true,
         );
         final server = setup.server;
         final responder0 = setup.responders[0];
-        final responder1 = setup.responders[1];
 
         runTest(setup.initialPhase, [
           mkSendKeyTest(responder0),
           mkSendBadSendErrorTest(
-              server: server,
-              source: Id.peerId(32),
-              destination: responder0.address),
-          // We don't know if we dropped a responder, so
-          // we can't know that we didn't send a message ;)
-          mkSendBadSendErrorTest(
-              server: server,
-              source: Id.peerId(32),
-              destination: responder1.address),
+            server: server,
+            source: Id.peerId(32),
+            destination: responder0.address,
+          ),
         ]);
       });
 
@@ -267,9 +252,10 @@ void main() {
         runTest(setup.initialPhase, [
           mkSendKeyTest(responder0),
           mkSendBadSendErrorTest(
-              server: server,
-              source: Id.initiatorAddress,
-              destination: Id.initiatorAddress),
+            server: server,
+            source: Id.initiatorAddress,
+            destination: Id.initiatorAddress,
+          ),
         ]);
       });
     });
@@ -332,14 +318,15 @@ void main() {
   test('handleDisconnected', () {
     final setup = _Setup.create(
       responderIds: [20, 30, 40],
-      goodResponderAt: 2,
+      goodResponderAt: 1,
     );
     final server = setup.server;
     runTest(setup.initialPhase, [
-      mkSendTokenTest(setup.responders[2]),
+      mkSendTokenTest(setup.responders[1]),
       mkSendDisconnectedTest(
         server: server,
         disconnect: 30,
+        knownPeer: true,
       ),
       mkSendDisconnectedTest(
         server: server,
@@ -368,7 +355,7 @@ class _Setup {
   final PeerData server;
   final List<PeerData> responders;
   final InitiatorClientHandshakePhase initialPhase;
-  final StreamController<Event> events;
+  final EventQueue events;
 
   _Setup._(
     this.server,
@@ -400,7 +387,7 @@ class _Setup {
       testedPeerId: Id.initiatorAddress,
     );
 
-    final events = StreamController<Event>.broadcast();
+    final events = EventQueue();
     final common = Common(
       crypto,
       MockSyncWebSocketSink(),
@@ -448,9 +435,9 @@ class _Setup {
   }
 }
 
-Phase Function(Phase, PackageQueue) mkSendTokenTest(PeerData mockPeer) {
+Phase? Function(Phase, Io) mkSendTokenTest(PeerData mockPeer) {
   assert(mockPeer.authToken != null);
-  return (initialPhase, packages) {
+  return (initialPhase, io) {
     final phase = mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
       message: Token(mockPeer.permanentKey.publicKey),
       sendTo: initialPhase,
@@ -470,10 +457,10 @@ Phase Function(Phase, PackageQueue) mkSendTokenTest(PeerData mockPeer) {
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendBadTokenTest(
+Phase? Function(Phase, Io) mkSendBadTokenTest(
     {required PeerData responder, required PeerData server}) {
   assert(responder.authToken != null);
-  return (initialPhase, packages) {
+  return (initialPhase, io) {
     var phase = phaseAs<InitiatorClientHandshakePhase>(initialPhase);
     phase = responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
       message: Token(responder.permanentKey.publicKey),
@@ -481,7 +468,8 @@ Phase Function(Phase, PackageQueue) mkSendBadTokenTest(
       encryptWith: responder.authToken,
     );
     expect(phase.responders.containsKey(responder.address), isFalse);
-    final dropMsg = server.expectMessageOfType<DropResponder>(packages,
+    final dropMsg = io.expectMessageOfType<DropResponder>(
+        sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
             ownKeyStore: server.testedPeer.theirSessionKey!,
             remotePublicKey: server.testedPeer.ourSessionKey!.publicKey));
@@ -491,46 +479,48 @@ Phase Function(Phase, PackageQueue) mkSendBadTokenTest(
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendKeyTest(PeerData mockPeer) {
-  return (initialPhase, packages) {
-    mockPeer.testedPeer.ourSessionKey = crypto.createKeyStore();
-    final sendPubKey = mockPeer.testedPeer.ourSessionKey!.publicKey;
-    final phase = mockPeer.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+Phase? Function(Phase, Io) mkSendKeyTest(PeerData responder) {
+  return (initialPhase, io) {
+    responder.testedPeer.ourSessionKey = crypto.createKeyStore();
+    final sendPubKey = responder.testedPeer.ourSessionKey!.publicKey;
+    final phase =
+        responder.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
       message: Key(sendPubKey),
       sendTo: initialPhase,
       encryptWith: crypto.createSharedKeyStore(
-          ownKeyStore: mockPeer.permanentKey,
-          remotePublicKey: mockPeer.testedPeer.permanentKey!.publicKey),
+          ownKeyStore: responder.permanentKey,
+          remotePublicKey: responder.testedPeer.permanentKey!.publicKey),
     );
-    final responderData = phase.responders[mockPeer.address]!;
-    final responder = responderData.responder;
+    final responderData = phase.responders[responder.address]!;
+    final responderFromPhase = responderData.responder;
     expect(responderData.state, equals(State.waitForAuth));
-    expect(responder.id, equals(mockPeer.address));
-    expect(responder.hasPermanentSharedKey, isTrue);
+    expect(responderFromPhase.id, equals(responder.address));
+    expect(responderFromPhase.hasPermanentSharedKey, isTrue);
     final expectedSharedPermanentKey = crypto.createSharedKeyStore(
         ownKeyStore: phase.config.permanentKeys,
-        remotePublicKey: mockPeer.permanentKey.publicKey);
-    expect(responder.permanentSharedKey, same(expectedSharedPermanentKey));
-    expect(responder.hasSessionSharedKey, isTrue);
+        remotePublicKey: responder.permanentKey.publicKey);
+    expect(responderFromPhase.permanentSharedKey,
+        same(expectedSharedPermanentKey));
+    expect(responderFromPhase.hasSessionSharedKey, isTrue);
     final decryptWith = crypto.createSharedKeyStore(
-        ownKeyStore: mockPeer.permanentKey,
-        remotePublicKey: mockPeer.testedPeer.permanentKey!.publicKey);
-    final msg =
-        mockPeer.expectMessageOfType<Key>(packages, decryptWith: decryptWith);
+        ownKeyStore: responder.permanentKey,
+        remotePublicKey: responder.testedPeer.permanentKey!.publicKey);
+    final msg = io.expectMessageOfType<Key>(
+        sendTo: responder, decryptWith: decryptWith);
     final initiatorSessionKey = crypto.getKeyStoreForKey(msg.key)!;
     final expectedSharedSessionKey = crypto.createSharedKeyStore(
       ownKeyStore: initiatorSessionKey,
       remotePublicKey: sendPubKey,
     );
-    expect(responder.sessionSharedKey, same(expectedSharedSessionKey));
-    mockPeer.testedPeer.theirSessionKey = initiatorSessionKey;
+    expect(responderFromPhase.sessionSharedKey, same(expectedSharedSessionKey));
+    responder.testedPeer.theirSessionKey = initiatorSessionKey;
     return phase;
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendBadKeyTest(
+Phase? Function(Phase, Io) mkSendBadKeyTest(
     {required PeerData responder, required PeerData server}) {
-  return (initialPhase, packages) {
+  return (initialPhase, io) {
     responder.testedPeer.ourSessionKey = crypto.createKeyStore();
     final sendPubKey = responder.testedPeer.ourSessionKey!.publicKey;
     final phase =
@@ -546,7 +536,8 @@ Phase Function(Phase, PackageQueue) mkSendBadKeyTest(
               return msg;
             });
     expect(phase.responders.containsKey(responder.address), isFalse);
-    final dropMsg = server.expectMessageOfType<DropResponder>(packages,
+    final dropMsg = io.expectMessageOfType<DropResponder>(
+        sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
             ownKeyStore: server.testedPeer.theirSessionKey!,
             remotePublicKey: server.testedPeer.ourSessionKey!.publicKey));
@@ -556,57 +547,55 @@ Phase Function(Phase, PackageQueue) mkSendBadKeyTest(
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendAuthNoSharedTaskTest({
+Phase? Function(Phase, Io) mkSendAuthNoSharedTaskTest({
   required PeerData responder,
   required List<TestTaskBuilder> supportedTasks,
   required List<TestTaskBuilder> responderTasks,
 }) {
-  return (phase, packages) {
-    try {
-      final tasksData = {
-        for (final task in responderTasks)
-          task.name: task.getInitialResponderData()
-      };
-      phase = responder.sendAndTransitToPhase<TaskPhase>(
-        message: AuthResponder(responder.testedPeer.cookiePair.theirs!,
-            tasksData.keys.toList(), tasksData),
-        sendTo: phase,
-        encryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: responder.testedPeer.ourSessionKey!,
-            remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey),
-      );
-    } on NoSharedTaskError {
-      // ignore: empty_catches
-    }
+  return (phase, io) {
+    final tasksData = {
+      for (final task in responderTasks)
+        task.name: task.getInitialResponderData()
+    };
+
+    final closing = responder.sendAndClose(
+      message: AuthResponder(responder.testedPeer.cookiePair.theirs!,
+          tasksData.keys.toList(), tasksData),
+      sendTo: phase,
+      encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: responder.testedPeer.ourSessionKey!,
+          remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey),
+    );
+
+    expect(closing, equals(CloseCode.goingAway));
+
+    io.expectEventOfType<events.NoSharedTaskFound>();
 
     for (final task in supportedTasks) {
       expect(task.lastInitiatorTask, isNull);
       expect(task.lastResponderTask, isNull);
     }
 
-    final msg = responder.expectMessageOfType<Close>(packages,
+    final msg = io.expectMessageOfType<Close>(
+        sendTo: responder,
         decryptWith: crypto.createSharedKeyStore(
             ownKeyStore: responder.testedPeer.ourSessionKey!,
             remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey));
 
     expect(msg.reason, CloseCode.noSharedTask);
 
-    //TODO make sure sink is closed correctly
-    // final channel = (phase.common.sink as MockWebSocket);
-    // expect(channel.closeCode, equals(CloseCode.goingAway));
-
-    return phase;
+    return null;
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendAuthTest({
+Phase? Function(Phase, Io) mkSendAuthTest({
   required PeerData responder,
   required PeerData server,
   required List<TestTaskBuilder> supportedTasks,
   required List<TestTaskBuilder> responderTasks,
   required String matchingTask,
 }) {
-  return (initialPhase, packages) {
+  return (initialPhase, io) {
     final tasksData = {
       for (final task in responderTasks)
         task.name: task.getInitialResponderData()
@@ -634,7 +623,8 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
       }
     }
 
-    final authMsg = responder.expectMessageOfType<AuthInitiator>(packages,
+    final authMsg = io.expectMessageOfType<AuthInitiator>(
+        sendTo: responder,
         decryptWith: crypto.createSharedKeyStore(
           ownKeyStore: responder.testedPeer.ourSessionKey!,
           remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey,
@@ -651,7 +641,8 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
               .second
         }));
 
-    var dropMsg = server.expectMessageOfType<DropResponder>(packages,
+    var dropMsg = io.expectMessageOfType<DropResponder>(
+        sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.ourSessionKey!,
           remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
@@ -659,7 +650,8 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
     expect(dropMsg.id, equals(Id.responderId(3)));
     expect(dropMsg.reason, equals(CloseCode.droppedByInitiator));
 
-    dropMsg = server.expectMessageOfType<DropResponder>(packages,
+    dropMsg = io.expectMessageOfType<DropResponder>(
+        sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.ourSessionKey!,
           remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
@@ -667,16 +659,19 @@ Phase Function(Phase, PackageQueue) mkSendAuthTest({
     expect(dropMsg.id, equals(Id.responderId(4)));
     expect(dropMsg.reason, equals(CloseCode.droppedByInitiator));
 
+    final authEvent = io.expectEventOfType<events.ResponderAuthenticated>();
+    expect(authEvent.permanentKey, equals(responder.permanentKey.publicKey));
+
     return phase;
   };
 }
 
-Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
+Phase? Function(Phase, Io) mkDropOldOnNewReceiverTest({
   required int newResponderId,
   required int droppedResponderId,
   required PeerData server,
 }) {
-  return (initialPhase, packages) {
+  return (initialPhase, io) {
     final nrOfResponders =
         phaseAs<InitiatorClientHandshakePhase>(initialPhase).responders.length;
     expect(nrOfResponders, equals(252));
@@ -690,7 +685,8 @@ Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
           remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
         ));
 
-    final dropMsg = server.expectMessageOfType<DropResponder>(packages,
+    final dropMsg = io.expectMessageOfType<DropResponder>(
+        sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.ourSessionKey!,
           remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
@@ -704,12 +700,13 @@ Phase Function(Phase, PackageQueue) mkDropOldOnNewReceiverTest({
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendDisconnectedTest({
+Phase? Function(Phase, Io) mkSendDisconnectedTest({
   required int disconnect,
   required PeerData server,
+  bool knownPeer = false,
 }) {
   final disonnectId = Id.responderId(disconnect);
-  return (initialPhaseUntyped, packages) {
+  return (initialPhaseUntyped, io) {
     final initialPhase =
         phaseAs<InitiatorClientHandshakePhase>(initialPhaseUntyped);
     final otherResponders = initialPhase.responders.keys
@@ -723,63 +720,70 @@ Phase Function(Phase, PackageQueue) mkSendDisconnectedTest({
         remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
       ),
     );
-
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[disconnect], isNull);
+    final disconnectedMsg = io.expectEventOfType<events.PeerDisconnected>();
+    if (knownPeer) {
+      expect(
+          disconnectedMsg.peerKind, events.PeerKind.unauthenticatedTargetPeer);
+    } else {
+      expect(disconnectedMsg.peerKind, events.PeerKind.unknownPeer);
+    }
     return phase;
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendErrorTest({
+Phase? Function(Phase, Io) mkSendErrorTest({
   required PeerData server,
   required PeerData responder,
 }) {
-  return (initialPhaseUntyped, packages) {
-    final phase = phaseAs<InitiatorClientHandshakePhase>(initialPhaseUntyped);
+  return (initialPhaseUntyped, io) {
+    var phase = phaseAs<InitiatorClientHandshakePhase>(initialPhaseUntyped);
     final otherResponders =
         phase.responders.keys.where((id) => id != responder.address).toList();
-    expect(() {
-      server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
-        message: SendError(Uint8List.fromList([
-          phase.common.address.value,
-          responder.address.value,
-          0,
-          0,
-          1,
-          2,
-          3,
-          4
-        ])),
-        sendTo: initialPhaseUntyped,
-        encryptWith: crypto.createSharedKeyStore(
-          ownKeyStore: server.testedPeer.ourSessionKey!,
-          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
-        ),
-      );
-    }, throwsA(isA<SendErrorException>()));
 
+    phase = server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
+      message: SendError(Uint8List.fromList([
+        phase.common.address.value,
+        responder.address.value,
+        0,
+        0,
+        1,
+        2,
+        3,
+        4
+      ])),
+      sendTo: initialPhaseUntyped,
+      encryptWith: crypto.createSharedKeyStore(
+        ownKeyStore: server.testedPeer.ourSessionKey!,
+        remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+      ),
+    );
     expect(phase.responders.keys, equals(otherResponders));
     expect(phase.responders[responder.address], isNull);
+
+    final errEvent = io.expectEventOfType<events.SendingMessageToPeerFailed>();
+    expect(errEvent.wasAuthenticated, isFalse);
     return phase;
   };
 }
 
-Phase Function(Phase, PackageQueue) mkSendBadSendErrorTest({
+Phase? Function(Phase, Io) mkSendBadSendErrorTest({
   required PeerData server,
   required Id source,
   required Id destination,
 }) {
-  return (phase, packages) {
-    expect(() {
-      server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
-        message: SendError(Uint8List.fromList(
-            [source.value, destination.value, 0, 0, 1, 2, 3, 4])),
-        sendTo: phase,
-        encryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: server.testedPeer.ourSessionKey!,
-            remotePublicKey: server.testedPeer.theirSessionKey!.publicKey),
-      );
-    }, throwsSaltyRtcError(closeCode: CloseCode.protocolError));
-    return phase;
+  return (initialPhase, io) {
+    final closing = server.sendAndClose(
+      message: SendError(Uint8List.fromList(
+          [source.value, destination.value, 0, 0, 1, 2, 3, 4])),
+      sendTo: initialPhase,
+      encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey),
+    );
+
+    expect(closing, equals(CloseCode.protocolError));
+    return null;
   };
 }
