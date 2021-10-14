@@ -4,7 +4,7 @@ import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, InternalError, eventFromWSCloseCode;
+    show Event, HandoverToTask, InternalError, eventFromWSCloseCode;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
@@ -83,6 +83,8 @@ class Closer {
         wsCloseCode = closeCode?.toInt();
       }
       _webSocket.sink.close(wsCloseCode);
+    } else {
+      logger.w('client closed more then once, ignoring: $closeCode, $reason');
     }
   }
 
@@ -93,10 +95,12 @@ class Closer {
   void handover() {
     _doHandover = true;
     close(CloseCode.handover, 'handover');
+    _events.emitEvent(HandoverToTask());
   }
 
   /// Notify the closer that the connection is closed.
   void notifyConnectionClosed() {
+    _isClosing = true;
     _closedCompleter.complete();
   }
 

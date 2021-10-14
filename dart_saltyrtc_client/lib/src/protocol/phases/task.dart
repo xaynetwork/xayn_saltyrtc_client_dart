@@ -209,7 +209,6 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     });
     common.closer.handover();
     _link.disconnect();
-    emitEvent(events.HandoverToTask());
   }
 
   @protected
