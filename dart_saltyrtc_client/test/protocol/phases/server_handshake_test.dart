@@ -1,6 +1,7 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/closer.dart';
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -26,7 +27,8 @@ import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
+import '../../network_mock.dart'
+    show MockSyncWebSocket, MockSyncWebSocketSink, PackageQueue;
 import '../../server_mock.dart'
     show Decrypt, IntermediateState, MockServer, NonceAndMessage;
 import '../../utils.dart' show NoOpCloser, setUpTesting;
@@ -202,14 +204,14 @@ class SetupData {
   ]) {
     final clientPermanentKeys = crypto.createKeyStore();
     final server = MockServer();
-    final ws = MockSyncWebSocketSink();
-    final outMsgs = ws.queue;
+    final ws = MockSyncWebSocket();
+    final outMsgs = ws.sink.queue;
     final events = StreamController<Event>.broadcast();
     final common = InitialCommon(
       crypto,
-      ws,
+      ws.sink,
       events.sink,
-      NoOpCloser(),
+      Closer(ws, events.sink),
     );
     final Config config;
     if (role == Role.initiator) {

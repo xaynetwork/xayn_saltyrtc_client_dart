@@ -9,7 +9,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
 import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
+    show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show TasksData;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
@@ -117,7 +117,7 @@ void main() {
             remotePublicKey: initiator.testedPeer.permanentKey!.publicKey,
           ),
         );
-        expect(closeCode, equals(CloseCode.goingAway));
+        expect(closeCode, equals(CloseCode.goingAway.toInt()));
         final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
         expect(event.peerKind, events.PeerKind.unauthenticated);
         return null;
@@ -196,7 +196,7 @@ void main() {
               remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
         );
 
-        expect(closeCode, equals(CloseCode.goingAway));
+        expect(closeCode, equals(CloseCode.goingAway.toInt()));
         final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
         expect(event.peerKind, events.PeerKind.unauthenticated);
         return null;
@@ -225,7 +225,7 @@ class _Setup {
     List<TaskBuilder>? tasks,
   }) {
     final responderId = Id.responderId(32);
-    final sAndC = createAfterServerHandshakeState(crypto, responderId);
+    final sAndC = createAfterServerHandshakeState(responderId);
     final server = sAndC.first;
     final common = sAndC.second;
     final responderPermanentKey = server.testedPeer.permanentKey!;

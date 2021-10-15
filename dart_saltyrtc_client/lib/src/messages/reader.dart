@@ -56,6 +56,7 @@ extension MessageDecryptionExt on CryptoBox {
     required Uint8List msgBytes,
     required Nonce nonce,
     CloseCode? decryptionErrorCloseCode,
+    List<String> taskTypes = const [],
   }) {
     final Uint8List decryptedBytes;
     try {
@@ -68,7 +69,7 @@ extension MessageDecryptionExt on CryptoBox {
       }
     }
 
-    final msg = readMessage(decryptedBytes);
+    final msg = readMessage(decryptedBytes, taskTypes: taskTypes);
     return msg;
   }
 

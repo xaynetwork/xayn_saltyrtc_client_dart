@@ -3,7 +3,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, Crypto, CryptoBox, KeyStore;
+    show AuthToken, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
@@ -28,7 +28,8 @@ import 'package:test/expect.dart';
 
 import 'crypto_mock.dart' show crypto, setUpCrypto;
 import 'logging.dart' show setUpLogging;
-import 'network_mock.dart' show EventQueue, MockSyncWebSocketSink, PackageQueue;
+import 'network_mock.dart'
+    show EventQueue, MockSyncWebSocket, MockSyncWebSocketSink, PackageQueue;
 
 // Setups logging and crypto.
 void setUpTesting() {
@@ -97,11 +98,11 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect((nextPhase.common.closer as NoOpCloser).closeWasCalled, isFalse);
+    expect(nextPhase.common.closer.isClosing, isFalse);
     return phaseAs<N>(nextPhase);
   }
 
-  CloseCode? sendAndClose({
+  int? sendAndClose({
     required Message message,
     required Phase sendTo,
     required CryptoBox? encryptWith,
@@ -115,9 +116,10 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    final noOpCloser = nextPhase.common.closer as NoOpCloser;
-    expect(noOpCloser.closeWasCalled, isTrue);
-    return noOpCloser.closeCode;
+    expect(nextPhase.common.closer.isClosing, isTrue);
+    final sink = nextPhase.common.sink as MockSyncWebSocketSink;
+    expect(sink.isClosed, isTrue);
+    return sink.closeCode;
   }
 
   Uint8List _createRawMessage(
@@ -140,7 +142,6 @@ class PeerData {
 }
 
 Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
-  Crypto crypto,
   ClientId clientAddress,
 ) {
   final server = PeerData(
@@ -150,8 +151,9 @@ Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
   server.testedPeer.ourSessionKey = crypto.createKeyStore();
   server.testedPeer.permanentKey = crypto.createKeyStore();
 
-  final common = InitialCommon(
-      crypto, MockSyncWebSocketSink(), EventQueue(), NoOpCloser());
+  final ws = MockSyncWebSocket();
+  final events = EventQueue();
+  final common = InitialCommon(crypto, ws.sink, events, Closer(ws, events));
   common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
     ownKeyStore: server.testedPeer.permanentKey!,
     remotePublicKey: server.permanentKey.publicKey,
@@ -227,7 +229,9 @@ class Io {
   }
 }
 
-void runTest(Phase initialPhase, List<Phase? Function(Phase, Io)> steps) {
+typedef TestStep = Phase? Function(Phase, Io);
+
+void runTest(Phase initialPhase, List<TestStep> steps) {
   Phase? phase = initialPhase;
   final sink = phase.common.sink;
   final sendPackages = (sink as MockSyncWebSocketSink).queue;
@@ -318,46 +322,6 @@ class TestTask extends Task {
 
   @override
   void handleHandover(EventSink<Event> events) {
-    throw UnimplementedError();
-  }
-}
-
-/// Doesn't do any of the thinks the closer is supposed to do.
-class NoOpCloser implements Closer {
-  final Completer<void> _onClose = Completer();
-  final Completer<void> _onClosed = Completer();
-  bool notifyStreamClosedWasCalled = false;
-  bool closeWasCalled = false;
-  CloseCode? closeCode;
-  String? closeReason;
-  bool wasCanceled = false;
-
-  @override
-  void close(CloseCode? closeCode, String? reason, {bool wasCanceled = false}) {
-    closeWasCalled = true;
-    this.closeCode = closeCode;
-    closeReason = reason;
-    this.wasCanceled = wasCanceled;
-    _onClose.complete();
-  }
-
-  @override
-  bool get isClosing => closeWasCalled;
-
-  @override
-  void setCurrentPhase(Phase current) {}
-
-  @override
-  Future<void> get onClosed => _onClosed.future;
-
-  @override
-  void notifyConnectionClosed() {
-    notifyStreamClosedWasCalled = true;
-    _onClosed.complete();
-  }
-
-  @override
-  void handover() {
     throw UnimplementedError();
   }
 }

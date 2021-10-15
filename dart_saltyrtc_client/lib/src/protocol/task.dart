@@ -66,18 +66,7 @@ abstract class Task {
   void handleHandover(EventSink<Event> events);
 }
 
-enum CancelReason { disconnected, sendError }
-
-/// A event as received by the Task.
-///
-/// This can contain a event emitted by the SaltyRtc client, and/or a
-/// message received from the authenticated peer **and/or a cancel task flat**.
-class TaskRecvEvent {
-  final Event? event;
-  final TaskMessage? msg;
-
-  TaskRecvEvent(this.event, this.msg);
-}
+enum CancelReason { disconnected, sendError, peerOverwrite }
 
 /// Links the Task and the SaltyRtc client together.
 ///

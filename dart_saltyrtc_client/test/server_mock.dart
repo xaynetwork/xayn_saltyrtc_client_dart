@@ -123,7 +123,7 @@ class MockServer {
     final messageBytes = buildMessage(nam, encrypt: encrypt);
 
     final nextPhase = phase.handleMessage(messageBytes);
-    expect((nextPhase.common.closer as NoOpCloser).closeWasCalled, isFalse);
+    expect(nextPhase.common.closer.isClosing, isFalse);
     if (expectSame) {
       expect(nextPhase, equals(phase));
     }

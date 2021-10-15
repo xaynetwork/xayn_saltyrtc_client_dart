@@ -19,66 +19,11 @@ import 'package:test/test.dart';
 
 import 'crypto_mock.dart' show crypto;
 import 'network_mock.dart' show EventQueue, MockSyncWebSocket, PackageQueue;
-import 'utils.dart' show Io;
-
-class TestPhase implements Phase {
-  final MockSyncWebSocket webSocket = MockSyncWebSocket();
-  late Io io = Io(PackageQueue(), EventQueue());
-  @override
-  late InitialCommon common = InitialCommon(
-      crypto, webSocket.sink, io.sendEvents, Closer(webSocket, io.sendEvents));
-
-  final int? Function(CloseCode?, TestPhase) _doCloseFn;
-
-  TestPhase({int? Function(CloseCode?, TestPhase)? doCloseFn})
-      : _doCloseFn = doCloseFn ?? ((closeCode, phase) => closeCode?.toInt()) {
-    common.closer.setCurrentPhase(this);
-  }
-
-  @override
-  Uint8List buildPacket(Message msg, Peer receiver,
-          {bool encrypt = true, AuthToken? authToken}) =>
-      throw UnimplementedError();
-
-  @override
-  Config get config => throw UnimplementedError();
-
-  @override
-  int? doClose(CloseCode? closeCode) => _doCloseFn(closeCode, this);
-
-  @override
-  void emitEvent(Event event, [StackTrace? st]) => throw UnimplementedError();
-
-  @override
-  Peer? getPeerWithId(Id id) => throw UnimplementedError();
-
-  @override
-  Phase handleMessage(Uint8List bytes) => throw UnimplementedError();
-
-  @override
-  Phase onProtocolError(ProtocolErrorException e, Id? source) =>
-      throw UnimplementedError();
-
-  @override
-  Role get role => throw UnimplementedError();
-
-  @override
-  Phase run(Peer source, Uint8List msgBytes, Nonce nonce) =>
-      throw UnimplementedError();
-
-  @override
-  void send(Uint8List bytes) => throw UnimplementedError();
-
-  @override
-  void sendMessage(Message msg,
-          {required Peer to, bool encrypt = true, AuthToken? authToken}) =>
-      throw UnimplementedError();
-
-  @override
-  void validateNonceDestination(Nonce nonce) => throw UnimplementedError();
-}
+import 'utils.dart' show Io, setUpTesting;
 
 void main() {
+  setUpTesting();
+
   group('.close', () {
     test('calls phase.doClose and uses the returned close code', () {
       void theTest(CloseCode? closeCode, int? closeCode2) {
@@ -195,6 +140,8 @@ void main() {
       expect(() {
         phase.common.closer.notifyConnectionClosed();
       }, throwsA(isA<StateError>()));
+      await closed;
+      expect(counter, equals(1));
     });
   });
 
@@ -219,4 +166,61 @@ void main() {
     expect(phase.webSocket.isClosed, isTrue);
     expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
   });
+}
+
+class TestPhase implements Phase {
+  final MockSyncWebSocket webSocket = MockSyncWebSocket();
+  late Io io = Io(PackageQueue(), EventQueue());
+  @override
+  late InitialCommon common = InitialCommon(
+      crypto, webSocket.sink, io.sendEvents, Closer(webSocket, io.sendEvents));
+
+  final int? Function(CloseCode?, TestPhase) _doCloseFn;
+
+  TestPhase({int? Function(CloseCode?, TestPhase)? doCloseFn})
+      : _doCloseFn = doCloseFn ?? ((closeCode, phase) => closeCode?.toInt()) {
+    common.closer.setCurrentPhase(this);
+  }
+
+  @override
+  Uint8List buildPacket(Message msg, Peer receiver,
+          {bool encrypt = true, AuthToken? authToken}) =>
+      throw UnimplementedError();
+
+  @override
+  Config get config => throw UnimplementedError();
+
+  @override
+  int? doClose(CloseCode? closeCode) => _doCloseFn(closeCode, this);
+
+  @override
+  void emitEvent(Event event, [StackTrace? st]) => throw UnimplementedError();
+
+  @override
+  Peer? getPeerWithId(Id id) => throw UnimplementedError();
+
+  @override
+  Phase handleMessage(Uint8List bytes) => throw UnimplementedError();
+
+  @override
+  Phase onProtocolError(ProtocolErrorException e, Id? source) =>
+      throw UnimplementedError();
+
+  @override
+  Role get role => throw UnimplementedError();
+
+  @override
+  Phase run(Peer source, Uint8List msgBytes, Nonce nonce) =>
+      throw UnimplementedError();
+
+  @override
+  void send(Uint8List bytes) => throw UnimplementedError();
+
+  @override
+  void sendMessage(Message msg,
+          {required Peer to, bool encrypt = true, AuthToken? authToken}) =>
+      throw UnimplementedError();
+
+  @override
+  void validateNonceDestination(Nonce nonce) => throw UnimplementedError();
 }
