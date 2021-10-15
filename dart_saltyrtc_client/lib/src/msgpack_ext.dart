@@ -1,6 +1,6 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
-import 'package:messagepack/messagepack.dart';
+import 'package:messagepack/messagepack.dart' show Packer;
 
 extension PackAnyExt on Packer {
   /// Tries to pack an arbitrary object.

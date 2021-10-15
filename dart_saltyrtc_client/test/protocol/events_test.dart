@@ -77,10 +77,6 @@ void main() {
         eventFromWSCloseCode(3002),
         equals(UnexpectedStatus.unchecked(
             UnexpectedStatusVariant.internalError, 3002)));
-    expect(
-        eventFromWSCloseCode(3003),
-        equals(
-            UnexpectedStatus.unchecked(UnexpectedStatusVariant.other, 3003)));
     expect(eventFromWSCloseCode(3004),
         equals(LikelyTemporaryFailure(TempFailureVariant.droppedByInitiator)));
     expect(eventFromWSCloseCode(3005), equals(InitiatorCouldNotDecrypt()));

@@ -9,7 +9,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateTasksDataType,
         validateTasksData,
         validateListType;
-import 'package:dart_saltyrtc_client/src/msgpack_ext.dart';
+import 'package:dart_saltyrtc_client/src/msgpack_ext.dart' show PackAnyExt;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 

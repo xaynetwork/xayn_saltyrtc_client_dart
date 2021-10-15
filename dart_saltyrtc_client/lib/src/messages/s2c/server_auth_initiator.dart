@@ -1,6 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/id.dart';
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, signedKeysLength;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'

@@ -1,7 +1,7 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/msgpack_ext.dart';
-import 'package:messagepack/messagepack.dart';
+import 'package:dart_saltyrtc_client/src/msgpack_ext.dart' show PackAnyExt;
+import 'package:messagepack/messagepack.dart' show Packer, Unpacker;
 import 'package:test/test.dart';
 
 Object? roundTrip(Object? value) {
