@@ -154,7 +154,7 @@ void main() {
       };
       return CloseCode.goingAway.toInt();
     });
-    phase.common.closer.enableHandover();
+    phase.common.closer.enableHandover = true;
     phase.common.closer.close(CloseCode.handover, 'handover');
     phase.common.closer.notifyConnectionClosed();
     expect(phase.webSocket.isClosed, isTrue);

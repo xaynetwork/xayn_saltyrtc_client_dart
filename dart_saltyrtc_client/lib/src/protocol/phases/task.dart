@@ -83,7 +83,7 @@ class _Link extends SaltyRtcTaskLink {
   void requestHandover() {
     final phase = _phase;
     if (phase != null) {
-      phase.common.closer.enableHandover();
+      phase.common.closer.enableHandover = true;
       phase.common.closer.close(CloseCode.handover, 'handover');
     } else {
       throw StateError('already disconnected from phase');
@@ -118,8 +118,22 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     try {
       func();
     } catch (e, s) {
-      emitEvent(events.InternalError(e), s);
+      _link.disconnect();
+      // Do not use `this.emitEvent` here as we do not want to send this event to
+      // the task as this might case further errors or even infinite recursion.
+      common.events.emitEvent(events.InternalError(e), s);
       common.closer.close(CloseCode.internalError, e.toString());
+      // We did fall over at some point during the handover,
+      // make sure events are closed anyway.
+      if (common.closer.enableHandover) {
+        common.events.close();
+      }
+      try {
+        task.handleCancel(CancelReason.handlerDidThrow);
+      } catch (e, s) {
+        logger.e(
+            'handleCancel(CancelReason.handleDidThrow) did also throw: $e\n$s');
+      }
     }
   }
 
@@ -131,10 +145,13 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     if (event is events.HandoverToTask) {
       taskCallGuard(() {
         task.handleHandover(common.events);
+        // only emit handover event to client if the handler did not throw
+        common.events.emitEvent(event, st);
       });
       _link.disconnect();
+    } else {
+      common.events.emitEvent(event, st);
     }
-    common.events.emitEvent(event, st);
   }
 
   @protected
@@ -196,7 +213,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   Phase handleClose(Close msg) {
     final closeCode = msg.reason;
     if (closeCode == CloseCode.handover) {
-      common.closer.enableHandover();
+      common.closer.enableHandover = true;
     } else {
       final event = events.eventFromWSCloseCode(closeCode.toInt());
       if (event != null) {

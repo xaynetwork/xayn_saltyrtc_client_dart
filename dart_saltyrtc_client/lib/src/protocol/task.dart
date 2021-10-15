@@ -51,22 +51,35 @@ abstract class Task {
 
   /// Called once the input `events` stream ended.
   ///
-  /// This is guaranteed to be called when the original
+  /// This is guaranteed to be called after the original
   /// WebSocket is closed, even if it's on context of a
   /// handover. (But [handleHandover] will be called first.)
   void handleWSClosed();
 
   /// Called when the task needs to stop, but the connection is not closed.
+  ///
+  /// In case of [CancelReason.handlerDidThrow] the task is already
+  /// disconnected from the client and can no longer emit events or send
+  /// messages over the client.
   void handleCancel(CancelReason reason);
 
-  /// Called when a handover is started.
+  /// Called after the handover is started.
   ///
   /// From now on the task is responsible for closing events when it's done or
   /// failed.
+  ///
+  /// This is called after the original WebSocket is already closed. (But
+  /// before [handleWSClosed] is called.)
+  ///
+  /// As important parts of the handover are already it *cannot* stop the
+  /// handover in any way. If this panics it will be handled like any other
+  /// handler panicking, but as the connection is already closed we can't
+  /// inform the peer of it. Through `handleCancel` is still called, so the
+  /// task can still "clean up" any additional connections it opened.
   void handleHandover(EventSink<Event> events);
 }
 
-enum CancelReason { disconnected, sendError, peerOverwrite }
+enum CancelReason { disconnected, sendError, peerOverwrite, handlerDidThrow }
 
 /// Links the Task and the SaltyRtc client together.
 ///

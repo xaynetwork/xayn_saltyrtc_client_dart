@@ -27,7 +27,10 @@ class Closer {
   bool _isClosing = false;
   bool _closedByUs = false;
   Phase? _currentPhase;
-  bool _doHandover = false;
+
+  /// If when the WS stream closes this will not close the events interface,
+  /// instead it will emit a [HandoverToTask] event.
+  bool enableHandover = false;
 
   final WebSocket _webSocket;
 
@@ -72,12 +75,6 @@ class Closer {
     }
   }
 
-  /// If when the WS stream closes this will not close the events interface,
-  /// instead it will emit a [HandoverToTask] event.
-  void enableHandover() {
-    _doHandover = true;
-  }
-
   /// Notify the closer that the connection is closed.
   void notifyConnectionClosed() {
     _isClosing = true;
@@ -87,7 +84,7 @@ class Closer {
         _currentPhase!.emitEvent(event);
       }
     }
-    if (_doHandover) {
+    if (enableHandover) {
       _currentPhase!.emitEvent(HandoverToTask());
     } else {
       _currentPhase!.common.events.close();

@@ -19,7 +19,13 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, HandoverToTask, PeerKind;
+    show
+        AdditionalResponderEvent,
+        Event,
+        HandoverToTask,
+        InternalError,
+        PeerDisconnected,
+        PeerKind;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Initiator, Peer, Responder;
@@ -136,15 +142,31 @@ void main() {
       });
 
       group('task exceptions lead to internal error in', () {
+        // Currently we can't test this without introducing a mechanism where
+        // creating a phase doesn't automatically starts it.
         test('start', () {}, skip: true);
-        test('handleMessage', () {}, skip: true);
-        test('handleEvent', () {}, skip: true);
 
-        test('handleCancel', () {}, skip: true);
+        test('handleMessage', () {
+          final setup = mkSetup();
+          setup.runTest([setup.mkPanicOnHandleMessageTest()]);
+        });
+        test('handleEvent', () {
+          final setup = mkSetup();
+          setup.runTest([setup.mkPanicOnHandleEventTest()]);
+        });
 
-        test('handleWsClosed ', () {}, skip: true);
+        test('handleCancel', () {
+          final setup = mkSetup();
+          setup.runTest([setup.mkPanicOnHandleCancelTest()]);
+        });
 
-        test('handleHandover', () {}, skip: true);
+        // Currently we can't test this without making tests async
+        test('handleWsClosed', () {}, skip: true);
+
+        test('handleHandover', () {
+          final setup = mkSetup();
+          setup.runTest([setup.mkPanicOnHandleHandoverTest()]);
+        });
       });
     });
   }
@@ -158,6 +180,12 @@ class TestTask implements Task {
   int handleHandoverCallCount = 0;
   EventSink<Event>? handoverGivenEventSink;
   CancelReason? handleCancelReason;
+  bool panicOnStart = false;
+  bool panicOnHandleEvent = false;
+  bool panicOnHandleMessage = false;
+  bool panicOnWsClosed = false;
+  bool panicOnHandleCancel = false;
+  bool panicOnHandleHandover = false;
   final Queue<TaskMessage> messages = Queue();
   final Queue<Event> events = Queue();
 
@@ -165,33 +193,51 @@ class TestTask implements Task {
   void handleCancel(CancelReason reason) {
     handleCancelCallCount += 1;
     handleCancelReason = reason;
+    if (panicOnHandleCancel) {
+      throw Exception('planned panic on handleCancel');
+    }
   }
 
   @override
   void handleEvent(Event event) {
     events.add(event);
+    if (panicOnHandleEvent) {
+      throw Exception('planned panic on handleEvent');
+    }
   }
 
   @override
   void handleHandover(EventSink<Event> events) {
     handleHandoverCallCount += 1;
     handoverGivenEventSink = events;
+    if (panicOnHandleHandover) {
+      throw Exception('planned panic on handleHandover');
+    }
   }
 
   @override
   void handleMessage(TaskMessage msg) {
     messages.add(msg);
+    if (panicOnHandleMessage) {
+      throw Exception('planned panic on handleMessage');
+    }
   }
 
   @override
   void handleWSClosed() {
     handleWSClosedCallCount += 1;
+    if (panicOnWsClosed) {
+      throw Exception('planned panic on handleWSClosed');
+    }
   }
 
   @override
   void start(SaltyRtcTaskLink link) {
     this.link = link;
     startCallCount += 1;
+    if (panicOnStart) {
+      throw Exception('planned panic on start');
+    }
   }
 
   @override
@@ -382,6 +428,119 @@ abstract class Setup {
       io.expectEventOfType<HandoverToTask>();
       expect(task.events.removeLast(), equals(HandoverToTask()));
       return initialPhase;
+    };
+  }
+
+  TestStep mkPanicOnHandleMessageTest() {
+    return (phase, io) {
+      task.panicOnHandleMessage = true;
+      final closeCode = peer.sendAndClose(
+        message: TaskMessage('taskMsg1', {}),
+        sendTo: phase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      final event = io.expectEventOfType<InternalError>();
+      expect(event.error.toString(), contains('handleMessage'));
+      expect(task.events, isEmpty);
+      expect(closeCode, equals(CloseCode.goingAway.toInt()));
+      final closeMsg = io.expectMessageOfType<Close>(
+        sendTo: peer,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      expect(closeMsg.reason, equals(CloseCode.internalError));
+      expect(task.messages.removeLast(), TaskMessage('taskMsg1', {}));
+      return phase;
+    };
+  }
+
+  TestStep mkPanicOnHandleEventTest() {
+    return (phase, io) {
+      task.panicOnHandleEvent = true;
+      final eventToEmit =
+          AdditionalResponderEvent(PeerDisconnected(PeerKind.unauthenticated));
+      phase.emitEvent(eventToEmit);
+      final event = io.expectEventOfType<InternalError>();
+      expect(event.error.toString(), contains('handleEvent'));
+      expect(task.messages, isEmpty);
+      expect((phase.common.sink as MockSyncWebSocketSink).closeCode,
+          equals(CloseCode.goingAway.toInt()));
+      final closeMsg = io.expectMessageOfType<Close>(
+        sendTo: peer,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      expect(closeMsg.reason, equals(CloseCode.internalError));
+      expect(task.events.removeLast(), eventToEmit);
+      io.expectEventOfType<AdditionalResponderEvent>();
+      return phase;
+    };
+  }
+
+  TestStep mkPanicOnHandleCancelTest() {
+    return (phase, io) {
+      task.panicOnHandleCancel = true;
+      final closeCode = server.sendAndClose(
+        message: Disconnected(peer.address.asClient()),
+        sendTo: phase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
+        ),
+      );
+      final disconnectedEvent = io.expectEventOfType<PeerDisconnected>();
+      expect(disconnectedEvent.peerKind, PeerKind.authenticated);
+      final errorEvent = io.expectEventOfType<InternalError>();
+      expect(errorEvent.error.toString(), contains('handleCancel'));
+      expect(closeCode, equals(CloseCode.goingAway.toInt()));
+      expect(task.messages, isEmpty);
+      expect(
+          task.events.removeLast(), PeerDisconnected(PeerKind.authenticated));
+      expect(task.events, isEmpty);
+      final closeMsg = io.expectMessageOfType<Close>(
+        sendTo: peer,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      expect(closeMsg.reason, equals(CloseCode.internalError));
+      return phase;
+    };
+  }
+
+  TestStep mkPanicOnHandleHandoverTest() {
+    return (phase, io) {
+      task.panicOnHandleHandover = true;
+      task.link.requestHandover();
+      final closeMsg = io.expectMessageOfType<Close>(
+        sendTo: peer,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      expect(closeMsg.reason, equals(CloseCode.handover));
+
+      phase.common.closer.notifyConnectionClosed();
+
+      final errorEvent = io.expectEventOfType<InternalError>();
+      expect(errorEvent.error.toString(), contains('handleHandover'));
+      expect((phase.common.sink as MockSyncWebSocketSink).closeCode,
+          equals(CloseCode.goingAway.toInt()));
+      expect(task.messages, isEmpty);
+      // the task received this event before handleHandover was called
+      expect(task.events.removeLast(), equals(HandoverToTask()));
+      expect(task.events, isEmpty);
+
+      return phase;
     };
   }
 
