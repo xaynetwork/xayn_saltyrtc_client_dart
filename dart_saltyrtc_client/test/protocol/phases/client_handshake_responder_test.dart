@@ -22,20 +22,21 @@ import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show AfterServerHandshakeCommon, InitialCommon, Phase, ResponderConfig;
+    show Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show ResponderTaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart' show EventQueue, MockSyncWebSocketSink;
+import '../../network_mock.dart' show EventQueue;
 import '../../utils.dart'
     show
         Io,
         PeerData,
         TestTask,
         TestTaskBuilder,
+        createAfterServerHandshakeState,
         phaseAs,
         runTest,
         setUpTesting;
@@ -220,7 +221,10 @@ class _Setup {
     List<TaskBuilder>? tasks,
   }) {
     final responderId = Id.responderId(32);
-    final responderPermanentKeys = crypto.createKeyStore();
+    final sAndC = createAfterServerHandshakeState(crypto, responderId);
+    final server = sAndC.first;
+    final common = sAndC.second;
+    final responderPermanentKey = server.testedPeer.permanentKey!;
 
     AuthToken? authToken;
     if (!usePresetTrust) {
@@ -233,34 +237,11 @@ class _Setup {
       authToken: badInitialAuth ? crypto.createAuthToken() : authToken,
     );
     if (usePresetTrust) {
-      initiator.testedPeer.permanentKey = responderPermanentKeys;
+      initiator.testedPeer.permanentKey = responderPermanentKey;
     }
-    final server = PeerData(
-      address: Id.serverAddress,
-      testedPeerId: responderId,
-    );
-    server.testedPeer.ourSessionKey = crypto.createKeyStore();
-    server.testedPeer.permanentKey = responderPermanentKeys;
-
-    final events = EventQueue();
-    final common = InitialCommon(crypto, MockSyncWebSocketSink(), events);
-    common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
-      ownKeyStore: responderPermanentKeys,
-      remotePublicKey: server.permanentKey.publicKey,
-    ));
-    common.server.setSessionSharedKey(crypto.createSharedKeyStore(
-      ownKeyStore: responderPermanentKeys,
-      remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
-    ));
-    common.server.cookiePair
-        .updateAndCheck(server.testedPeer.cookiePair.ours, Id.serverAddress);
-    common.server.csPair
-        .updateAndCheck(server.testedPeer.csPair.ours, Id.serverAddress);
-
-    common.address = responderId;
 
     final config = ResponderConfig(
-      permanentKeys: responderPermanentKeys,
+      permanentKeys: responderPermanentKey,
       tasks: tasks ?? [],
       initiatorPermanentPublicKey: initiator.permanentKey.publicKey,
       authToken: authToken,
@@ -268,7 +249,7 @@ class _Setup {
     );
 
     final phase = ResponderClientHandshakePhase(
-      AfterServerHandshakeCommon(common),
+      common,
       config,
       initiatorConnected: initiatorIsKnown,
     );
@@ -277,7 +258,7 @@ class _Setup {
       server: server,
       initiator: initiator,
       initialPhase: phase,
-      events: events,
+      events: common.events as EventQueue,
     );
   }
 }

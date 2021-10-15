@@ -25,15 +25,22 @@ import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase, State;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show AfterServerHandshakeCommon, InitialCommon, InitiatorConfig, Phase;
+    show InitiatorConfig, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show TaskPhase;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart' show EventQueue, MockSyncWebSocketSink;
+import '../../network_mock.dart' show EventQueue;
 import '../../utils.dart'
-    show Io, PeerData, TestTaskBuilder, phaseAs, runTest, setUpTesting;
+    show
+        Io,
+        PeerData,
+        TestTaskBuilder,
+        createAfterServerHandshakeState,
+        phaseAs,
+        runTest,
+        setUpTesting;
 
 void main() {
   setUpTesting();
@@ -163,8 +170,7 @@ void main() {
               sendTo: server,
               decryptWith: crypto.createSharedKeyStore(
                   ownKeyStore: server.testedPeer.ourSessionKey!,
-                  remotePublicKey:
-                      server.testedPeer.theirSessionKey!.publicKey));
+                  remotePublicKey: server.testedPeer.permanentKey!.publicKey));
 
           expect(dropMsg.id, equals(responder.address));
           return phase;
@@ -216,7 +222,7 @@ void main() {
           final dropMsg = io.expectMessageOfType<DropResponder>(
             sendTo: server,
             decryptWith: crypto.createSharedKeyStore(
-                ownKeyStore: server.testedPeer.theirSessionKey!,
+                ownKeyStore: server.testedPeer.permanentKey!,
                 remotePublicKey: server.testedPeer.ourSessionKey!.publicKey),
           );
 
@@ -382,34 +388,10 @@ class _Setup {
             authToken: address == goodResponder ? goodAuthToken : badAuthToken))
         .toList(growable: false);
 
-    final server = PeerData(
-      address: Id.serverAddress,
-      testedPeerId: Id.initiatorAddress,
-    );
-
-    final events = EventQueue();
-    final common = InitialCommon(
-      crypto,
-      MockSyncWebSocketSink(),
-      events,
-    );
-
-    server.testedPeer.ourSessionKey = crypto.createKeyStore();
-    server.testedPeer.theirSessionKey = crypto.createKeyStore();
-    final initiatorPermanentKeys = crypto.createKeyStore();
-    common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
-      ownKeyStore: initiatorPermanentKeys,
-      remotePublicKey: server.permanentKey.publicKey,
-    ));
-    common.server.setSessionSharedKey(crypto.createSharedKeyStore(
-      ownKeyStore: server.testedPeer.theirSessionKey!,
-      remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
-    ));
-    common.server.cookiePair
-        .updateAndCheck(server.testedPeer.cookiePair.ours, Id.serverAddress);
-    common.server.csPair
-        .updateAndCheck(server.testedPeer.csPair.ours, Id.serverAddress);
-    common.address = Id.initiatorAddress;
+    final sAndC = createAfterServerHandshakeState(crypto, Id.initiatorAddress);
+    final server = sAndC.first;
+    final common = sAndC.second;
+    final initiatorPermanentKeys = server.testedPeer.permanentKey!;
 
     final authMethod = InitialClientAuthMethod.fromEither(
       authToken: usePresetTrust ? null : goodAuthToken,
@@ -427,10 +409,7 @@ class _Setup {
       expectedServerPublicKey: server.permanentKey.publicKey,
     );
 
-    final phase = InitiatorClientHandshakePhase(
-      AfterServerHandshakeCommon(common),
-      config,
-    );
+    final phase = InitiatorClientHandshakePhase(common, config);
 
     server.testedPeer.permanentKey = phase.config.permanentKey;
     for (final responder in responders) {
@@ -439,7 +418,7 @@ class _Setup {
       phase.addNewResponder(responder.address.asResponder());
     }
 
-    return _Setup._(server, responders, phase, events);
+    return _Setup._(server, responders, phase, common.events as EventQueue);
   }
 }
 
@@ -479,7 +458,7 @@ Phase? Function(Phase, Io) mkSendBadTokenTest(
     final dropMsg = io.expectMessageOfType<DropResponder>(
         sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: server.testedPeer.theirSessionKey!,
+            ownKeyStore: server.testedPeer.permanentKey!,
             remotePublicKey: server.testedPeer.ourSessionKey!.publicKey));
     expect(dropMsg.id, equals(responder.address));
     expect(dropMsg.reason, equals(CloseCode.initiatorCouldNotDecrypt));
@@ -547,7 +526,7 @@ Phase? Function(Phase, Io) mkSendBadKeyTest(
     final dropMsg = io.expectMessageOfType<DropResponder>(
         sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
-            ownKeyStore: server.testedPeer.theirSessionKey!,
+            ownKeyStore: server.testedPeer.permanentKey!,
             remotePublicKey: server.testedPeer.ourSessionKey!.publicKey));
     expect(dropMsg.id, equals(responder.address));
     expect(dropMsg.reason, equals(CloseCode.initiatorCouldNotDecrypt));
@@ -653,7 +632,7 @@ Phase? Function(Phase, Io) mkSendAuthTest({
         sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.ourSessionKey!,
-          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
         ));
     expect(dropMsg.id, equals(Id.responderId(3)));
     expect(dropMsg.reason, equals(CloseCode.droppedByInitiator));
@@ -662,7 +641,7 @@ Phase? Function(Phase, Io) mkSendAuthTest({
         sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.ourSessionKey!,
-          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
         ));
     expect(dropMsg.id, equals(Id.responderId(4)));
     expect(dropMsg.reason, equals(CloseCode.droppedByInitiator));
@@ -689,7 +668,7 @@ Phase? Function(Phase, Io) mkDropOldOnNewReceiverTest({
         message: NewResponder(newId),
         sendTo: initialPhase,
         encryptWith: crypto.createSharedKeyStore(
-          ownKeyStore: server.testedPeer.theirSessionKey!,
+          ownKeyStore: server.testedPeer.permanentKey!,
           remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
         ));
 
@@ -697,7 +676,7 @@ Phase? Function(Phase, Io) mkDropOldOnNewReceiverTest({
         sendTo: server,
         decryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.ourSessionKey!,
-          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
         ));
 
     expect(dropMsg.id, equals(droppedId));
@@ -725,7 +704,7 @@ Phase? Function(Phase, Io) mkSendDisconnectedTest({
       sendTo: initialPhase,
       encryptWith: crypto.createSharedKeyStore(
         ownKeyStore: server.testedPeer.ourSessionKey!,
-        remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+        remotePublicKey: server.testedPeer.permanentKey!.publicKey,
       ),
     );
     expect(phase.responders.keys, equals(otherResponders));
@@ -764,7 +743,7 @@ Phase? Function(Phase, Io) mkSendErrorTest({
       sendTo: initialPhaseUntyped,
       encryptWith: crypto.createSharedKeyStore(
         ownKeyStore: server.testedPeer.ourSessionKey!,
-        remotePublicKey: server.testedPeer.theirSessionKey!.publicKey,
+        remotePublicKey: server.testedPeer.permanentKey!.publicKey,
       ),
     );
     expect(phase.responders.keys, equals(otherResponders));
@@ -788,7 +767,7 @@ Phase? Function(Phase, Io) mkSendBadSendErrorTest({
       sendTo: initialPhase,
       encryptWith: crypto.createSharedKeyStore(
           ownKeyStore: server.testedPeer.ourSessionKey!,
-          remotePublicKey: server.testedPeer.theirSessionKey!.publicKey),
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey),
     );
 
     expect(closing, equals(CloseCode.protocolError));
