@@ -35,26 +35,6 @@ void main() {
       expect(sharedKeyStore1, same(sharedKeyStore2));
     });
 
-    test('using KeyStore.decrypt', () {
-      final message = crypto.randomBytes(10);
-      final nonce = Nonce.fromRandom(
-          source: id1, destination: id2, randomBytes: crypto.randomBytes);
-
-      final key1 = crypto.createKeyStore();
-      final key2 = crypto.createKeyStore();
-      final sharedKeyOf1 = crypto.createSharedKeyStore(
-          ownKeyStore: key1, remotePublicKey: key2.publicKey);
-
-      final encrypted =
-          sharedKeyOf1.encrypt(message: message, nonce: nonce.toBytes());
-      final decrypted = key2.decrypt(
-          remotePublicKey: key1.publicKey,
-          ciphertext: encrypted,
-          nonce: nonce.toBytes());
-
-      expect(decrypted, equals(message));
-    });
-
     test('using a second shared key', () {
       final message = crypto.randomBytes(10);
       final nonce = Nonce.fromRandom(

@@ -35,7 +35,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_respon
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakePhase,
-        CommonAfterServerHandshake,
+        AfterServerHandshakeCommon,
         InitiatorConfig,
         InitiatorIdentity,
         InitiatorSendDropResponder,
@@ -48,12 +48,11 @@ import 'package:meta/meta.dart' show protected;
 
 abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
-  final Client pairedClient;
+  Client get pairedClient;
 
   final Task task;
 
-  TaskPhase(CommonAfterServerHandshake common, this.pairedClient, this.task)
-      : super(common);
+  TaskPhase(AfterServerHandshakeCommon common, this.task) : super(common);
 
   @protected
   Phase handleServerMessage(Message msg);
@@ -125,15 +124,14 @@ class InitiatorTaskPhase extends TaskPhase
   @override
   final InitiatorConfig config;
   @override
-  // ignore: overridden_fields
   final AuthenticatedResponder pairedClient;
 
   InitiatorTaskPhase(
-    CommonAfterServerHandshake common,
+    AfterServerHandshakeCommon common,
     this.config,
     this.pairedClient,
     Task task,
-  ) : super(common, pairedClient, task);
+  ) : super(common, task);
 
   @override
   Phase handleDisconnected(Disconnected msg) {
@@ -175,15 +173,14 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   @override
   final ResponderConfig config;
   @override
-  // ignore: overridden_fields
   final AuthenticatedInitiator pairedClient;
 
   ResponderTaskPhase(
-    CommonAfterServerHandshake common,
+    AfterServerHandshakeCommon common,
     this.config,
     this.pairedClient,
     Task task,
-  ) : super(common, pairedClient, task);
+  ) : super(common, task);
 
   @override
   Phase handleDisconnected(Disconnected msg) {

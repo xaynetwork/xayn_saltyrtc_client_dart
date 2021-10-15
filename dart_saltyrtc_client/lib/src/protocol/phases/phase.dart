@@ -36,14 +36,14 @@ import 'package:meta/meta.dart' show immutable, protected;
 /// 3. Handover to the selected task
 
 /// Data that is common to all phases and roles.
-class Common {
+abstract class Common {
   final Crypto crypto;
 
   /// Server instance.
-  Server server;
+  Server get server;
 
-  /// Every client start with address set to unknown.
-  Id address = Id.unknownAddress;
+  /// Address of this client.
+  Id get address;
 
   /// Sink to send messages to the server or close the connection.
   /// This should not be used directly, use `send` instead.
@@ -56,29 +56,67 @@ class Common {
     this.crypto,
     this.sink,
     this.events,
-  ) : server = Server.fromRandom(crypto);
+  );
+}
+
+/// Data that is common during the initial setup/server handshake.
+class InitialCommon extends Common {
+  /// Server instance.
+  @override
+  Server server;
+
+  /// Every client start with address set to unknown.
+  @override
+  Id address = Id.unknownAddress;
+
+  InitialCommon(
+    Crypto crypto,
+    WebSocketSink sink,
+    EventSink<Event> events,
+  )   : server = Server.fromRandom(crypto),
+        super(crypto, sink, events);
+}
+
+/// Data that is common to all phases and roles after the server handshake.
+class AfterServerHandshakeCommon extends Common {
+  /// After the server handshake the address is an IdClient and it cannot be
+  /// modified anymore.
+  @override
+  final IdClient address;
+
+  /// After the server handshake the session key cannot be nullable anymore.
+  @override
+  final AuthenticatedServer server;
+
+  AfterServerHandshakeCommon(
+    InitialCommon common,
+  )   : address = common.address.asClient(),
+        server = common.server.asAuthenticated(),
+        super(
+          common.crypto,
+          common.sink,
+          common.events,
+        );
 }
 
 /// Config values shared by all people.
 @immutable
 abstract class Config {
-  /// The permanent keys of this client.
-  final KeyStore permanentKeys;
+  /// The permanent key of this client.
+  final KeyStore permanentKey;
   final int pingInterval;
 
   /// The expected server permanent public key.
-  final Uint8List? expectedServerPublicKey;
+  final Uint8List expectedServerPublicKey;
   final List<TaskBuilder> tasks;
 
   Config({
-    required this.permanentKeys,
+    required this.permanentKey,
     required this.tasks,
     required this.expectedServerPublicKey,
     required this.pingInterval,
   }) {
-    if (expectedServerPublicKey != null) {
-      Crypto.checkPublicKey(expectedServerPublicKey!);
-    }
+    Crypto.checkPublicKey(expectedServerPublicKey);
   }
 }
 
@@ -92,10 +130,10 @@ class InitiatorConfig extends Config {
     required this.authMethod,
     required KeyStore permanentKeys,
     required List<TaskBuilder> tasks,
-    Uint8List? expectedServerPublicKey,
+    required Uint8List expectedServerPublicKey,
     int pingInterval = 0,
   }) : super(
-          permanentKeys: permanentKeys,
+          permanentKey: permanentKeys,
           tasks: tasks,
           expectedServerPublicKey: expectedServerPublicKey,
           pingInterval: pingInterval,
@@ -120,11 +158,11 @@ class ResponderConfig extends Config {
     required KeyStore permanentKeys,
     required List<TaskBuilder> tasks,
     required this.initiatorPermanentPublicKey,
+    required Uint8List expectedServerPublicKey,
     this.authToken,
-    Uint8List? expectedServerPublicKey,
     int pingInterval = 0,
   }) : super(
-          permanentKeys: permanentKeys,
+          permanentKey: permanentKeys,
           tasks: tasks,
           expectedServerPublicKey: expectedServerPublicKey,
           pingInterval: pingInterval,
@@ -150,14 +188,14 @@ abstract class Phase {
   }
 
   /// Data common to all phases and role.
-  final Common common;
+  Common get common;
 
   /// Client Config.
   ///
   /// Use `config` provided by `InitiatorIdentity`/`ResponderIdentity` instead.
   Config get config;
 
-  Phase(this.common);
+  Phase();
 
   Role get role;
 
@@ -307,10 +345,9 @@ mixin InitiatorSendDropResponder on Phase {
 /// Mostly control messages from the server.
 abstract class AfterServerHandshakePhase extends Phase {
   @override
-  // ignore: overridden_fields
-  final CommonAfterServerHandshake common;
+  final AfterServerHandshakeCommon common;
 
-  AfterServerHandshakePhase(this.common) : super(common);
+  AfterServerHandshakePhase(this.common) : super();
 
   Phase handleSendError(SendError msg) {
     if (msg.source != common.address) {
@@ -330,28 +367,4 @@ abstract class AfterServerHandshakePhase extends Phase {
   Phase handleSendErrorByDestination(Id destination);
 
   Phase handleDisconnected(Disconnected msg);
-}
-
-/// Data that is common to all phases and roles after the server handshake.
-class CommonAfterServerHandshake extends Common {
-  /// After the server handshake the address is an IdClient and it cannot be
-  /// modified anymore.
-  @override
-  // ignore: overridden_fields
-  final IdClient address;
-
-  /// After the server handshake the session key cannot be nullable anymore.
-  @override
-  // ignore: overridden_fields
-  final AuthenticatedServer server;
-
-  CommonAfterServerHandshake(
-    Common common,
-  )   : address = common.address.asClient(),
-        server = common.server.asAuthenticated(),
-        super(
-          common.crypto,
-          common.sink,
-          common.events,
-        );
 }

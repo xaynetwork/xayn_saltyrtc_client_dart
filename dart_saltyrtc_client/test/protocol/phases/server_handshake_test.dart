@@ -18,7 +18,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initia
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Common, Config, ResponderConfig, InitiatorConfig, Phase;
+    show Config, InitialCommon, InitiatorConfig, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show ResponderServerHandshakePhase, InitiatorServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
@@ -196,7 +196,7 @@ class SetupData {
 
   factory SetupData.init(
     Role role,
-    Phase Function(Common, Config) initPhase, [
+    Phase Function(InitialCommon, Config) initPhase, [
     int pingInterval = 13,
     List<TaskBuilder> tasks = const [],
   ]) {
@@ -205,7 +205,7 @@ class SetupData {
     final ws = MockSyncWebSocketSink();
     final outMsgs = ws.queue;
     final events = StreamController<Event>.broadcast();
-    final common = Common(
+    final common = InitialCommon(
       crypto,
       ws,
       events.sink,
@@ -244,7 +244,7 @@ class SetupData {
 }
 
 InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
-  Common common,
+  InitialCommon common,
   Config config,
 ) {
   return InitiatorServerHandshakePhase(
@@ -254,7 +254,7 @@ InitiatorServerHandshakePhase makeInitiatorServerHandshakePhase(
 }
 
 ResponderServerHandshakePhase makeResponderServerHandshakePhase(
-  Common common,
+  InitialCommon common,
   Config config,
 ) {
   return ResponderServerHandshakePhase(common, config as ResponderConfig);

@@ -36,12 +36,6 @@ abstract class KeyStore {
     Crypto.checkPublicKey(publicKey);
     Crypto.checkPrivateKey(privateKey);
   }
-
-  Uint8List decrypt({
-    required Uint8List remotePublicKey,
-    required Uint8List ciphertext,
-    required Uint8List nonce,
-  });
 }
 
 /// A `SharedKeyStore` holds the resulting precalculated shared key of

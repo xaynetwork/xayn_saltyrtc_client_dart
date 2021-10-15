@@ -16,3 +16,15 @@ export SALTYRTC_SERVER_PERMANENT_KEY="0919b266ce1855419e4066fc076b39855e728768e3
 SALTYRTC_SAFETY_OFF='yes-and-i-know-what-im-doing' ./venv/bin/saltyrtc-server -v 5 serve -p 8765 -k $SALTYRTC_SERVER_PERMANENT_KEY
 ```
 
+### SaltyRtc spec compliance/completion
+
+This implementation is currently focused on our use case and
+does not implement certain parts of the spec we
+
+#### Known missing parts
+
+- The `application` message is currently not supported.
+- Using a server without a knowing it's public key is
+  currently not supported.
+
+Please open a PR if you are interested in implementing this.

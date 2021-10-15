@@ -10,7 +10,7 @@ import 'package:dart_saltyrtc_client/src/protocol/events.dart'
     show Event, InternalError, eventFromWSCloseCode;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Common, InitiatorConfig, Phase, ResponderConfig;
+    show InitialCommon, InitiatorConfig, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
@@ -115,7 +115,7 @@ class InitiatorClient extends Client {
     }
 
     final eventsCtrl = StreamController<Event>.broadcast();
-    final common = Common(
+    final common = InitialCommon(
       crypto,
       ws.sink,
       eventsCtrl.sink,
@@ -154,7 +154,7 @@ class ResponderClient extends Client {
     Uint8List? sharedAuthToken,
   }) {
     final events = StreamController<Event>.broadcast();
-    final common = Common(
+    final common = InitialCommon(
       crypto,
       ws.sink,
       events.sink,
