@@ -109,6 +109,12 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     });
   }
 
+  @override
+  void enableHandover() {
+    //ignore: invalid_use_of_protected_member
+    common.enableHandover = true;
+  }
+
   void taskCallGuard(void Function() func) {
     try {
       func();

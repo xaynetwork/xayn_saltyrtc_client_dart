@@ -191,9 +191,8 @@ abstract class Phase {
 
   /// If when the WS stream closes this will not close the events interface,
   /// instead it will emit a [HandoverToTask] event.
-  void enableHandover() {
-    common.enableHandover = true;
-  }
+  void enableHandover() =>
+      throw StateError('handover is only possible in the task phase');
 
   /// Data common to all phases and role.
   Common get common;
@@ -266,12 +265,8 @@ abstract class Phase {
   /// task.
   ///
   /// This can be freely called from any async task.
-  void emitEvent(Event event, [StackTrace? st]) {
-    if (event is HandoverToTask) {
-      throw StateError('handover is only possible in task phase');
-    }
-    common.events.emitEvent(event, st);
-  }
+  void emitEvent(Event event, [StackTrace? st]) =>
+      common.events.emitEvent(event, st);
 
   /// Short form for `send(buildPacket(msg, to))`
   void sendMessage(
@@ -356,6 +351,8 @@ abstract class Phase {
     }
   }
 
+  bool _notifyConnectionClosedAlreadyCalled = false;
+
   /// Notify the closer that the connection is closed.
   ///
   /// The MUST be called by whoever listens on the `WebSocket` once
@@ -363,6 +360,10 @@ abstract class Phase {
   ///
   /// This can be freely called from any async task.
   void notifyConnectionClosed() {
+    if (_notifyConnectionClosedAlreadyCalled) {
+      throw StateError('notifyConnectionClosed was already called');
+    }
+    _notifyConnectionClosedAlreadyCalled = true;
     common.isClosing = true;
     if (!common.closedByUs) {
       final event = eventFromWSCloseCode(common.webSocket.closeCode);
