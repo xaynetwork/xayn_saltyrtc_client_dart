@@ -49,11 +49,14 @@ abstract class Task {
   /// Called when a `Event` was emitted.
   void handleEvent(Event event);
 
-  /// Called once the input `events` stream ended.
+  /// Called after the WebSocket was closed.
   ///
   /// This is guaranteed to be called after the original
   /// WebSocket is closed, even if it's on context of a
   /// handover. (But [handleHandover] will be called first.)
+  ///
+  /// Outside of a handover the events stream will already be closed
+  /// at this point in time.
   void handleWSClosed();
 
   /// Called when the task needs to stop, but the connection is not closed.

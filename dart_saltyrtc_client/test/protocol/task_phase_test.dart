@@ -156,8 +156,10 @@ void main() {
           setup.runTest([setup.mkPanicOnHandleCancelTest()]);
         });
 
-        // Currently we can't test this without making tests async
-        test('handleWsClosed', () {}, skip: true);
+        test('handleWSClosed', () {
+          final setup = mkSetup();
+          setup.runTest([setup.mkPanicOnHandleWSClosedTest()]);
+        });
 
         test('handleHandover', () {
           final setup = mkSetup();
@@ -535,6 +537,40 @@ abstract class Setup {
       // the task received this event before handleHandover was called
       expect(task.events.removeLast(), equals(HandoverToTask()));
       expect(task.events, isEmpty);
+
+      return phase;
+    };
+  }
+
+  TestStep mkPanicOnHandleWSClosedTest() {
+    return (phase, io) {
+      task.panicOnWsClosed = true;
+      // If we don't enableHandover events would be closed
+      // before `handleWSClosed` is called.
+      phase.enableHandover();
+      phase.close(CloseCode.timeout, 'food bar');
+      final closeMsg = io.expectMessageOfType<Close>(
+        sendTo: peer,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      expect(closeMsg.reason, equals(CloseCode.timeout));
+
+      phase.notifyConnectionClosed();
+      // happens before we fail
+      io.expectEventOfType<HandoverToTask>();
+
+      final errorEvent = io.expectEventOfType<InternalError>();
+      expect(errorEvent.error.toString(), contains('handleWSClosed'));
+      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
+          equals(CloseCode.goingAway.toInt()));
+      expect(task.messages, isEmpty);
+      // the task received this event before handleHandover was called
+      expect(task.events.removeLast(), equals(HandoverToTask()));
+      expect(task.events, isEmpty);
+      expect(io.sendEvents.isClosed, isTrue);
 
       return phase;
     };
