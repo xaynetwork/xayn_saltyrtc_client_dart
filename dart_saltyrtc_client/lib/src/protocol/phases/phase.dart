@@ -1,7 +1,6 @@
 import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
-import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod, Crypto, AuthToken, KeyStore;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
@@ -22,9 +21,13 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, HandoverToTask, ProtocolErrorWithServer;
-import 'package:dart_saltyrtc_client/src/protocol/network.dart'
-    show WebSocketSink;
+    show
+        Event,
+        HandoverToTask,
+        InternalError,
+        ProtocolErrorWithServer,
+        eventFromWSCloseCode;
+import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedServer, Client, Peer, Server;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
@@ -41,6 +44,13 @@ import 'package:meta/meta.dart' show immutable, protected;
 abstract class Common {
   final Crypto crypto;
 
+  @protected
+  bool isClosing = false;
+  @protected
+  bool closedByUs = false;
+  @protected
+  bool enableHandover = false;
+
   /// Server instance.
   Server get server;
 
@@ -49,19 +59,15 @@ abstract class Common {
 
   /// Sink to send messages to the server or close the connection.
   /// This should not be used directly, use `send` instead.
-  WebSocketSink sink;
-
-  /// Mechanism to allow handle all the different ways of closing.
-  Closer closer;
+  WebSocket webSocket;
 
   /// Event stream to send to the client.
   EventSink<Event> events;
 
   Common(
     this.crypto,
-    this.sink,
+    this.webSocket,
     this.events,
-    this.closer,
   );
 }
 
@@ -77,11 +83,10 @@ class InitialCommon extends Common {
 
   InitialCommon(
     Crypto crypto,
-    WebSocketSink sink,
+    WebSocket webSocket,
     EventSink<Event> events,
-    Closer closer,
   )   : server = Server.fromRandom(crypto),
-        super(crypto, sink, events, closer);
+        super(crypto, webSocket, events);
 }
 
 /// Data that is common to all phases and roles after the server handshake.
@@ -101,9 +106,8 @@ class AfterServerHandshakeCommon extends Common {
         server = common.server.asAuthenticated(),
         super(
           common.crypto,
-          common.sink,
+          common.webSocket,
           common.events,
-          common.closer,
         );
 }
 
@@ -182,6 +186,15 @@ class ResponderConfig extends Config {
 /// A phase can handle a message and returns the next phase.
 /// This also contains common and auxiliary code.
 abstract class Phase {
+  bool get isClosing => common.isClosing;
+  bool get isHandoverEnabled => common.enableHandover;
+
+  /// If when the WS stream closes this will not close the events interface,
+  /// instead it will emit a [HandoverToTask] event.
+  void enableHandover() {
+    common.enableHandover = true;
+  }
+
   /// Data common to all phases and role.
   Common get common;
 
@@ -190,9 +203,7 @@ abstract class Phase {
   /// Use `config` provided by `InitiatorIdentity`/`ResponderIdentity` instead.
   Config get config;
 
-  Phase() {
-    common.closer.setCurrentPhase(this);
-  }
+  Phase();
 
   Role get role;
 
@@ -224,8 +235,7 @@ abstract class Phase {
 
   @protected
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
-    common.closer
-        .close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
+    close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
     emitEvent(ProtocolErrorWithServer());
     return this;
   }
@@ -308,7 +318,7 @@ abstract class Phase {
     // websocket channel. This design allow the task to implement its own chunking
     // and reduce the overhead of a message but it also move some encryption logic
     // to the task it self. At the moment I pref to keep the code simpler.
-    common.sink.add(bytes);
+    common.webSocket.sink.add(bytes);
   }
 
   /// Validate the nonce and update the values from it in the peer structure.
@@ -317,6 +327,54 @@ abstract class Phase {
     final source = nonce.source;
     peer.csPair.updateAndCheck(nonce.combinedSequence, source);
     peer.cookiePair.updateAndCheck(nonce.cookie, source);
+  }
+
+  /// Close the client.
+  ///
+  /// The will immediately call `doClose` on the current phase and close the
+  /// `WebSocket` afterwards.
+  ///
+  /// This can be freely called from any async task.
+  void close(CloseCode? closeCode, String? reason) {
+    if (!isClosing) {
+      common.isClosing = true;
+      common.closedByUs = true;
+      logger.i('Closing connection (closeCode=$closeCode): $reason');
+      int? wsCloseCode;
+      // Give Phase a chance to send some remaining messages (e.g. `close`).
+      // Also allow Phase to determine the closeCode/status used to close the
+      // WebSocket Connection.
+      try {
+        wsCloseCode = doClose(closeCode);
+      } catch (e, s) {
+        emitEvent(InternalError(e), s);
+        wsCloseCode = CloseCode.internalError.toInt();
+      }
+      common.webSocket.sink.close(wsCloseCode);
+    } else {
+      logger.w('client closed more then once, ignoring: $closeCode, $reason');
+    }
+  }
+
+  /// Notify the closer that the connection is closed.
+  ///
+  /// The MUST be called by whoever listens on the `WebSocket` once
+  /// the stream is closed. It also MUST only be called in that specific case.
+  ///
+  /// This can be freely called from any async task.
+  void notifyConnectionClosed() {
+    common.isClosing = true;
+    if (!common.closedByUs) {
+      final event = eventFromWSCloseCode(common.webSocket.closeCode);
+      if (event != null) {
+        emitEvent(event);
+      }
+    }
+    if (isHandoverEnabled) {
+      emitEvent(HandoverToTask());
+    } else {
+      common.events.close();
+    }
   }
 
   /// Called when we are in the process of being closed.

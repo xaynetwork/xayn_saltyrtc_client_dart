@@ -1,7 +1,6 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -208,9 +207,8 @@ class SetupData {
     final events = StreamController<Event>.broadcast();
     final common = InitialCommon(
       crypto,
-      ws.sink,
+      ws,
       events.sink,
-      Closer(ws),
     );
     final Config config;
     if (role == Role.initiator) {

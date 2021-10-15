@@ -105,7 +105,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       // that we did so. To again communicate with the initiator we need a new
       // address, so we need to close the connection. As the protocol error was
       // not with the server we close the connection with `goingAway`.
-      common.closer.close(CloseCode.goingAway, 'c2c protocol error');
+      close(CloseCode.goingAway, 'c2c protocol error');
       return this;
     } else {
       return super.onProtocolError(e, source);
@@ -193,7 +193,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       if (msg.reason == CloseCode.noSharedTask) {
         logger.w('No shared task for ${initiator.id} found');
         emitEvent(events.NoSharedTaskFound());
-        common.closer.close(null, 'no shared task was found');
+        close(null, 'no shared task was found');
         return this;
       }
     }

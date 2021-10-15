@@ -1,7 +1,6 @@
 import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
@@ -98,7 +97,7 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect(nextPhase.common.closer.isClosing, isFalse);
+    expect(nextPhase.isClosing, isFalse);
     return phaseAs<N>(nextPhase);
   }
 
@@ -116,8 +115,8 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect(nextPhase.common.closer.isClosing, isTrue);
-    final sink = nextPhase.common.sink as MockSyncWebSocketSink;
+    expect(nextPhase.isClosing, isTrue);
+    final sink = nextPhase.common.webSocket.sink as MockSyncWebSocketSink;
     expect(sink.isClosed, isTrue);
     return sink.closeCode;
   }
@@ -153,7 +152,7 @@ Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
 
   final ws = MockSyncWebSocket();
   final events = EventQueue();
-  final common = InitialCommon(crypto, ws.sink, events, Closer(ws));
+  final common = InitialCommon(crypto, ws, events);
   common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
     ownKeyStore: server.testedPeer.permanentKey!,
     remotePublicKey: server.permanentKey.publicKey,
@@ -233,7 +232,7 @@ typedef TestStep = Phase? Function(Phase, Io);
 
 void runTest(Phase initialPhase, List<TestStep> steps) {
   Phase? phase = initialPhase;
-  final sink = phase.common.sink;
+  final sink = phase.common.webSocket.sink;
   final sendPackages = (sink as MockSyncWebSocketSink).queue;
   final sendEvents = phase.common.events as EventQueue;
   final io = Io(sendPackages, sendEvents);
@@ -241,7 +240,7 @@ void runTest(Phase initialPhase, List<TestStep> steps) {
     if (phase == null) {
       throw AssertionError('closed before all test did run');
     }
-    expect(phase.common.sink, same(sink));
+    expect(phase.common.webSocket.sink, same(sink));
     expect(phase.common.events, same(sendEvents));
     phase = step(phase, io);
     expect(sendPackages, isEmpty);

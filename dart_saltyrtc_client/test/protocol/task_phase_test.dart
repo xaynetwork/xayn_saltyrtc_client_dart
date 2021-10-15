@@ -115,17 +115,13 @@ void main() {
         });
       });
 
-      test('closing WS calls handleWSClosed ', () async {
+      test('closing WS calls handleWSClosed ', () {
         final setup = mkSetup();
-        await setup.startPhase.common.sink
+        setup.startPhase.common.webSocket.sink
             .close(CloseCode.noSharedSubprotocol.toInt(), 'a word');
 
         /// we have no client so we need fake the wiring
-        setup.startPhase.common.closer.notifyConnectionClosed();
-        await setup.startPhase.common.closer.onClosed;
-        // await another tick to make sure callbacks on `onClosed` already
-        // completed
-        await Future.microtask(() => null);
+        setup.startPhase.notifyConnectionClosed();
         expect(setup.task.handleWSClosedCallCount, equals(1));
       });
 
@@ -312,7 +308,7 @@ abstract class Setup {
 
       expect(task.messages, isEmpty);
       expect(closeCode, equals(CloseCode.goingAway.toInt()));
-      expect(initialPhase.common.closer.isClosing, isTrue);
+      expect(initialPhase.isClosing, isTrue);
       final closeMsg = io.expectMessageOfType<Close>(
           sendTo: peer,
           decryptWith: crypto.createSharedKeyStore(
@@ -386,8 +382,8 @@ abstract class Setup {
   TestStep mkTriggerHandoverTest() {
     return (phase, io) {
       task.link.requestHandover();
-      expect(phase.common.closer.isClosing, isTrue);
-      expect((phase.common.sink as MockSyncWebSocketSink).closeCode,
+      expect(phase.isClosing, isTrue);
+      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
           equals(CloseCode.goingAway.toInt()));
       final closeMsg = io.expectMessageOfType<Close>(
         sendTo: peer,
@@ -399,7 +395,7 @@ abstract class Setup {
       expect(closeMsg.reason, equals(CloseCode.handover));
       expect(io.sendEvents, isEmpty);
 
-      phase.common.closer.notifyConnectionClosed();
+      phase.notifyConnectionClosed();
       expect(task.handleHandoverCallCount, equals(1));
       expect(task.handoverGivenEventSink, same(phase.common.events));
       io.expectEventOfType<HandoverToTask>();
@@ -422,7 +418,7 @@ abstract class Setup {
       );
       expect(closeCode, isNull);
 
-      initialPhase.common.closer.notifyConnectionClosed();
+      initialPhase.notifyConnectionClosed();
       expect(task.handleHandoverCallCount, equals(1));
       expect(task.handoverGivenEventSink, same(initialPhase.common.events));
       io.expectEventOfType<HandoverToTask>();
@@ -468,7 +464,7 @@ abstract class Setup {
       final event = io.expectEventOfType<InternalError>();
       expect(event.error.toString(), contains('handleEvent'));
       expect(task.messages, isEmpty);
-      expect((phase.common.sink as MockSyncWebSocketSink).closeCode,
+      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
           equals(CloseCode.goingAway.toInt()));
       final closeMsg = io.expectMessageOfType<Close>(
         sendTo: peer,
@@ -529,11 +525,11 @@ abstract class Setup {
       );
       expect(closeMsg.reason, equals(CloseCode.handover));
 
-      phase.common.closer.notifyConnectionClosed();
+      phase.notifyConnectionClosed();
 
       final errorEvent = io.expectEventOfType<InternalError>();
       expect(errorEvent.error.toString(), contains('handleHandover'));
-      expect((phase.common.sink as MockSyncWebSocketSink).closeCode,
+      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
           equals(CloseCode.goingAway.toInt()));
       expect(task.messages, isEmpty);
       // the task received this event before handleHandover was called

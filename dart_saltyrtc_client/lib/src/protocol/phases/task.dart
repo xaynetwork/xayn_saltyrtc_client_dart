@@ -58,7 +58,7 @@ class _Link extends SaltyRtcTaskLink {
   void close(CloseCode closeCode, [String? reason]) {
     final phase = _phase;
     if (phase != null) {
-      phase.common.closer.close(closeCode, reason);
+      phase.close(closeCode, reason);
     }
   }
 
@@ -83,8 +83,8 @@ class _Link extends SaltyRtcTaskLink {
   void requestHandover() {
     final phase = _phase;
     if (phase != null) {
-      phase.common.closer.enableHandover = true;
-      phase.common.closer.close(CloseCode.handover, 'handover');
+      phase.enableHandover();
+      phase.close(CloseCode.handover, 'handover');
     } else {
       throw StateError('already disconnected from phase');
     }
@@ -107,11 +107,6 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     taskCallGuard(() {
       task.start(_link);
     });
-    common.closer.onClosed.whenComplete(() {
-      taskCallGuard(() {
-        task.handleWSClosed();
-      });
-    });
   }
 
   void taskCallGuard(void Function() func) {
@@ -122,10 +117,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
       // Do not use `this.emitEvent` here as we do not want to send this event to
       // the task as this might case further errors or even infinite recursion.
       common.events.emitEvent(events.InternalError(e), s);
-      common.closer.close(CloseCode.internalError, e.toString());
+      close(CloseCode.internalError, e.toString());
       // We did fall over at some point during the handover,
       // make sure events are closed anyway.
-      if (common.closer.enableHandover) {
+      if (isHandoverEnabled) {
         common.events.close();
       }
       try {
@@ -160,7 +155,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source == pairedClient.id) {
-      common.closer.close(e.closeCode, 'closing after c2c protocol error');
+      close(e.closeCode, 'closing after c2c protocol error');
       emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.authenticated));
       return this;
     } else {
@@ -213,14 +208,14 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   Phase handleClose(Close msg) {
     final closeCode = msg.reason;
     if (closeCode == CloseCode.handover) {
-      common.closer.enableHandover = true;
+      enableHandover();
     } else {
       final event = events.eventFromWSCloseCode(closeCode.toInt());
       if (event != null) {
         emitEvent(event);
       }
     }
-    common.closer.close(null, 'close msg');
+    close(null, 'close msg');
     return this;
   }
 
@@ -239,6 +234,14 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     _link.disconnect();
     return onlyCreateClientHandshakePhase(
         initiatorOverrid: newInitiator, responderOverride: responderOverride);
+  }
+
+  @override
+  void notifyConnectionClosed() {
+    super.notifyConnectionClosed();
+    taskCallGuard(() {
+      task.handleWSClosed();
+    });
   }
 
   @override
