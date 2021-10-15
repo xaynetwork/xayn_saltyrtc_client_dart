@@ -22,7 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, ProtocolErrorWithServer;
+    show Event, HandoverToTask, ProtocolErrorWithServer;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
@@ -250,9 +250,18 @@ abstract class Phase {
     }
   }
 
-  @protected
-  void emitEvent(Event event, [StackTrace? st]) =>
-      common.events.emitEvent(event, st);
+  /// Emit an event.
+  ///
+  /// The event will be received by the clients user and potentially a running
+  /// task.
+  ///
+  /// This can be freely called from any async task.
+  void emitEvent(Event event, [StackTrace? st]) {
+    if (event is HandoverToTask) {
+      throw StateError('handover is only possible in task phase');
+    }
+    common.events.emitEvent(event, st);
+  }
 
   /// Short form for `send(buildPacket(msg, to))`
   void sendMessage(
@@ -314,6 +323,8 @@ abstract class Phase {
   ///
   /// The returned `int?` is the status code used as close code for
   /// the WebSocket connection.
+  ///
+  /// This can be freely called from any async task.
   int? doClose(CloseCode? closeCode) => closeCode?.toInt();
 }
 

@@ -1,7 +1,7 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/closer.dart';
+import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -27,11 +27,10 @@ import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:test/test.dart';
 
 import '../../crypto_mock.dart' show crypto;
-import '../../network_mock.dart'
-    show MockSyncWebSocket, MockSyncWebSocketSink, PackageQueue;
+import '../../network_mock.dart' show MockSyncWebSocket, PackageQueue;
 import '../../server_mock.dart'
     show Decrypt, IntermediateState, MockServer, NonceAndMessage;
-import '../../utils.dart' show NoOpCloser, setUpTesting;
+import '../../utils.dart' show setUpTesting;
 
 void main() {
   setUpTesting();
@@ -211,7 +210,7 @@ class SetupData {
       crypto,
       ws.sink,
       events.sink,
-      Closer(ws, events.sink),
+      Closer(ws),
     );
     final Config config;
     if (role == Role.initiator) {

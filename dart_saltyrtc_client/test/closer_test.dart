@@ -15,6 +15,7 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Config, InitialCommon, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
+import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
 import 'package:test/test.dart';
 
 import 'crypto_mock.dart' show crypto;
@@ -153,18 +154,16 @@ void main() {
       };
       return CloseCode.goingAway.toInt();
     });
-    phase.common.closer.handover();
+    phase.common.closer.enableHandover();
+    phase.common.closer.close(CloseCode.handover, 'handover');
+    phase.common.closer.notifyConnectionClosed();
     expect(phase.webSocket.isClosed, isTrue);
     expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
     doCloseTest!();
     phase.io.expectEventOfType<HandoverToTask>();
     expect(phase.io.sendEvents.isClosed, isFalse);
-
-    phase.common.closer.notifyConnectionClosed();
     await phase.common.closer.onClosed;
     expect(phase.io.sendEvents.isClosed, isFalse);
-    expect(phase.webSocket.isClosed, isTrue);
-    expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
   });
 }
 
@@ -172,8 +171,8 @@ class TestPhase implements Phase {
   final MockSyncWebSocket webSocket = MockSyncWebSocket();
   late Io io = Io(PackageQueue(), EventQueue());
   @override
-  late InitialCommon common = InitialCommon(
-      crypto, webSocket.sink, io.sendEvents, Closer(webSocket, io.sendEvents));
+  late InitialCommon common =
+      InitialCommon(crypto, webSocket.sink, io.sendEvents, Closer(webSocket));
 
   final int? Function(CloseCode?, TestPhase) _doCloseFn;
 
@@ -194,7 +193,8 @@ class TestPhase implements Phase {
   int? doClose(CloseCode? closeCode) => _doCloseFn(closeCode, this);
 
   @override
-  void emitEvent(Event event, [StackTrace? st]) => throw UnimplementedError();
+  void emitEvent(Event event, [StackTrace? st]) =>
+      common.events.emitEvent(event, st);
 
   @override
   Peer? getPeerWithId(Id id) => throw UnimplementedError();

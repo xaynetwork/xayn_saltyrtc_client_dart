@@ -352,10 +352,10 @@ Event? eventFromWSCloseCode(int? closeCode) {
       return IncompatibleServerKey();
     case 3008:
       return LikelyTemporaryFailure(TempFailureVariant.timeout);
-
-    /// Handover should only be send via `Close` message and as such
-    /// shouldn't appear here.
     case 3003:
+      logger.e('handover status should have been handled separately');
+      return UnexpectedStatus.unchecked(
+          UnexpectedStatusVariant.other, closeCode);
     default:
       return UnexpectedStatus.unchecked(
           UnexpectedStatusVariant.other, closeCode);

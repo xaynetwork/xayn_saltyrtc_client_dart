@@ -1,4 +1,4 @@
-import 'dart:async' show Completer, EventSink;
+import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
@@ -153,7 +153,7 @@ Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
 
   final ws = MockSyncWebSocket();
   final events = EventQueue();
-  final common = InitialCommon(crypto, ws.sink, events, Closer(ws, events));
+  final common = InitialCommon(crypto, ws.sink, events, Closer(ws));
   common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
     ownKeyStore: server.testedPeer.permanentKey!,
     remotePublicKey: server.permanentKey.publicKey,
@@ -325,3 +325,5 @@ class TestTask extends Task {
     throw UnimplementedError();
   }
 }
+
+Future<void> tick() => Future.microtask(() => null);

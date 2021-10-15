@@ -19,7 +19,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, PeerKind;
+    show Event, HandoverToTask, PeerKind;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Initiator, Peer, Responder;
@@ -38,10 +38,11 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
     show InitiatorTaskPhase, ResponderTaskPhase, TaskPhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart'
     show CancelReason, SaltyRtcTaskLink, Task;
-import 'package:dart_saltyrtc_client/src/utils.dart';
+import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/test.dart';
 
 import '../crypto_mock.dart' show crypto;
+import '../network_mock.dart' show MockSyncWebSocketSink;
 import '../utils.dart'
     show Io, PeerData, TestStep, createAfterServerHandshakeState, setUpTesting;
 import '../utils.dart' as utils;
@@ -123,8 +124,15 @@ void main() {
       });
 
       group('handover calls handleHandover when triggered by', () {
-        test('link.handover()', () {}, skip: true);
-        test('Close(Handover) msg', () {}, skip: true);
+        test('link.handover()', () {
+          final setup = mkSetup();
+          setup.runTest([setup.mkTriggerHandoverTest()]);
+        });
+
+        test('Close(Handover) msg', () {
+          final setup = mkSetup();
+          setup.runTest([setup.mkRecvHandoverTest()]);
+        });
       });
 
       group('task exceptions lead to internal error in', () {
@@ -147,6 +155,8 @@ class TestTask implements Task {
   int startCallCount = 0;
   int handleWSClosedCallCount = 0;
   int handleCancelCallCount = 0;
+  int handleHandoverCallCount = 0;
+  EventSink<Event>? handoverGivenEventSink;
   CancelReason? handleCancelReason;
   final Queue<TaskMessage> messages = Queue();
   final Queue<Event> events = Queue();
@@ -163,7 +173,10 @@ class TestTask implements Task {
   }
 
   @override
-  void handleHandover(EventSink<Event> events) {}
+  void handleHandover(EventSink<Event> events) {
+    handleHandoverCallCount += 1;
+    handoverGivenEventSink = events;
+  }
 
   @override
   void handleMessage(TaskMessage msg) {
@@ -252,7 +265,7 @@ abstract class Setup {
               remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey));
 
       expect(task.messages, isEmpty);
-      expect(closeCode, equals(CloseCode.closingNormal.toInt()));
+      expect(closeCode, equals(CloseCode.goingAway.toInt()));
       expect(initialPhase.common.closer.isClosing, isTrue);
       final closeMsg = io.expectMessageOfType<Close>(
           sendTo: peer,
@@ -321,6 +334,54 @@ abstract class Setup {
       expect(task.events.removeLast(),
           equals(events.SendingMessageToPeerFailed(PeerKind.authenticated)));
       return phase;
+    };
+  }
+
+  TestStep mkTriggerHandoverTest() {
+    return (phase, io) {
+      task.link.requestHandover();
+      expect(phase.common.closer.isClosing, isTrue);
+      expect((phase.common.sink as MockSyncWebSocketSink).closeCode,
+          equals(CloseCode.goingAway.toInt()));
+      final closeMsg = io.expectMessageOfType<Close>(
+        sendTo: peer,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      expect(closeMsg.reason, equals(CloseCode.handover));
+      expect(io.sendEvents, isEmpty);
+
+      phase.common.closer.notifyConnectionClosed();
+      expect(task.handleHandoverCallCount, equals(1));
+      expect(task.handoverGivenEventSink, same(phase.common.events));
+      io.expectEventOfType<HandoverToTask>();
+
+      expect(task.events.removeLast(), equals(HandoverToTask()));
+
+      return phase;
+    };
+  }
+
+  TestStep mkRecvHandoverTest() {
+    return (initialPhase, io) {
+      final closeCode = peer.sendAndClose(
+        message: Close(CloseCode.handover),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
+      expect(closeCode, isNull);
+
+      initialPhase.common.closer.notifyConnectionClosed();
+      expect(task.handleHandoverCallCount, equals(1));
+      expect(task.handoverGivenEventSink, same(initialPhase.common.events));
+      io.expectEventOfType<HandoverToTask>();
+      expect(task.events.removeLast(), equals(HandoverToTask()));
+      return initialPhase;
     };
   }
 

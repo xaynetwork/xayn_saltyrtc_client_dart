@@ -83,7 +83,8 @@ class _Link extends SaltyRtcTaskLink {
   void requestHandover() {
     final phase = _phase;
     if (phase != null) {
-      phase.doHandoverToTask();
+      phase.common.closer.enableHandover();
+      phase.common.closer.close(CloseCode.handover, 'handover');
     } else {
       throw StateError('already disconnected from phase');
     }
@@ -127,7 +128,13 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     taskCallGuard(() {
       task.handleEvent(event);
     });
-    super.emitEvent(event);
+    if (event is events.HandoverToTask) {
+      taskCallGuard(() {
+        task.handleHandover(common.events);
+      });
+      _link.disconnect();
+    }
+    common.events.emitEvent(event, st);
   }
 
   @protected
@@ -189,24 +196,15 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   Phase handleClose(Close msg) {
     final closeCode = msg.reason;
     if (closeCode == CloseCode.handover) {
-      doHandoverToTask();
+      common.closer.enableHandover();
     } else {
       final event = events.eventFromWSCloseCode(closeCode.toInt());
       if (event != null) {
         emitEvent(event);
       }
-      common.closer.close(null, 'close msg');
     }
+    common.closer.close(null, 'close msg');
     return this;
-  }
-
-  @protected
-  void doHandoverToTask() {
-    taskCallGuard(() {
-      task.handleHandover(common.events);
-    });
-    common.closer.handover();
-    _link.disconnect();
   }
 
   @protected
@@ -233,7 +231,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     //          future.
     if (closeCode != null) {
       sendMessage(Close(closeCode), to: pairedClient);
-      return CloseCode.closingNormal.toInt();
+      return CloseCode.goingAway.toInt();
     } else {
       return super.doClose(closeCode);
     }

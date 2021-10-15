@@ -100,8 +100,7 @@ class InitiatorClient extends Client {
     }
 
     final events = StreamController<Event>.broadcast();
-    final common =
-        InitialCommon(crypto, ws.sink, events.sink, Closer(ws, events.sink));
+    final common = InitialCommon(crypto, ws.sink, events.sink, Closer(ws));
     final authMethod = InitialClientAuthMethod.fromEither(
       crypto: crypto,
       authToken: sharedAuthToken?.toAuthToken(crypto),
@@ -136,8 +135,7 @@ class ResponderClient extends Client {
     Uint8List? sharedAuthToken,
   }) {
     final events = StreamController<Event>.broadcast();
-    final common =
-        InitialCommon(crypto, ws.sink, events.sink, Closer(ws, events));
+    final common = InitialCommon(crypto, ws.sink, events.sink, Closer(ws));
 
     final config = ResponderConfig(
       permanentKeys: ourPermanentKeys,

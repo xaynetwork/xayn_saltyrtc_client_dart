@@ -19,7 +19,6 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart' show Phase;
 import 'package:test/test.dart';
 
 import 'crypto_mock.dart' show crypto;
-import 'utils.dart' show NoOpCloser;
 
 typedef Decrypt = Uint8List Function(Uint8List);
 
