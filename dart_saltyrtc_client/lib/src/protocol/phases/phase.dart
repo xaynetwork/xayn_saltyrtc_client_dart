@@ -346,8 +346,6 @@ abstract class Phase {
         wsCloseCode = CloseCode.internalError.toInt();
       }
       common.webSocket.sink.close(wsCloseCode);
-    } else {
-      logger.w('client closed more then once, ignoring: $closeCode, $reason');
     }
   }
 

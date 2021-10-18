@@ -1,5 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -29,6 +30,7 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
       throw ProtocolErrorException(
           'Message destination does not match our address');
     }
+    logger.v('message from ${nonce.destination}');
 
     if (nonce.source == Id.serverAddress) {
       return _handleServerMessage(msgBytes, nonce);

@@ -74,10 +74,13 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   }) : super(common) {
     if (initiatorConnected) {
       startNewHandshake();
+    } else {
+      logger.d('waiting for initiator to connect');
     }
   }
 
   void startNewHandshake() {
+    logger.d('starting new c2c handshake for responder ${common.address}');
     final initiator = Initiator(common.crypto);
     if (config.authToken != null) {
       sendMessage(Token(config.permanentKey.publicKey),
