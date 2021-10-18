@@ -123,36 +123,25 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
       // Do not use `this.emitEvent` here as we do not want to send this event to
       // the task as this might case further errors or even infinite recursion.
       common.events.emitEvent(events.InternalError(e), s);
+      common.events.close();
       close(CloseCode.internalError, e.toString());
-      // We did fall over at some point during the handover,
-      // make sure events are closed anyway.
-      if (isHandoverEnabled) {
-        common.events.close();
-      }
-      try {
-        task.handleCancel(CancelReason.handlerDidThrow);
-      } catch (e, s) {
-        logger.e(
-            'handleCancel(CancelReason.handleDidThrow) did also throw: $e\n$s');
-      }
+      _cancelTask(CancelReason.handlerDidThrow);
     }
   }
 
   @override
   void emitEvent(Event event, [StackTrace? st]) {
+    final isHandover = event is events.HandoverToTask;
+    if (isHandover) {
+      taskCallGuard(() {
+        task.handleHandover(common.events);
+      });
+      _link.disconnect();
+    }
+    common.events.emitEvent(event, st);
     taskCallGuard(() {
       task.handleEvent(event);
     });
-    if (event is events.HandoverToTask) {
-      taskCallGuard(() {
-        task.handleHandover(common.events);
-        // only emit handover event to client if the handler did not throw
-        common.events.emitEvent(event, st);
-      });
-      _link.disconnect();
-    } else {
-      common.events.emitEvent(event, st);
-    }
   }
 
   @protected
@@ -234,20 +223,31 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @protected
   Phase toClientHandshakePhase(CancelReason reason,
       {bool newInitiator = false, ResponderId? responderOverride}) {
-    taskCallGuard(() {
-      task.handleCancel(reason);
-    });
+    _cancelTask(reason);
     _link.disconnect();
     return onlyCreateClientHandshakePhase(
-        initiatorOverrid: newInitiator, responderOverride: responderOverride);
+        initiatorOverride: newInitiator, responderOverride: responderOverride);
   }
 
   @override
   void notifyConnectionClosed() {
-    super.notifyConnectionClosed();
     taskCallGuard(() {
-      task.handleWSClosed();
+      if (!isHandoverEnabled) {
+        _cancelTask(CancelReason.serverDisconnected);
+      }
     });
+    super.notifyConnectionClosed();
+  }
+
+  bool _taskCancelWasCalled = false;
+  void _cancelTask(CancelReason reason) {
+    if (!_taskCancelWasCalled) {
+      _taskCancelWasCalled = true;
+      taskCallGuard(() {
+        task.handleCancel(reason);
+      });
+      _link.disconnect();
+    }
   }
 
   @override
@@ -265,7 +265,7 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @protected
   Phase onlyCreateClientHandshakePhase(
-      {bool initiatorOverrid = false, ResponderId? responderOverride});
+      {bool initiatorOverride = false, ResponderId? responderOverride});
 }
 
 class InitiatorTaskPhase extends TaskPhase
@@ -292,7 +292,7 @@ class InitiatorTaskPhase extends TaskPhase
       return this;
     } else {
       emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-      return toClientHandshakePhase(CancelReason.disconnected);
+      return toClientHandshakePhase(CancelReason.peerDisconnected);
     }
   }
 
@@ -330,8 +330,8 @@ class InitiatorTaskPhase extends TaskPhase
 
   @override
   Phase onlyCreateClientHandshakePhase(
-      {bool initiatorOverrid = false, ResponderId? responderOverride}) {
-    assert(initiatorOverrid == false);
+      {bool initiatorOverride = false, ResponderId? responderOverride}) {
+    assert(initiatorOverride == false);
     final newPhase = InitiatorClientHandshakePhase(common, config);
     if (responderOverride != null) {
       newPhase.addNewResponder(responderOverride);
@@ -358,7 +358,7 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
     final id = msg.id;
     validateInitiatorId(id.value);
     emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-    return toClientHandshakePhase(CancelReason.disconnected);
+    return toClientHandshakePhase(CancelReason.peerDisconnected);
   }
 
   @override
@@ -383,9 +383,9 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
 
   @override
   Phase onlyCreateClientHandshakePhase(
-      {bool initiatorOverrid = false, ResponderId? responderOverride}) {
+      {bool initiatorOverride = false, ResponderId? responderOverride}) {
     assert(responderOverride == null);
     return ResponderClientHandshakePhase(common, config,
-        initiatorConnected: initiatorOverrid);
+        initiatorConnected: initiatorOverride);
   }
 }

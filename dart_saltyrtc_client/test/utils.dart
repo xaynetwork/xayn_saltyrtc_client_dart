@@ -302,11 +302,6 @@ class TestTask extends Task {
   }
 
   @override
-  void handleWSClosed() {
-    throw UnimplementedError();
-  }
-
-  @override
   void handleEvent(Event event) {
     throw UnimplementedError();
   }

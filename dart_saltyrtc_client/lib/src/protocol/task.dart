@@ -6,7 +6,8 @@ import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show TaskData;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
-import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
+import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt, Pair;
+import 'package:meta/meta.dart' show protected;
 
 /// Information that are needed to negotiate and handover a task.
 ///
@@ -36,34 +37,35 @@ abstract class TaskBuilder {
 }
 
 /// Type representing an initialized/running task.
+///
+/// This trait contains some default implementations to reduce some overhead
+/// for task implementors.
 abstract class Task {
   /// The custom message types that the task use.
   List<String> get supportedTypes;
 
   /// Start given task
-  void start(SaltyRtcTaskLink link);
+  void start(SaltyRtcTaskLink link) {
+    this.link = link;
+  }
 
   /// Called when a `TaskMessage` is received.
   void handleMessage(TaskMessage msg);
 
-  /// Called when a `Event` was emitted.
-  void handleEvent(Event event);
+  /// Called when an `Event` was emitted.
+  ///
+  /// As not all tasks need to listen for events this
+  /// has an empty default implementation.
+  void handleEvent(Event event) {}
 
-  /// Called after the WebSocket was closed.
+  /// Called when the task needs to stop.
   ///
-  /// This is guaranteed to be called after the original
-  /// WebSocket is closed, even if it's on context of a
-  /// handover. (But [handleHandover] will be called first.)
+  /// Depending on the `reason` the WebSocket and/or `events` sink might
+  /// already have been closed.
   ///
-  /// Outside of a handover the events stream will already be closed
-  /// at this point in time.
-  void handleWSClosed();
-
-  /// Called when the task needs to stop, but the connection is not closed.
-  ///
-  /// In case of [CancelReason.handlerDidThrow] the task is already
-  /// disconnected from the client and can no longer emit events or send
-  /// messages over the client.
+  /// The task will be "disconnected" from the client immediately after this
+  /// handler returns, i.e. once the handler returns sending messages or
+  /// emitting events through the link will no longer work.
   void handleCancel(CancelReason reason);
 
   /// Called after the handover is started.
@@ -71,18 +73,66 @@ abstract class Task {
   /// From now on the task is responsible for closing events when it's done or
   /// failed.
   ///
-  /// This is called after the original WebSocket is already closed. (But
-  /// before [handleWSClosed] is called.)
+  /// This is called after the original WebSocket is already closed.
   ///
   /// As important parts of the handover are already it *cannot* stop the
   /// handover in any way. If this panics it will be handled like any other
   /// handler panicking, but as the connection is already closed we can't
   /// inform the peer of it. Through `handleCancel` is still called, so the
   /// task can still "clean up" any additional connections it opened.
-  void handleHandover(EventSink<Event> events);
+  ///
+  /// The default implementation stores `events` so that `handoverWasDone`
+  /// returns `true`, for some tasks this might be all they need.
+  void handleHandover(EventSink<Event> events) {
+    _eventsPostHandover = events;
+  }
+
+  @protected
+  EventSink<Event>? get eventsPostHandover => _eventsPostHandover;
+  EventSink<Event>? _eventsPostHandover;
+
+  @protected
+  bool get handoverWasDone => _eventsPostHandover != null;
+
+  @protected
+  late SaltyRtcTaskLink link;
+
+  @protected
+  void emitEvent(Event event) {
+    final eventsPostHandover = this.eventsPostHandover;
+    if (eventsPostHandover != null) {
+      eventsPostHandover.emitEvent(event);
+    } else {
+      link.emitEvent(event);
+    }
+  }
 }
 
-enum CancelReason { disconnected, sendError, peerOverwrite, handlerDidThrow }
+enum CancelReason {
+  /// The peer disconnected.
+  peerDisconnected,
+
+  /// Sending message to the peer failed.
+  sendError,
+
+  /// The peer was replaced with a new peer.
+  peerOverwrite,
+
+  /// A handler (e.g. handleMessage) did throw an exception.
+  ///
+  /// When [Task.handleCancel] is called with this reason the task
+  /// is already disconnected from the client, the closing of the
+  /// WebSocket was already initiated and the and a InternalError event
+  /// was already emitted and the events sink was already closed.
+  handlerDidThrow,
+
+  /// WebSocket closed without a handover.
+  ///
+  /// When this is called the WebSocket is already closed. The
+  /// event sink is still open (it will be closed immediately after this
+  /// handler is called).
+  serverDisconnected,
+}
 
 /// Links the Task and the SaltyRtc client together.
 ///
@@ -109,7 +159,7 @@ abstract class SaltyRtcTaskLink {
 
   /// Trigger a handover.
   ///
-  /// This will lead to [Task.handleHandover] being called. It might be called
+  /// This will lead to [necessary.handleHandover] being called. It might be called
   /// before [requestHandover] returns or it might be called it might be called
   /// async on a later tick.
   ///

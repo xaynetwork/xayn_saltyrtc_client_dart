@@ -115,14 +115,16 @@ void main() {
         });
       });
 
-      test('closing WS calls handleWSClosed ', () {
+      test('closing WS calls handleCancel ', () {
         final setup = mkSetup();
         setup.startPhase.common.webSocket.sink
             .close(CloseCode.noSharedSubprotocol.toInt(), 'a word');
 
         /// we have no client so we need fake the wiring
         setup.startPhase.notifyConnectionClosed();
-        expect(setup.task.handleWSClosedCallCount, equals(1));
+        expect(setup.task.handleCancelCallCount, equals(1));
+        expect(setup.task.handleCancelReason,
+            equals(CancelReason.serverDisconnected));
       });
 
       group('handover calls handleHandover when triggered by', () {
@@ -156,11 +158,6 @@ void main() {
           setup.runTest([setup.mkPanicOnHandleCancelTest()]);
         });
 
-        test('handleWSClosed', () {
-          final setup = mkSetup();
-          setup.runTest([setup.mkPanicOnHandleWSClosedTest()]);
-        });
-
         test('handleHandover', () {
           final setup = mkSetup();
           setup.runTest([setup.mkPanicOnHandleHandoverTest()]);
@@ -171,9 +168,9 @@ void main() {
 }
 
 class TestTask implements Task {
+  @override
   late SaltyRtcTaskLink link;
   int startCallCount = 0;
-  int handleWSClosedCallCount = 0;
   int handleCancelCallCount = 0;
   int handleHandoverCallCount = 0;
   EventSink<Event>? handoverGivenEventSink;
@@ -181,7 +178,6 @@ class TestTask implements Task {
   bool panicOnStart = false;
   bool panicOnHandleEvent = false;
   bool panicOnHandleMessage = false;
-  bool panicOnWsClosed = false;
   bool panicOnHandleCancel = false;
   bool panicOnHandleHandover = false;
   final Queue<TaskMessage> messages = Queue();
@@ -222,14 +218,6 @@ class TestTask implements Task {
   }
 
   @override
-  void handleWSClosed() {
-    handleWSClosedCallCount += 1;
-    if (panicOnWsClosed) {
-      throw Exception('planned panic on handleWSClosed');
-    }
-  }
-
-  @override
   void start(SaltyRtcTaskLink link) {
     this.link = link;
     startCallCount += 1;
@@ -240,6 +228,15 @@ class TestTask implements Task {
 
   @override
   List<String> get supportedTypes => ['taskMsg1', 'taskMsg2'];
+
+  @override
+  void emitEvent(Event event) {}
+
+  @override
+  EventSink<Event>? get eventsPostHandover => throw UnimplementedError();
+
+  @override
+  bool get handoverWasDone => throw UnimplementedError();
 }
 
 abstract class Setup {
@@ -347,7 +344,7 @@ abstract class Setup {
       final event = io.expectEventOfType<events.PeerDisconnected>();
       expect(event.peerKind, PeerKind.authenticated);
       expect(task.handleCancelCallCount, equals(1));
-      expect(task.handleCancelReason, equals(CancelReason.disconnected));
+      expect(task.handleCancelReason, equals(CancelReason.peerDisconnected));
       expect(task.events.removeLast(),
           equals(events.PeerDisconnected(PeerKind.authenticated)));
       return phase;
@@ -463,6 +460,8 @@ abstract class Setup {
       final eventToEmit =
           AdditionalResponderEvent(PeerDisconnected(PeerKind.unauthenticated));
       phase.emitEvent(eventToEmit);
+      // event is emitted first
+      io.expectEventOfType<AdditionalResponderEvent>();
       final event = io.expectEventOfType<InternalError>();
       expect(event.error.toString(), contains('handleEvent'));
       expect(task.messages, isEmpty);
@@ -477,7 +476,6 @@ abstract class Setup {
       );
       expect(closeMsg.reason, equals(CloseCode.internalError));
       expect(task.events.removeLast(), eventToEmit);
-      io.expectEventOfType<AdditionalResponderEvent>();
       return phase;
     };
   }
@@ -537,40 +535,6 @@ abstract class Setup {
       // the task received this event before handleHandover was called
       expect(task.events.removeLast(), equals(HandoverToTask()));
       expect(task.events, isEmpty);
-
-      return phase;
-    };
-  }
-
-  TestStep mkPanicOnHandleWSClosedTest() {
-    return (phase, io) {
-      task.panicOnWsClosed = true;
-      // If we don't enableHandover events would be closed
-      // before `handleWSClosed` is called.
-      phase.enableHandover();
-      phase.close(CloseCode.timeout, 'food bar');
-      final closeMsg = io.expectMessageOfType<Close>(
-        sendTo: peer,
-        decryptWith: crypto.createSharedKeyStore(
-          ownKeyStore: peer.testedPeer.ourSessionKey!,
-          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
-        ),
-      );
-      expect(closeMsg.reason, equals(CloseCode.timeout));
-
-      phase.notifyConnectionClosed();
-      // happens before we fail
-      io.expectEventOfType<HandoverToTask>();
-
-      final errorEvent = io.expectEventOfType<InternalError>();
-      expect(errorEvent.error.toString(), contains('handleWSClosed'));
-      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
-          equals(CloseCode.goingAway.toInt()));
-      expect(task.messages, isEmpty);
-      // the task received this event before handleHandover was called
-      expect(task.events.removeLast(), equals(HandoverToTask()));
-      expect(task.events, isEmpty);
-      expect(io.sendEvents.isClosed, isTrue);
 
       return phase;
     };
