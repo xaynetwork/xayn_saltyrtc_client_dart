@@ -6,7 +6,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
-    show Id, IdResponder, IdServer, IdInitiator;
+    show Id, ResponderId, ServerId, InitiatorId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show CombinedSequence;
@@ -14,7 +14,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolErrorException, ValidationException;
 import 'package:meta/meta.dart' show protected;
 
 /// A peer can be the server, the initiator or a responder
@@ -50,7 +50,7 @@ abstract class Peer {
   void setSessionSharedKey(SharedKeyStore sks) {
     // we need to check that permanent and session are different
     if (sks.remotePublicKey == permanentSharedKey?.remotePublicKey) {
-      throw ProtocolError(
+      throw ProtocolErrorException(
           'Server session key is the same as the permanent key');
     }
     _sessionSharedKey = sks;
@@ -75,7 +75,7 @@ abstract class Peer {
 
 class Server extends Peer {
   @override
-  final IdServer id = Id.serverAddress;
+  final ServerId id = Id.serverAddress;
 
   Server.fromRandom(Crypto crypto) : super.fromRandom(crypto);
 
@@ -166,7 +166,7 @@ abstract class Client extends Peer {
 
 class Responder extends Client {
   @override
-  final IdResponder id;
+  final ResponderId id;
 
   Responder(this.id, Crypto crypto) : super.fromRandom(crypto);
 
@@ -194,7 +194,7 @@ class Responder extends Client {
 
 class Initiator extends Client {
   @override
-  final IdInitiator id = Id.initiatorAddress;
+  final InitiatorId id = Id.initiatorAddress;
 
   Initiator(Crypto crypto) : super.fromRandom(crypto);
 
@@ -215,7 +215,7 @@ class Initiator extends Client {
     // if it's a Token message we need to use authToken
     if (msg is Token) {
       if (token == null) {
-        throw ProtocolError(
+        throw ProtocolErrorException(
             'Cannot encrypt token message for peer: auth token is null');
       }
       return _encrypt(msg, nonce, token);
@@ -300,13 +300,13 @@ class CombinedSequencePair {
     // this is the first message from that sender, the overflow number must be zero
     if (theirs == null) {
       if (!csnFromMessage.isOverflowZero) {
-        throw ValidationError('First message from $source with overflow');
+        throw ValidationException('First message from $source with overflow');
       }
       _theirs = csnFromMessage.copy();
     } else {
       theirs!.next();
       if (theirs != csnFromMessage) {
-        throw ValidationError('$source CS must be incremented by 1');
+        throw ValidationException('$source CS must be incremented by 1');
       }
     }
   }
@@ -329,12 +329,12 @@ class CookiePair {
   void updateAndCheck(Cookie cookieFromMessage, Id source) {
     if (theirs == null) {
       if (ours == cookieFromMessage) {
-        throw ValidationError('$source reused our cookie');
+        throw ValidationException('$source reused our cookie');
       } else {
         _theirs = cookieFromMessage;
       }
     } else if (theirs != cookieFromMessage) {
-      throw ValidationError('Cookie of $source changed');
+      throw ValidationException('Cookie of $source changed');
     }
   }
 }

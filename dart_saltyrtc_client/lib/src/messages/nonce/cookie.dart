@@ -1,7 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationError;
+    show ValidationException;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
@@ -16,7 +16,7 @@ class Cookie with EquatableMixin {
 
   Cookie(this._cookie) {
     if (_cookie.length != cookieLength) {
-      throw ValidationError('cookie must be $cookieLength bytes long');
+      throw ValidationException('cookie must be $cookieLength bytes long');
     }
   }
 

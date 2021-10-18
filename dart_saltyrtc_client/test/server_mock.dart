@@ -2,7 +2,7 @@ import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show KeyStore, CryptoBox;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdResponder;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
@@ -79,7 +79,7 @@ class MockServer {
   IntermediateState<ServerAuthInitiator> sendServerAuthInitiatorToPhase(
     Phase phase,
     Cookie yourCookie,
-    List<IdResponder> responders,
+    List<ResponderId> responders,
   ) {
     return _sendToPhase(
       serverAuthInitiator(yourCookie, responders),
@@ -92,7 +92,7 @@ class MockServer {
     Phase phase,
     Cookie yourCookie,
     bool initiatorConnected,
-    IdResponder clientAddress,
+    ResponderId clientAddress,
   ) {
     return _sendToPhase(
       serverAuthResponder(yourCookie, initiatorConnected, clientAddress),
@@ -132,7 +132,7 @@ class MockServer {
   NonceAndMessage<ServerAuthResponder> serverAuthResponder(
     Cookie yourCookie,
     bool initiatorConnected,
-    IdResponder clientAddress,
+    ResponderId clientAddress,
   ) {
     nonce.combinedSequence.next();
     // update with the new address of the client
@@ -145,7 +145,7 @@ class MockServer {
 
   NonceAndMessage<ServerAuthInitiator> serverAuthInitiator(
     Cookie yourCookie,
-    List<IdResponder> responders,
+    List<ResponderId> responders,
   ) {
     nonce.combinedSequence.next();
     // update with the new address of the client

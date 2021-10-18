@@ -22,9 +22,9 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateIdInitiator;
+    show validateInitiatorId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError;
+    show ProtocolErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Initiator;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
@@ -99,7 +99,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   @override
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
-    validateIdInitiator(id.value);
+    validateInitiatorId(id.value);
     initiatorWithState = null;
     emitEvent(
         events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
@@ -183,12 +183,13 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       }
     }
     if (msg is! AuthInitiator) {
-      throw ProtocolError(
+      throw ProtocolErrorException(
           'Unexpected message of type ${msg.type}, expected auth');
     }
 
     if (msg.yourCookie != initiator.cookiePair.ours) {
-      throw ProtocolError('Bad your_cookie in ${MessageType.auth} message');
+      throw ProtocolErrorException(
+          'Bad your_cookie in ${MessageType.auth} message');
     }
 
     final taskName = msg.task;
@@ -196,7 +197,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     try {
       taskBuilder = config.tasks.firstWhere((task) => task.name == taskName);
     } on StateError {
-      throw ProtocolError('unknown selected task ${msg.task}');
+      throw ProtocolErrorException('unknown selected task ${msg.task}');
     }
 
     final task = taskBuilder.buildResponderTask(msg.data[taskName]);

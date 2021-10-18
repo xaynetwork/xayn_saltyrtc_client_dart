@@ -2,7 +2,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError;
+    show ProtocolErrorException;
 import 'package:meta/meta.dart' show immutable;
 
 /// Exception we map provider specific decryption failure exceptions to.
@@ -10,7 +10,7 @@ import 'package:meta/meta.dart' show immutable;
 /// Decryption failure is a special case of an protocol error,
 /// in some edge cases we catch decryption failure and handle it differently.
 @immutable
-class DecryptionFailedException extends ProtocolError {
+class DecryptionFailedException extends ProtocolErrorException {
   DecryptionFailedException(Object cause) : super('decryption failed: $cause');
 }
 

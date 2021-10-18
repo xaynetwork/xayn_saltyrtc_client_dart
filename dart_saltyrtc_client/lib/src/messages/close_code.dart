@@ -1,5 +1,5 @@
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationError;
+    show ValidationException;
 import 'package:quiver/collection.dart' show HashBiMap;
 
 enum CloseCode {
@@ -74,7 +74,7 @@ extension CloseCodeToFromInt on CloseCode {
   static CloseCode fromInt(int value) {
     final cc = _cc2int.inverse[value];
     if (cc == null) {
-      throw ValidationError('$value is not a valid close code');
+      throw ValidationException('$value is not a valid close code');
     }
     return cc;
   }

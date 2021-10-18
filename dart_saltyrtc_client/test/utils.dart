@@ -4,14 +4,14 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show AuthToken, Crypto, CryptoBox, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, IdClient;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ClientId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, TaskData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolErrorException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show CombinedSequencePair, CookiePair;
@@ -33,19 +33,20 @@ void setUpTesting() {
 }
 
 Matcher throwsValidationError() {
-  return throwsA(isA<ValidationError>());
+  return throwsA(isA<ValidationException>());
 }
 
 Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   bool errorHasExpectedState(Object? error) {
-    if (error is! ProtocolError) {
+    if (error is! ProtocolErrorException) {
       return true;
     } else {
       return error.closeCode == closeCode;
     }
   }
 
-  return throwsA(allOf(isA<ProtocolError>(), predicate(errorHasExpectedState)));
+  return throwsA(
+      allOf(isA<ProtocolErrorException>(), predicate(errorHasExpectedState)));
 }
 
 class MockKnowledgeAboutTestedPeer {
@@ -135,7 +136,7 @@ class PeerData {
 
 Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
   Crypto crypto,
-  IdClient clientAddress,
+  ClientId clientAddress,
 ) {
   final server = PeerData(
     address: Id.serverAddress,

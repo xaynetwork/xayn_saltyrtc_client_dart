@@ -7,7 +7,7 @@ import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart'
-    show Id, IdClient, IdResponder;
+    show Id, ClientId, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show OverflowException;
@@ -19,7 +19,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolErrorException, ValidationException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink;
@@ -82,7 +82,7 @@ class AfterServerHandshakeCommon extends Common {
   /// After the server handshake the address is an IdClient and it cannot be
   /// modified anymore.
   @override
-  final IdClient address;
+  final ClientId address;
 
   /// After the server handshake the session key cannot be nullable anymore.
   @override
@@ -218,13 +218,13 @@ abstract class Phase {
       final msgBytes = Uint8List.sublistView(bytes, Nonce.totalLength);
 
       return run(peer, msgBytes, nonce);
-    } on ProtocolError catch (e) {
+    } on ProtocolErrorException catch (e) {
       return onProtocolError(e, nonce?.source);
     }
   }
 
   @protected
-  Phase onProtocolError(ProtocolError e, Id? source) {
+  Phase onProtocolError(ProtocolErrorException e, Id? source) {
     close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
     return this;
   }
@@ -242,7 +242,7 @@ abstract class Phase {
     final address = common.address;
     final destination = nonce.destination;
     if (destination != address) {
-      throw ValidationError(
+      throw ValidationException(
         'Invalid nonce destination.'
         'Expected $address, found $destination',
       );
@@ -270,7 +270,7 @@ abstract class Phase {
     try {
       cs.next();
     } on OverflowException {
-      throw ProtocolError('CSN overflow');
+      throw ProtocolErrorException('CSN overflow');
     }
 
     final nonce =
@@ -335,7 +335,7 @@ mixin WithPeer implements Phase {
 }
 
 mixin InitiatorSendDropResponder on Phase {
-  void sendDropResponder(IdResponder id, CloseCode closeCode) {
+  void sendDropResponder(ResponderId id, CloseCode closeCode) {
     logger.d('Dropping responder $id');
     sendMessage(DropResponder(id, closeCode), to: common.server);
   }
@@ -351,14 +351,15 @@ abstract class AfterServerHandshakePhase extends Phase {
 
   Phase handleSendError(SendError msg) {
     if (msg.source != common.address) {
-      throw ProtocolError('received send-error for message not send by us');
+      throw ProtocolErrorException(
+          'received send-error for message not send by us');
     }
     final destination = msg.destination;
     final viableDestination = role == Role.initiator
         ? msg.destination.isResponder()
         : msg.destination.isInitiator();
     if (!viableDestination) {
-      throw ProtocolError(
+      throw ProtocolErrorException(
           'received send-error for unexpected destination $destination');
     }
     return handleSendErrorByDestination(destination);

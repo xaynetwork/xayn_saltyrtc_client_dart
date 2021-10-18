@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show IdClient, Id;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show ClientId, Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields;
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
@@ -10,7 +10,7 @@ const _type = MessageType.disconnected;
 
 @immutable
 class Disconnected extends Message {
-  final IdClient id;
+  final ClientId id;
 
   @override
   List<Object> get props => [id];

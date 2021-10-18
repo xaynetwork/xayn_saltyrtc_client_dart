@@ -42,7 +42,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateTypeType, validateStringMapType;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolError, ValidationError;
+    show ProtocolErrorException, ValidationException;
 import 'package:messagepack/messagepack.dart' show Unpacker;
 
 extension MessageDecryptionExt on CryptoBox {
@@ -92,7 +92,7 @@ extension MessageDecryptionExt on CryptoBox {
       decryptionErrorCloseCode: decryptionErrorCloseCode,
     );
     if (msg is! T) {
-      throw ProtocolError(
+      throw ProtocolErrorException(
           'Unexpected message of type ${msg.type}, expected $msgType');
     }
     return msg as T;
@@ -120,7 +120,7 @@ Message readMessage(Uint8List bytes, {List<String> taskTypes = const []}) {
       } else if (map.containsKey(MessageFields.responders)) {
         return ServerAuthInitiator.fromMap(map);
       }
-      throw ValidationError('Invalid ${MessageType.serverAuth} message');
+      throw ValidationException('Invalid ${MessageType.serverAuth} message');
     case MessageType.clientAuth:
       return ClientAuth.fromMap(map);
     case MessageType.newInitiator:
@@ -141,7 +141,7 @@ Message readMessage(Uint8List bytes, {List<String> taskTypes = const []}) {
       } else if (map.containsKey(MessageFields.tasks)) {
         return AuthResponder.fromMap(map);
       }
-      throw ValidationError('Invalid ${MessageType.auth} message');
+      throw ValidationException('Invalid ${MessageType.auth} message');
     case MessageType.close:
       return Close.fromMap(map);
     case MessageType.application:
@@ -154,5 +154,5 @@ Message readMessage(Uint8List bytes, {List<String> taskTypes = const []}) {
       }
   }
 
-  throw ValidationError('Unknown message type: $type');
+  throw ValidationException('Unknown message type: $type');
 }

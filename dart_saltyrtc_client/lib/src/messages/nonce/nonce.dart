@@ -6,7 +6,7 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationError;
+    show ValidationException;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
 
@@ -40,7 +40,7 @@ class Nonce with EquatableMixin {
 
   factory Nonce.fromBytes(Uint8List bytes) {
     if (bytes.length < totalLength) {
-      throw ValidationError('buffer limit must be at least $totalLength');
+      throw ValidationException('buffer limit must be at least $totalLength');
     }
 
     final cookie = bytes.sublist(0, Cookie.cookieLength);
