@@ -66,7 +66,7 @@ class _Link extends SaltyRtcTaskLink {
   void emitEvent(Event event) {
     final phase = _phase;
     if (phase != null) {
-      // by-pass `TaskPhase.emitEvent` to prevent even re-receiving
+      // by-pass `TaskPhase.emitEvent` to prevent event re-receiving
       phase.common.events.emitEvent(event);
     }
   }

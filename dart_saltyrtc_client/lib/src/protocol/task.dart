@@ -16,7 +16,7 @@ import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 /// 1. The responder gets the data from `getInitialResponderData()` for every
 ///    task and sends it to the initiator (as part of the auth message).
 /// 2. The initiator selects a supported task, ignoring the data in this step.
-/// 3. The initiator builds a instance of the selected task using the data
+/// 3. The initiator builds an instance of the selected task using the data
 ///    provided from the responder. Besides the `Task` instance this will create
 ///    data which is send back to the responder (as part of the auth message).
 /// 4. The responder creates a task instance based on the data returned from
@@ -35,7 +35,7 @@ abstract class TaskBuilder {
   Task buildResponderTask(TaskData? initiatorData);
 }
 
-/// Type representing a initialized/running task.
+/// Type representing an initialized/running task.
 abstract class Task {
   /// The custom message types that the task use.
   List<String> get supportedTypes;
@@ -103,15 +103,15 @@ abstract class SaltyRtcTaskLink {
 
   /// Emits an event to the application.
   ///
-  /// If the event is a instance of `ClosingErrorEvent` the task should
+  /// If the event is an instance of `ClosingErrorEvent` the task should
   /// call (or have called) close.
   void emitEvent(Event event);
 
   /// Trigger a handover.
   ///
-  /// This will load to [Task.handleHandover] being called. It might be called
-  /// before [requestHandover] returns or it might be called from a later micro
-  /// task.
+  /// This will lead to [Task.handleHandover] being called. It might be called
+  /// before [requestHandover] returns or it might be called it might be called
+  /// async on a later tick.
   ///
   void requestHandover();
 }

@@ -1,13 +1,13 @@
 @JS()
 library sodium_loader;
 
-import 'dart:async';
-import 'dart:html';
-import 'dart:js_util';
+import 'dart:async' show Completer, Future;
+import 'dart:html' show ScriptElement, document, window;
+import 'dart:js_util' show getProperty, setProperty;
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart';
-import 'package:js/js.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart' show LibSodiumJS;
+import 'package:js/js.dart' show JS, allowInterop, anonymous;
 
 @JS()
 @anonymous

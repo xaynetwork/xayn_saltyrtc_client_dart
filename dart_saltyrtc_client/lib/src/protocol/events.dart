@@ -131,8 +131,8 @@ class NoSharedTaskFound extends FatalErrorEvent {}
 /// This mainly happens in following situations:
 ///
 /// - The wrong auth token is used.
-/// - A auth token was required but not used.
-/// - A auth token was not required but send.
+/// - An auth token was required but not used.
+/// - An auth token was not required but send.
 /// - The responders permanent key doesn't match the expected
 ///   trusted responders key.
 ///
@@ -206,7 +206,7 @@ class LikelyTemporaryFailure extends ClosingErrorEvent {
 }
 
 enum UnexpectedStatusVariant {
-  /// The server or other client ran into a internal error.
+  /// The server or other client ran into an internal error.
   ///
   /// *If we run into an internalError we use the InternalError event,
   ///  which provides additional debug information.*
@@ -250,7 +250,7 @@ enum UnexpectedStatusVariant {
 @immutable
 class CancelTask extends ClosingErrorEvent {}
 
-/// A unexpected error occurred.
+/// An unexpected error occurred.
 ///
 /// This is most likely a bug on at least one side, but in rare cases can also
 /// be caused by bad settings and/or unusual network conditions.
@@ -260,7 +260,7 @@ class UnexpectedStatus extends ClosingErrorEvent {
   final UnexpectedStatusVariant variant;
   final int? closeCode;
 
-  // Creates a instance, it doesn't check if `variant` matches `closeCode`.
+  // Creates an instance, it doesn't check if `variant` matches `closeCode`.
   //
   // Preferably use `eventFromStatus` instead.
   UnexpectedStatus.unchecked(
@@ -272,7 +272,7 @@ class UnexpectedStatus extends ClosingErrorEvent {
   List<Object?> get props => [variant, closeCode];
 }
 
-/// A unexpected exception was thrown, this error is 100% indicating that we hit a bug.
+/// An unexpected exception was thrown, this error is 100% indicating that we hit a bug.
 @immutable
 class InternalError extends ClosingErrorEvent {
   final Object error;
@@ -305,7 +305,7 @@ class HandoverToTask extends Event {}
 @immutable
 class TaskDone extends Event {}
 
-/// Creates a event from an status code.
+/// Creates an event from an status code.
 ///
 /// This should be used if the `WebSocket` was closed without us closing it,
 /// to determine if we need to emit another event.

@@ -59,10 +59,10 @@ abstract class Id with EquatableMixin {
 /// Represent the id of a server.
 abstract class ServerId implements Id {}
 
-/// Represent the id of a initiator or a responder.
+/// Represent the id of an initiator or a responder.
 abstract class ClientId implements Id {}
 
-/// Represent the id of a initiator.
+/// Represent the id of an initiator.
 abstract class InitiatorId implements ClientId {}
 
 /// Represent the id of a responder.

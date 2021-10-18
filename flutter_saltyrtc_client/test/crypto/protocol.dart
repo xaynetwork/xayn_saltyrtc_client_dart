@@ -1,7 +1,7 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:convert' show base64, json;
+import 'dart:typed_data' show Uint8List;
 
-import 'package:equatable/equatable.dart';
+import 'package:equatable/equatable.dart' show Equatable;
 
 class MessageType {
   const MessageType._();

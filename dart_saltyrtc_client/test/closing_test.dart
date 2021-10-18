@@ -95,7 +95,8 @@ void main() {
       expect(phase.isClosing, isTrue);
     });
 
-    test('if not manually closed close the events and maybe emits a Event', () {
+    test('if not manually closed close the events and maybe emits an Event',
+        () {
       var phase = TestPhase();
       phase.common.webSocket.sink
           .close(CloseCode.initiatorCouldNotDecrypt.toInt());

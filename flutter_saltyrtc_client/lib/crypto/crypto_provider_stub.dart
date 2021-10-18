@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' show Crypto;
 
 Crypto get cryptoInstance {
   throw UnsupportedError('Cannot create an crypto instance');

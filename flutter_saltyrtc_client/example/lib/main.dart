@@ -1,8 +1,21 @@
-import 'dart:async';
-import 'dart:convert';
+import 'dart:async' show Future;
+import 'dart:convert' show base64Encode;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart';
+import 'package:flutter/material.dart'
+    show
+        AppBar,
+        BuildContext,
+        Center,
+        Key,
+        MaterialApp,
+        Scaffold,
+        State,
+        StatefulWidget,
+        Text,
+        Widget,
+        runApp;
+import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
+    show CryptoProvider;
 
 void main() {
   runApp(const MyApp());

@@ -38,7 +38,7 @@ void main() {
   CombinedSequence mkCSN() => CombinedSequence.fromRandom(crypto.randomBytes);
 
   group('Responder.assertAuthenticated', () {
-    test('creates a AuthenticatedResponder', () {
+    test('creates an AuthenticatedResponder', () {
       final responder = Responder(responderId1, crypto);
       responder.setPermanentSharedKey(sharedKey1f2);
       responder.setSessionSharedKey(sharedKey1f3);
@@ -81,7 +81,7 @@ void main() {
   });
 
   group('Initiator.assertAuthenticated', () {
-    test('creates a AuthenticatedInitiator', () {
+    test('creates an AuthenticatedInitiator', () {
       final initiator = Initiator(crypto);
       initiator.setPermanentSharedKey(sharedKey1f2);
       initiator.setSessionSharedKey(sharedKey1f3);
