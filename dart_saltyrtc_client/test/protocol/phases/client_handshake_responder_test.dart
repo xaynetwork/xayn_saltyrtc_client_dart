@@ -108,16 +108,18 @@ void main() {
     final initiator = setup.initiator;
     runTest(setup.initialPhase, [
       mkRecvTokenAndKeyTest(initiator),
-      (phase, io) {
-        final closing = initiator.sendAndClose(
+      (initialPhase, io) {
+        final closeCode = initiator.sendAndClose(
           message: Token(crypto.createAuthToken().bytes),
-          sendTo: phase,
+          sendTo: initialPhase,
           encryptWith: crypto.createSharedKeyStore(
             ownKeyStore: initiator.permanentKey,
             remotePublicKey: initiator.testedPeer.permanentKey!.publicKey,
           ),
         );
-        expect(closing, equals(CloseCode.protocolError));
+        expect(closeCode, equals(CloseCode.goingAway));
+        final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
+        expect(event.peerKind, events.PeerKind.unauthenticated);
         return null;
       }
     ]);
@@ -185,7 +187,7 @@ void main() {
         tasks: tasks,
       ),
       (initialPhase, io) {
-        final closing = initiator.sendAndClose(
+        final closeCode = initiator.sendAndClose(
           message: AuthInitiator(initiator.testedPeer.cookiePair.ours,
               'example.v23', {'example.v23': null}),
           sendTo: initialPhase,
@@ -194,7 +196,9 @@ void main() {
               remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
         );
 
-        expect(closing, equals(CloseCode.protocolError));
+        expect(closeCode, equals(CloseCode.goingAway));
+        final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
+        expect(event.peerKind, events.PeerKind.unauthenticated);
         return null;
       }
     ]);
@@ -425,8 +429,7 @@ Phase? Function(Phase, Io) mkInitiatorDisconnectedTest({
           remotePublicKey: server.testedPeer.permanentKey!.publicKey),
     );
     final disconnectedEvent = io.expectEventOfType<events.PeerDisconnected>();
-    expect(
-        disconnectedEvent.peerKind, events.PeerKind.unauthenticatedTargetPeer);
+    expect(disconnectedEvent.peerKind, events.PeerKind.unauthenticated);
     expect(phase.initiatorWithState, isNull);
     return phase;
   };
@@ -458,7 +461,7 @@ Phase? Function(Phase, Io) mkSendErrorTest({
     resetInitiatorData(initiator);
 
     final errEvent = io.expectEventOfType<events.SendingMessageToPeerFailed>();
-    expect(errEvent.wasAuthenticated, isFalse);
+    expect(errEvent.peerKind, events.PeerKind.unauthenticated);
 
     return phase;
   };

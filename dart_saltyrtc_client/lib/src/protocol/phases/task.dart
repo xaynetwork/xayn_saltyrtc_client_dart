@@ -61,7 +61,9 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source == pairedClient.id) {
       sendMessage(Close(e.closeCode), to: pairedClient);
-      close(CloseCode.closingNormal, 'closing after c2c protocol error');
+      common.closer
+          .close(CloseCode.closingNormal, 'closing after c2c protocol error');
+      //TODO event + reset (TY-2032)
       return this;
     } else {
       return super.onProtocolError(e, source);
@@ -138,10 +140,11 @@ class InitiatorTaskPhase extends TaskPhase
     final id = msg.id;
     validateResponderId(id.value);
     if (id != pairedClient.id) {
-      emitEvent(events.PeerDisconnected(events.PeerKind.unknownPeer));
+      emitEvent(events.AdditionalResponderEvent(
+          events.PeerDisconnected(events.PeerKind.unauthenticated)));
       return this;
     } else {
-      emitEvent(events.PeerDisconnected(events.PeerKind.authenticatedPeer));
+      emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
       return InitiatorClientHandshakePhase(common, config);
     }
   }
@@ -149,10 +152,12 @@ class InitiatorTaskPhase extends TaskPhase
   @override
   Phase handleSendErrorByDestination(Id destination) {
     if (destination != pairedClient.id) {
-      emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
+      emitEvent(events.AdditionalResponderEvent(
+          events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated)));
       return this;
     } else {
-      emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: true));
+      emitEvent(
+          events.SendingMessageToPeerFailed(events.PeerKind.authenticated));
       return InitiatorClientHandshakePhase(common, config);
     }
   }
@@ -186,14 +191,14 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateInitiatorId(id.value);
-    emitEvent(events.PeerDisconnected(events.PeerKind.authenticatedPeer));
+    emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
     return ResponderClientHandshakePhase(common, config,
         initiatorConnected: false);
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
-    emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: true));
+    emitEvent(events.SendingMessageToPeerFailed(events.PeerKind.authenticated));
     return ResponderClientHandshakePhase(common, config,
         initiatorConnected: false);
   }
@@ -204,7 +209,9 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
       // if a new initiator connected the current session is not valid anymore
       logger.d('A new initiator connected');
       // we could also go back to `ResponderClientHandshakePhase`, but we also need to notify the Task
-      close(CloseCode.closingNormal, 'Another initiator connected');
+      common.closer
+          .close(CloseCode.closingNormal, 'Another initiator connected');
+      //TODO event + task (TY-2032)
       return this;
     } else {
       logger.w('Unexpected server message type: ${msg.type}');

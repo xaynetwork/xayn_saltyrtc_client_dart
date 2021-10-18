@@ -97,19 +97,35 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   }
 
   @override
+  Phase onProtocolError(ProtocolErrorException e, Id? source) {
+    if (source != null && source.isInitiator()) {
+      emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.unauthenticated));
+      initiatorWithState = null;
+      // We can't just reset the initiator state as we can't tell the initiator
+      // that we did so. To again communicate with the initiator we need a new
+      // address, so we need to close the connection. As the protocol error was
+      // not with the server we close the connection with `goingAway`.
+      common.closer.close(CloseCode.goingAway, 'c2c protocol error');
+      return this;
+    } else {
+      return super.onProtocolError(e, source);
+    }
+  }
+
+  @override
   Phase handleDisconnected(Disconnected msg) {
     final id = msg.id;
     validateInitiatorId(id.value);
     initiatorWithState = null;
-    emitEvent(
-        events.PeerDisconnected(events.PeerKind.unauthenticatedTargetPeer));
+    emitEvent(events.PeerDisconnected(events.PeerKind.unauthenticated));
     return this;
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
-    emitEvent(events.SendingMessageToPeerFailed(wasAuthenticated: false));
+    emitEvent(
+        events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated));
     return this;
   }
 
@@ -177,8 +193,7 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       if (msg.reason == CloseCode.noSharedTask) {
         logger.w('No shared task for ${initiator.id} found');
         emitEvent(events.NoSharedTaskFound());
-        // no close code is used in this case
-        close(null, 'no shared task was found');
+        common.closer.close(null, 'no shared task was found');
         return this;
       }
     }

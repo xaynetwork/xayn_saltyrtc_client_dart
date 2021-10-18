@@ -21,7 +21,7 @@ abstract class SaltyRtcClient {
 
   /// Close the connection with the server, the client is not usable after
   /// this method has been called.
-  Future<void> close();
+  Future<void> cancel();
 }
 
 /// Client for an initiator.
@@ -107,8 +107,8 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
   /// Close the connection with the server, the client is not usable after
   /// this method has been called.
   @override
-  Future<void> close() {
-    return _client.close();
+  Future<void> cancel() {
+    return _client.cancel();
   }
 }
 
@@ -195,8 +195,8 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
   /// Close the connection with the server, the client is not
   /// usable after this method has been called.
   @override
-  Future<void> close() {
-    return _client.close();
+  Future<void> cancel() {
+    return _client.cancel();
   }
 }
 

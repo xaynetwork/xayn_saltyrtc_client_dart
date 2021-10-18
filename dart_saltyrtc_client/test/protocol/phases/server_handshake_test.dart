@@ -29,7 +29,7 @@ import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show MockSyncWebSocketSink, PackageQueue;
 import '../../server_mock.dart'
     show Decrypt, IntermediateState, MockServer, NonceAndMessage;
-import '../../utils.dart' show setUpTesting;
+import '../../utils.dart' show NoOpCloser, setUpTesting;
 
 void main() {
   setUpTesting();
@@ -209,6 +209,7 @@ class SetupData {
       crypto,
       ws,
       events.sink,
+      NoOpCloser(),
     );
     final Config config;
     if (role == Role.initiator) {

@@ -22,6 +22,7 @@ abstract class WebSocket {
   /// The code used to close the web socket (if there was one and if the
   /// socket was closed)
   int? get closeCode;
+
   WebSocketSink get sink;
   WebSocketStream get stream;
 }
