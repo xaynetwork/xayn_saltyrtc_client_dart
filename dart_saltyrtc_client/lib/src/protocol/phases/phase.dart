@@ -326,7 +326,7 @@ abstract class Phase {
 
   /// Close the client.
   ///
-  /// The will immediately call `doClose` on the current phase and close the
+  /// This will immediately call `doClose` on the current phase and close the
   /// `WebSocket` afterwards.
   ///
   /// This can be freely called from any async task.
@@ -355,7 +355,7 @@ abstract class Phase {
 
   /// Notify the closer that the connection is closed.
   ///
-  /// The MUST be called by whoever listens on the `WebSocket` once
+  /// This MUST be called by whoever listens on the `WebSocket` once
   /// the stream is closed. It also MUST only be called in that specific case.
   ///
   /// This can be freely called from any async task.
