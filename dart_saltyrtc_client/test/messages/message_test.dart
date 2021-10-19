@@ -8,7 +8,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
 import 'package:test/test.dart';
 
 import '../crypto_mock.dart' show crypto;
-import '../utils.dart';
+import '../utils.dart' show setUpTesting;
 
 void main() {
   setUpTesting();

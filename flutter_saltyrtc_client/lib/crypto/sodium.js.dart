@@ -4,10 +4,10 @@
 @JS()
 library sodium.js;
 
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
-import 'package:js/js.dart';
-import 'package:meta/meta.dart';
+import 'package:js/js.dart' show JS, anonymous;
+import 'package:meta/meta.dart' show visibleForTesting;
 
 @JS()
 @anonymous

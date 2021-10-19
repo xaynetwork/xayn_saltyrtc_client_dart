@@ -10,7 +10,7 @@ abstract class Event extends Equatable {
 }
 
 /// An event which will lead to the SaltyRtc client being closed.
-abstract class ClosingErrorEvent extends Event {}
+abstract class ClosingErrorEvent extends Event implements Exception {}
 
 /// An error which can't be recovered from.
 ///
@@ -131,8 +131,8 @@ class NoSharedTaskFound extends FatalErrorEvent {}
 /// This mainly happens in following situations:
 ///
 /// - The wrong auth token is used.
-/// - A auth token was required but not used.
-/// - A auth token was not required but send.
+/// - An auth token was required but not used.
+/// - An auth token was not required but send.
 /// - The responders permanent key doesn't match the expected
 ///   trusted responders key.
 ///
@@ -206,7 +206,7 @@ class LikelyTemporaryFailure extends ClosingErrorEvent {
 }
 
 enum UnexpectedStatusVariant {
-  /// The server or other client ran into a internal error.
+  /// The server or other client ran into an internal error.
   ///
   /// *If we run into an internalError we use the InternalError event,
   ///  which provides additional debug information.*
@@ -239,7 +239,7 @@ enum UnexpectedStatusVariant {
   other
 }
 
-/// A unexpected error occurred.
+/// An unexpected error occurred.
 ///
 /// This is most likely a bug on at least one side, but in rare cases can also
 /// be caused by bad settings and/or unusual network conditions.
@@ -249,7 +249,7 @@ class UnexpectedStatus extends ClosingErrorEvent {
   final UnexpectedStatusVariant variant;
   final int? closeCode;
 
-  // Creates a instance, it doesn't check if `variant` matches `closeCode`.
+  // Creates an instance, it doesn't check if `variant` matches `closeCode`.
   //
   // Preferably use `eventFromStatus` instead.
   UnexpectedStatus.unchecked(
@@ -261,7 +261,7 @@ class UnexpectedStatus extends ClosingErrorEvent {
   List<Object?> get props => [variant, closeCode];
 }
 
-/// A unexpected exception was thrown, this error is 100% indicating that we hit a bug.
+/// An unexpected exception was thrown, this error is 100% indicating that we hit a bug.
 @immutable
 class InternalError extends ClosingErrorEvent {
   final Object error;
@@ -285,7 +285,16 @@ class ProtocolErrorWithPeer extends Event {
   List<Object?> get props => [peerKind];
 }
 
-/// Creates a event from an status code.
+/// Event emitted when all responsibility is handed over to the task and the
+/// original WebSocket is closed because it's no longer needed.
+@immutable
+class HandoverToTask extends Event {}
+
+/// Emitted by tasks when they are done.
+@immutable
+class TaskDone extends Event {}
+
+/// Creates an event from an status code.
 ///
 /// This should be used if the `WebSocket` was closed without us closing it,
 /// to determine if we need to emit another event.
@@ -322,8 +331,6 @@ Event? eventFromWSCloseCode(int? closeCode) {
           UnexpectedStatusVariant.tlsHandshake, closeCode);
     case 3000:
       return LikelyTemporaryFailure(TempFailureVariant.pathFull);
-    // case 3003:
-    //   return HandoverOfSignalingChannel();
     case 3004:
       return LikelyTemporaryFailure(TempFailureVariant.droppedByInitiator);
     case 3005:
@@ -334,6 +341,10 @@ Event? eventFromWSCloseCode(int? closeCode) {
       return IncompatibleServerKey();
     case 3008:
       return LikelyTemporaryFailure(TempFailureVariant.timeout);
+    case 3003:
+      logger.e('handover status should have been handled separately');
+      return UnexpectedStatus.unchecked(
+          UnexpectedStatusVariant.other, closeCode);
     default:
       return UnexpectedStatus.unchecked(
           UnexpectedStatusVariant.other, closeCode);

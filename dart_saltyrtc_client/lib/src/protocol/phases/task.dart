@@ -7,8 +7,8 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
+    show CloseCode, CloseCodeToFromInt;
+import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/reader.dart'
@@ -26,6 +26,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
@@ -43,16 +44,105 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         ResponderConfig,
         ResponderIdentity,
         WithPeer;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show Task;
+import 'package:dart_saltyrtc_client/src/protocol/task.dart'
+    show SaltyRtcTaskLink, Task, CancelReason;
+import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
 import 'package:meta/meta.dart' show protected;
+
+class _Link extends SaltyRtcTaskLink {
+  TaskPhase? _phase;
+
+  _Link(TaskPhase this._phase);
+
+  @override
+  void close(CloseCode closeCode, [String? reason]) {
+    final phase = _phase;
+    if (phase != null) {
+      phase.close(closeCode, reason);
+    }
+  }
+
+  @override
+  void emitEvent(Event event) {
+    final phase = _phase;
+    if (phase != null) {
+      // by-pass `TaskPhase.emitEvent` to prevent event re-receiving
+      phase.common.events.emitEvent(event);
+    }
+  }
+
+  @override
+  void sendMessage(TaskMessage msg) {
+    final phase = _phase;
+    if (phase != null) {
+      phase.sendMessage(msg, to: phase.pairedClient);
+    }
+  }
+
+  @override
+  void requestHandover() {
+    final phase = _phase;
+    if (phase != null) {
+      phase.enableHandover();
+      phase.close(CloseCode.handover, 'handover');
+    } else {
+      throw StateError('already disconnected from phase');
+    }
+  }
+
+  void disconnect() {
+    _phase = null;
+  }
+}
 
 abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
   Client get pairedClient;
 
   final Task task;
+  late _Link _link;
 
-  TaskPhase(AfterServerHandshakeCommon common, this.task) : super(common);
+  TaskPhase(AfterServerHandshakeCommon common, this.task) : super(common) {
+    _link = _Link(this);
+    taskCallGuard(() {
+      task.start(_link);
+    });
+  }
+
+  @override
+  void enableHandover() {
+    //ignore: invalid_use_of_protected_member
+    common.enableHandover = true;
+  }
+
+  void taskCallGuard(void Function() func) {
+    try {
+      func();
+    } catch (e, s) {
+      _link.disconnect();
+      // Do not use `this.emitEvent` here as we do not want to send this event to
+      // the task as this might case further errors or even infinite recursion.
+      common.events.emitEvent(events.InternalError(e), s);
+      common.events.close();
+      close(CloseCode.internalError, e.toString());
+      _cancelTask(CancelReason.handlerDidThrow);
+    }
+  }
+
+  @override
+  void emitEvent(Event event, [StackTrace? st]) {
+    final isHandover = event is events.HandoverToTask;
+    if (isHandover) {
+      taskCallGuard(() {
+        task.handleHandover(common.events);
+      });
+      _link.disconnect();
+    }
+    common.events.emitEvent(event, st);
+    taskCallGuard(() {
+      task.handleEvent(event);
+    });
+  }
 
   @protected
   Phase handleServerMessage(Message msg);
@@ -60,10 +150,8 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   @override
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
     if (source == pairedClient.id) {
-      sendMessage(Close(e.closeCode), to: pairedClient);
-      common.closer
-          .close(CloseCode.closingNormal, 'closing after c2c protocol error');
-      //TODO event + reset (TY-2032)
+      close(e.closeCode, 'closing after c2c protocol error');
+      emitEvent(events.ProtocolErrorWithPeer(events.PeerKind.authenticated));
       return this;
     } else {
       return super.onProtocolError(e, source);
@@ -72,8 +160,11 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @override
   Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
-    final msg = source.sessionSharedKey!
-        .readEncryptedMessage(msgBytes: msgBytes, nonce: nonce);
+    final msg = source.sessionSharedKey!.readEncryptedMessage(
+      msgBytes: msgBytes,
+      nonce: nonce,
+      taskTypes: task.supportedTypes,
+    );
 
     if (nonce.source.isServer()) {
       if (msg is SendError) {
@@ -92,7 +183,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   Phase handlePeerMessage(Message msg) {
     if (msg is TaskMessage) {
       logger.d('Received task message');
-      return handleTaskMessage(msg);
+      taskCallGuard(() {
+        task.handleMessage(msg);
+      });
+      return this;
     } else if (msg is Close) {
       logger.d('Received close message');
       return handleClose(msg);
@@ -107,18 +201,71 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @protected
   Phase handleClose(Close msg) {
-    throw UnimplementedError();
-  }
-
-  @protected
-  Phase handleTaskMessage(TaskMessage msg) {
-    throw UnimplementedError();
+    final closeCode = msg.reason;
+    if (closeCode == CloseCode.handover) {
+      enableHandover();
+    } else {
+      final event = events.eventFromWSCloseCode(closeCode.toInt());
+      if (event != null) {
+        emitEvent(event);
+      }
+    }
+    close(null, 'close msg');
+    return this;
   }
 
   @protected
   Phase handleApplicationMessage(Application msg) {
-    throw UnimplementedError();
+    logger.e('application messages are currently not supported');
+    return this;
   }
+
+  @protected
+  Phase toClientHandshakePhase(CancelReason reason,
+      {bool newInitiator = false, ResponderId? responderOverride}) {
+    _cancelTask(reason);
+    _link.disconnect();
+    return onlyCreateClientHandshakePhase(
+        initiatorOverride: newInitiator, responderOverride: responderOverride);
+  }
+
+  @override
+  void notifyConnectionClosed() {
+    taskCallGuard(() {
+      if (!isHandoverEnabled) {
+        _cancelTask(CancelReason.serverDisconnected);
+      }
+    });
+    super.notifyConnectionClosed();
+  }
+
+  bool _taskCancelWasCalled = false;
+  void _cancelTask(CancelReason reason) {
+    if (!_taskCancelWasCalled) {
+      _taskCancelWasCalled = true;
+      taskCallGuard(() {
+        task.handleCancel(reason);
+      });
+      _link.disconnect();
+    }
+  }
+
+  @override
+  int? doClose(CloseCode? closeCode) {
+    // WARNING: Do not move any task cancellation/closing logic in here.
+    //          It would mess with handovers, instead use the `onClosed`
+    //          future.
+    if (closeCode != null) {
+      sendMessage(Close(closeCode), to: pairedClient);
+      return CloseCode.goingAway.toInt();
+    } else {
+      return super.doClose(closeCode);
+    }
+  }
+
+  @protected
+  Phase onlyCreateClientHandshakePhase(
+      {bool initiatorOverride = false, ResponderId? responderOverride});
 }
 
 class InitiatorTaskPhase extends TaskPhase
@@ -145,7 +292,7 @@ class InitiatorTaskPhase extends TaskPhase
       return this;
     } else {
       emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-      return InitiatorClientHandshakePhase(common, config);
+      return toClientHandshakePhase(CancelReason.peerDisconnected);
     }
   }
 
@@ -158,19 +305,38 @@ class InitiatorTaskPhase extends TaskPhase
     } else {
       emitEvent(
           events.SendingMessageToPeerFailed(events.PeerKind.authenticated));
-      return InitiatorClientHandshakePhase(common, config);
+      return toClientHandshakePhase(CancelReason.sendError);
     }
   }
 
   @override
   Phase handleServerMessage(Message msg) {
     if (msg is NewResponder) {
-      logger.d('Dropping new responder while in task phase');
-      sendDropResponder(msg.id, CloseCode.droppedByInitiator);
+      if (msg.id == pairedClient.id) {
+        // For the client we pretend the responder disconnected (and a new
+        // not yet authenticated responder reconnected).
+        emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
+        return toClientHandshakePhase(CancelReason.peerOverwrite,
+            responderOverride: msg.id);
+      } else {
+        logger.d('Dropping new responder while in task phase');
+        sendDropResponder(msg.id, CloseCode.droppedByInitiator);
+      }
     } else {
       logger.w('Unexpected server message type: ${msg.type}');
     }
     return this;
+  }
+
+  @override
+  Phase onlyCreateClientHandshakePhase(
+      {bool initiatorOverride = false, ResponderId? responderOverride}) {
+    assert(initiatorOverride == false);
+    final newPhase = InitiatorClientHandshakePhase(common, config);
+    if (responderOverride != null) {
+      newPhase.addNewResponder(responderOverride);
+    }
+    return newPhase;
   }
 }
 
@@ -192,30 +358,34 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
     final id = msg.id;
     validateInitiatorId(id.value);
     emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-    return ResponderClientHandshakePhase(common, config,
-        initiatorConnected: false);
+    return toClientHandshakePhase(CancelReason.peerDisconnected);
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
     emitEvent(events.SendingMessageToPeerFailed(events.PeerKind.authenticated));
-    return ResponderClientHandshakePhase(common, config,
-        initiatorConnected: false);
+    return toClientHandshakePhase(CancelReason.sendError);
   }
 
   @override
   Phase handleServerMessage(Message msg) {
     if (msg is NewInitiator) {
-      // if a new initiator connected the current session is not valid anymore
-      logger.d('A new initiator connected');
-      // we could also go back to `ResponderClientHandshakePhase`, but we also need to notify the Task
-      common.closer
-          .close(CloseCode.closingNormal, 'Another initiator connected');
-      //TODO event + task (TY-2032)
-      return this;
+      // For the client we pretend the initiator disconnected (and a new
+      // not yet authenticated responder reconnected).
+      emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
+      return toClientHandshakePhase(CancelReason.peerOverwrite,
+          newInitiator: true);
     } else {
       logger.w('Unexpected server message type: ${msg.type}');
       return this;
     }
+  }
+
+  @override
+  Phase onlyCreateClientHandshakePhase(
+      {bool initiatorOverride = false, ResponderId? responderOverride}) {
+    assert(responderOverride == null);
+    return ResponderClientHandshakePhase(common, config,
+        initiatorConnected: initiatorOverride);
   }
 }

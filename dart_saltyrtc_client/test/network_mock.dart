@@ -15,6 +15,7 @@ class MockSyncWebSocketSink implements WebSocketSink {
   final queue = PackageQueue();
   int? closeCode;
   String? closeReason;
+  bool isClosed = false;
 
   @override
   void add(Uint8List package) {
@@ -23,10 +24,24 @@ class MockSyncWebSocketSink implements WebSocketSink {
 
   @override
   Future<void> close([int? closeCode, String? closeReason]) {
-    closeCode = closeCode;
-    closeReason = closeReason;
+    isClosed = true;
+    this.closeCode = closeCode;
+    this.closeReason = closeReason;
     return Future.value(null);
   }
+}
+
+class MockSyncWebSocket implements WebSocket {
+  @override
+  final MockSyncWebSocketSink sink = MockSyncWebSocketSink();
+
+  @override
+  int? get closeCode => sink.closeCode;
+
+  bool get isClosed => sink.isClosed;
+
+  @override
+  WebSocketStream get stream => throw UnimplementedError();
 }
 
 class MockAsyncWebSocketSink implements WebSocketSink {

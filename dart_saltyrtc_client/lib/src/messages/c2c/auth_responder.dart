@@ -1,5 +1,3 @@
-import 'package:dart_saltyrtc_client/src/messages/c2c/common.dart'
-    show writeDataTagWithTasksData;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, TasksData;
 import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
@@ -11,6 +9,7 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
         validateTasksDataType,
         validateTasksData,
         validateListType;
+import 'package:dart_saltyrtc_client/src/msgpack_ext.dart' show PackAnyExt;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
 
@@ -60,6 +59,8 @@ class AuthResponder extends Message {
       msgPacker.packString(task);
     }
 
-    writeDataTagWithTasksData(msgPacker, data);
+    msgPacker
+      ..packString(MessageFields.data)
+      ..packAny(data);
   }
 }

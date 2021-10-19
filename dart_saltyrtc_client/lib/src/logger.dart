@@ -1,4 +1,5 @@
-import 'package:logger/logger.dart';
+import 'package:logger/logger.dart'
+    show Level, LogFilter, LogOutput, Logger, PrettyPrinter;
 
 final _defaultLogger = Logger();
 Logger? _logger;

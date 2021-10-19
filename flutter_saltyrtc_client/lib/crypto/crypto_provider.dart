@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' show Crypto;
 
 import 'crypto_provider_stub.dart'
     if (dart.library.io) 'crypto_provider_dart.dart'

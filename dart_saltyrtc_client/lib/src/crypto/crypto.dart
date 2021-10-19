@@ -113,11 +113,11 @@ class InitialClientAuthMethod {
   InitialClientAuthMethod._({this.authToken, this.trustedResponderSharedKey}) {
     if ((trustedResponderSharedKey == null) == (authToken == null)) {
       throw ArgumentError(
-          'Expects either a authToken OR a trustedResponderSharedKey');
+          'Expects either an authToken OR a trustedResponderSharedKey');
     }
   }
 
-  /// Create a instance from either an `AuthToken` or the public key
+  /// Create an instance from either an `AuthToken` or the public key
   /// of the trusted responder.
   ///
   /// The `crypto` and `initiatorPermanentKeys` are required if the trusted

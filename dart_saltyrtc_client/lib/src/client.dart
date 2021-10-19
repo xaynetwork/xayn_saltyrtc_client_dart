@@ -1,7 +1,6 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, KeyStore, AuthToken, InitialClientAuthMethod;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
@@ -26,50 +25,49 @@ extension BytesToAuthToken on Uint8List {
 abstract class Client {
   final WebSocket _ws;
   final StreamController<Event> _events;
-  final Closer _closer;
-  Phase? _phase;
+  Phase _phase;
+  bool _hasStarted = false;
 
   @protected
-  Client(this._ws, Phase this._phase, this._events)
-      : _closer = _phase.common.closer;
+  Client(this._ws, this._phase, this._events);
 
   /// Runs this Client returning a stream of events indicating the progress.
   Stream<Event> run() {
-    final phase = _phase;
-    if (phase == null) {
+    if (_hasStarted) {
       throw SaltyRtcClientError('SaltyRtc Client is already running');
     }
     // We must only access the phase from the run loop.
-    _phase = null;
-    _run(phase);
+    _hasStarted = true;
+    _run();
     return _events.stream;
   }
 
-  Future<void> _run(Phase phase) async {
+  Future<void> _run() async {
     try {
       await for (final message in _ws.stream) {
-        if (_closer.isClosing) {
+        if (_phase.isClosing) {
           // Can happen as closing the sink doesn't drop any pending incoming
           // messages, isClosing SHOULD only be true after `doClose` was called
           // on the `Phase`.
           logger.w('phase received message after closing');
           break;
         }
-        phase = phase.handleMessage(message);
+        _phase = _phase.handleMessage(message);
       }
     } catch (e, s) {
       _events.sink.emitEvent(InternalError(e), s);
-      _closer.close(CloseCode.internalError, e.toString());
+      _phase.close(CloseCode.internalError, e.toString());
     } finally {
-      _closer.notifyConnectionClosed();
+      _phase.notifyConnectionClosed();
     }
   }
 
   /// Closes the client and disconnect from the server canceling any ongoing
   /// task.
-  Future<void> cancel() {
-    _closer.close(CloseCode.goingAway, 'cancel');
-    return _closer.onClosed;
+  ///
+  /// This can be freely called from any async task.
+  void cancel() {
+    _phase.close(CloseCode.goingAway, 'cancel');
   }
 }
 
@@ -100,8 +98,7 @@ class InitiatorClient extends Client {
     }
 
     final events = StreamController<Event>.broadcast();
-    final common =
-        InitialCommon(crypto, ws.sink, events.sink, Closer(ws, events.sink));
+    final common = InitialCommon(crypto, ws, events.sink);
     final authMethod = InitialClientAuthMethod.fromEither(
       crypto: crypto,
       authToken: sharedAuthToken?.toAuthToken(crypto),
@@ -136,8 +133,7 @@ class ResponderClient extends Client {
     Uint8List? sharedAuthToken,
   }) {
     final events = StreamController<Event>.broadcast();
-    final common =
-        InitialCommon(crypto, ws.sink, events.sink, Closer(ws, events));
+    final common = InitialCommon(crypto, ws, events.sink);
 
     final config = ResponderConfig(
       permanentKeys: ourPermanentKeys,

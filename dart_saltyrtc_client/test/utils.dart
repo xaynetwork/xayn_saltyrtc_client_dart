@@ -1,9 +1,10 @@
-import 'dart:async' show Completer;
+import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/closer.dart' show Closer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, Crypto, CryptoBox, KeyStore;
+    show AuthToken, CryptoBox, KeyStore;
+import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
+    show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ClientId;
@@ -20,13 +21,14 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show AfterServerHandshakeCommon, InitialCommon, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart'
-    show Task, TaskBuilder;
+    show Task, TaskBuilder, SaltyRtcTaskLink, CancelReason;
 import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/expect.dart';
 
 import 'crypto_mock.dart' show crypto, setUpCrypto;
 import 'logging.dart' show setUpLogging;
-import 'network_mock.dart' show EventQueue, MockSyncWebSocketSink, PackageQueue;
+import 'network_mock.dart'
+    show EventQueue, MockSyncWebSocket, MockSyncWebSocketSink, PackageQueue;
 
 // Setups logging and crypto.
 void setUpTesting() {
@@ -95,11 +97,11 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect((nextPhase.common.closer as NoOpCloser).closeWasCalled, isFalse);
+    expect(nextPhase.isClosing, isFalse);
     return phaseAs<N>(nextPhase);
   }
 
-  CloseCode? sendAndClose({
+  int? sendAndClose({
     required Message message,
     required Phase sendTo,
     required CryptoBox? encryptWith,
@@ -113,9 +115,10 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    final noOpCloser = nextPhase.common.closer as NoOpCloser;
-    expect(noOpCloser.closeWasCalled, isTrue);
-    return noOpCloser.closeCode;
+    expect(nextPhase.isClosing, isTrue);
+    final sink = nextPhase.common.webSocket.sink as MockSyncWebSocketSink;
+    expect(sink.isClosed, isTrue);
+    return sink.closeCode;
   }
 
   Uint8List _createRawMessage(
@@ -138,7 +141,6 @@ class PeerData {
 }
 
 Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
-  Crypto crypto,
   ClientId clientAddress,
 ) {
   final server = PeerData(
@@ -148,8 +150,9 @@ Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
   server.testedPeer.ourSessionKey = crypto.createKeyStore();
   server.testedPeer.permanentKey = crypto.createKeyStore();
 
-  final common = InitialCommon(
-      crypto, MockSyncWebSocketSink(), EventQueue(), NoOpCloser());
+  final ws = MockSyncWebSocket();
+  final events = EventQueue();
+  final common = InitialCommon(crypto, ws, events);
   common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
     ownKeyStore: server.testedPeer.permanentKey!,
     remotePublicKey: server.permanentKey.publicKey,
@@ -225,9 +228,11 @@ class Io {
   }
 }
 
-void runTest(Phase initialPhase, List<Phase? Function(Phase, Io)> steps) {
+typedef TestStep = Phase? Function(Phase, Io);
+
+void runTest(Phase initialPhase, List<TestStep> steps) {
   Phase? phase = initialPhase;
-  final sink = phase.common.sink;
+  final sink = phase.common.webSocket.sink;
   final sendPackages = (sink as MockSyncWebSocketSink).queue;
   final sendEvents = phase.common.events as EventQueue;
   final io = Io(sendPackages, sendEvents);
@@ -235,7 +240,7 @@ void runTest(Phase initialPhase, List<Phase? Function(Phase, Io)> steps) {
     if (phase == null) {
       throw AssertionError('closed before all test did run');
     }
-    expect(phase.common.sink, same(sink));
+    expect(phase.common.webSocket.sink, same(sink));
     expect(phase.common.events, same(sendEvents));
     phase = step(phase, io);
     expect(sendPackages, isEmpty);
@@ -290,39 +295,29 @@ class TestTask extends Task {
   final List<String> supportedTypes;
 
   TestTask(this.name, {this.initData, this.supportedTypes = const ['magic']});
-}
-
-/// Doesn't do any of the thinks the closer is supposed to do.
-class NoOpCloser implements Closer {
-  final Completer<void> _onClose = Completer();
-  final Completer<void> _onClosed = Completer();
-  bool notifyStreamClosedWasCalled = false;
-  bool closeWasCalled = false;
-  CloseCode? closeCode;
-  String? closeReason;
-  bool wasCanceled = false;
 
   @override
-  void close(CloseCode? closeCode, String? reason, {bool wasCanceled = false}) {
-    closeWasCalled = true;
-    this.closeCode = closeCode;
-    closeReason = reason;
-    this.wasCanceled = wasCanceled;
-    _onClose.complete();
+  void handleCancel(CancelReason reason) {
+    throw UnimplementedError();
   }
 
   @override
-  bool get isClosing => closeWasCalled;
+  void handleEvent(Event event) {
+    throw UnimplementedError();
+  }
 
   @override
-  void setCurrentPhase(Phase current) {}
+  void handleMessage(TaskMessage msg) {
+    throw UnimplementedError();
+  }
 
   @override
-  Future<void> get onClosed => _onClosed.future;
+  void start(SaltyRtcTaskLink link) {}
 
   @override
-  void notifyConnectionClosed() {
-    notifyStreamClosedWasCalled = true;
-    _onClosed.complete();
+  void handleHandover(EventSink<Event> events) {
+    throw UnimplementedError();
   }
 }
+
+Future<void> tick() => Future.microtask(() => null);

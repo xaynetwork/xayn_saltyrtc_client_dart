@@ -10,7 +10,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
 import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
 import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
+    show CloseCode, CloseCodeToFromInt;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
@@ -71,7 +71,7 @@ void main() {
         TestTaskBuilder('fe fe', initialResponderData: {
           'yo': [1, 4, 3]
         }),
-        TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+        TestTaskBuilder('example.v23', initialResponderData: {'xml': <int>[]}),
         TestTaskBuilder('bar', initialResponderData: {
           'yes': [0, 0, 0]
         }),
@@ -185,7 +185,7 @@ void main() {
         TestTaskBuilder('fe fe', initialResponderData: {
           'yo': [1, 4, 3]
         }),
-        TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+        TestTaskBuilder('example.v23', initialResponderData: {'xml': <int>[]}),
         TestTaskBuilder('bar', initialResponderData: {
           'yes': [0, 0, 0]
         }),
@@ -276,7 +276,7 @@ void main() {
       TestTaskBuilder('fe fe', initialResponderData: {
         'yo': [1, 4, 3]
       }),
-      TestTaskBuilder('example.v23', initialResponderData: {'xml': []}),
+      TestTaskBuilder('example.v23', initialResponderData: {'xml': <int>[]}),
       TestTaskBuilder('bar', initialResponderData: {
         'yes': [0, 0, 0]
       }),
@@ -397,7 +397,7 @@ class _Setup {
             authToken: address == goodResponder ? goodAuthToken : badAuthToken))
         .toList(growable: false);
 
-    final sAndC = createAfterServerHandshakeState(crypto, Id.initiatorAddress);
+    final sAndC = createAfterServerHandshakeState(Id.initiatorAddress);
     final server = sAndC.first;
     final common = sAndC.second;
     final initiatorPermanentKeys = server.testedPeer.permanentKey!;
@@ -565,7 +565,7 @@ Phase? Function(Phase, Io) mkSendAuthNoSharedTaskTest({
           remotePublicKey: responder.testedPeer.theirSessionKey!.publicKey),
     );
 
-    expect(closing, equals(CloseCode.goingAway));
+    expect(closing, equals(CloseCode.goingAway.toInt()));
 
     io.expectEventOfType<events.NoSharedTaskFound>();
 
@@ -679,8 +679,8 @@ Phase? Function(Phase, Io) mkDropOldOnNewReceiverTest({
         message: NewResponder(newId),
         sendTo: initialPhase,
         encryptWith: crypto.createSharedKeyStore(
-          ownKeyStore: server.testedPeer.permanentKey!,
-          remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
         ));
 
     final dropMsg = io.expectMessageOfType<DropResponder>(
@@ -784,7 +784,7 @@ Phase? Function(Phase, Io) mkSendBadSendErrorTest({
           ownKeyStore: server.testedPeer.ourSessionKey!,
           remotePublicKey: server.testedPeer.permanentKey!.publicKey),
     );
-    expect(closing, equals(CloseCode.protocolError));
+    expect(closing, equals(CloseCode.protocolError.toInt()));
 
     io.expectEventOfType<events.ProtocolErrorWithServer>();
     return null;

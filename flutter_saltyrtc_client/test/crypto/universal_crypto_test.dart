@@ -1,10 +1,11 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' show Crypto;
-import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart';
+import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
+    show CryptoProvider;
 import 'package:test/test.dart';
 
-import 'protocol.dart';
+import 'protocol.dart' show EncryptedMessage, KeyExchangeMessage;
 
 extension CreateRandomNonce on Crypto {
   Uint8List createRandomNonce() {

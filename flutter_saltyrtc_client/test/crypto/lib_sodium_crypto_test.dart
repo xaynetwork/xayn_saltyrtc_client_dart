@@ -1,7 +1,7 @@
-import 'package:libsodium/libsodium.dart';
+import 'package:libsodium/libsodium.dart' show CryptoBox;
 import 'package:test/test.dart';
 
-import 'protocol.dart';
+import 'protocol.dart' show EncryptedMessage, KeyExchangeMessage;
 
 // This test can fail on platforms that don't have libsodium installed, install libsodium before running it.
 void main() async {

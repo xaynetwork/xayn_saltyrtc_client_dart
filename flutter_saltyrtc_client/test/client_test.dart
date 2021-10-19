@@ -6,7 +6,6 @@ import 'package:flutter_saltyrtc_client/client.dart'
     show InitiatorClient, ResponderClient, SaltyRtcClient;
 import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
     show getCrypto;
-import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart';
 import 'package:hex/hex.dart' show HEX;
 import 'package:test/test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart'
