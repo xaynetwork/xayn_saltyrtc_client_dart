@@ -323,13 +323,26 @@ abstract class Phase {
     peer.cookiePair.updateAndCheck(nonce.cookie, source);
   }
 
+  bool killedFuse = false;
   void killBecauseOf(Object error, StackTrace st) {
-    // mae sure we definitely don't do anything anymore
-    common.closingState = ClosingState.closed;
-    emitEvent(InternalError(error), st);
-    common.events.close();
-    common.webSocket.sink.close(CloseCode.internalError.toInt());
-    cancelTask();
+    logger.w('phase killed because of: $error\n$st');
+    //fuse to avoid endless recursion in certain edge cases
+    if (!killedFuse) {
+      killedFuse = true;
+      // by-pass any emitEvent overrides (risc of endless )
+      common.events.emitEvent(InternalError(error), st);
+      common.events.close();
+      // This will still send a close msg to a peer if necessary
+      // and cancel any ongoing task if necessary.
+      try {
+        close(CloseCode.internalError, 'internal error');
+      } catch (e, st) {
+        logger.w('closing on kill phase failed: $e\n$st');
+      }
+      common.closingState = ClosingState.closed;
+    } else {
+      logger.e('killingBecause of called multiple times: $error\n$st');
+    }
   }
 
   /// Called by
@@ -367,8 +380,8 @@ abstract class Phase {
               wsCloseCode = closeCode;
             }
           } catch (e, s) {
-            emitEvent(InternalError(e), s);
-            wsCloseCode = CloseCode.internalError;
+            killBecauseOf(e, s);
+            return;
           }
         }
         break;

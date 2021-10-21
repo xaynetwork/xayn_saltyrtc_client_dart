@@ -415,7 +415,7 @@ abstract class Setup {
           remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
         ),
       );
-      expect(closeCode, isNull);
+      expect(closeCode, equals(CloseCode.goingAway.toInt()));
 
       initialPhase.notifyWsStreamClosed();
       expect(task.handleHandoverCallCount, equals(1));

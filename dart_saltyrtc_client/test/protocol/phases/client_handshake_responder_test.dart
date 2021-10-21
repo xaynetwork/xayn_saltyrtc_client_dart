@@ -410,7 +410,7 @@ Phase? Function(Phase, Io) mkSendNoSharedTaskTest(PeerData initiator) {
           remotePublicKey: initiator.testedPeer.theirSessionKey!.publicKey),
     );
 
-    expect(closing, isNull);
+    expect(closing, equals(CloseCode.goingAway.toInt()));
 
     io.expectEventOfType<events.NoSharedTaskFound>();
     return phase;

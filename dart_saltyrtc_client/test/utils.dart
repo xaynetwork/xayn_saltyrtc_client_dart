@@ -101,7 +101,7 @@ class PeerData {
     return phaseAs<N>(nextPhase);
   }
 
-  int? sendAndClose({
+  int sendAndClose({
     required Message message,
     required Phase sendTo,
     required CryptoBox? encryptWith,
@@ -118,7 +118,8 @@ class PeerData {
     expect(nextPhase.isClosingWsStream, isTrue);
     final sink = nextPhase.common.webSocket.sink as MockSyncWebSocketSink;
     expect(sink.isClosed, isTrue);
-    return sink.closeCode;
+    expect(sink.closeCode, isNotNull);
+    return sink.closeCode!;
   }
 
   Uint8List _createRawMessage(

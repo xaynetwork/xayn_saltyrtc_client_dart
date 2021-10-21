@@ -37,6 +37,9 @@ class MockSyncWebSocket implements WebSocket {
 
   @override
   int? get closeCode => sink.closeCode;
+  set closeCode(int? closeCode) {
+    sink.closeCode = closeCode;
+  }
 
   bool get isClosed => sink.isClosed;
 
