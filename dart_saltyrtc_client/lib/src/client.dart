@@ -158,4 +158,7 @@ class SaltyRtcClientError extends Error {
   StackTrace? get stackTrace => _customStackTrace ?? super.stackTrace;
 
   SaltyRtcClientError(this.message, [this._customStackTrace]);
+
+  @override
+  String toString() => 'SaltyRtcClientError($message, $_customStackTrace)';
 }
