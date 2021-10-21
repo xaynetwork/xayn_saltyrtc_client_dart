@@ -79,6 +79,51 @@ void main() {
 
     await Future.wait([initiatorTests, responderTests]);
   });
+
+  test('cancel after handover works', () async {
+    final crypto = await getCrypto();
+    await Setup.serverReady();
+    final initiatorSetup = Setup.initiatorWithAuthToken(
+      crypto,
+      tasks: [
+        SendBlobTaskBuilder(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]),
+            hang: true)
+      ],
+    );
+
+    final responderSetup = Setup.responderWithAuthToken(
+      crypto,
+      tasks: [
+        SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]), hang: true)
+      ],
+      initiatorTrustedKey: initiatorSetup.permanentPublicKey,
+      authToken: initiatorSetup.authToken!,
+    );
+
+    final initiatorTests = initiatorSetup.runAndTestEvents([
+      (event) => expect(event, equals(ServerHandshakeDone())),
+      (event) => expect(event,
+          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(event, equals(HandoverToTask())),
+      (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
+    ]);
+
+    final responderTests = responderSetup.runAndTestEvents([
+      (event) => expect(event, equals(ServerHandshakeDone())),
+      (event) => expect(event,
+          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(event, equals(HandoverToTask())),
+      (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
+    ]);
+
+    Future.delayed(Duration(milliseconds: 100), () {
+      responderSetup.client.cancel();
+      initiatorSetup.client.cancel();
+    });
+
+    await Future.wait([initiatorTests, responderTests])
+        .timeout(Duration(seconds: 12));
+  });
 }
 
 class BlobReceived extends Event {
@@ -94,8 +139,9 @@ class UnexpectedClosedBeforeCompletion extends ClosingErrorEvent {}
 
 class SendBlobTaskBuilder extends TaskBuilder {
   final Uint8List blobToSendOverP2P;
+  final bool hang;
 
-  SendBlobTaskBuilder(this.blobToSendOverP2P);
+  SendBlobTaskBuilder(this.blobToSendOverP2P, {this.hang = false});
 
   @override
   Pair<Task, TaskData?> buildInitiatorTask(TaskData? initialResponderData) {
@@ -106,7 +152,7 @@ class SendBlobTaskBuilder extends TaskBuilder {
     expect(initialResponderData!['mode'], equals('magicNetwork'));
     final channel = FakeP2PChannel();
     final data = {'magicId': channel.magicGlobalId, 'mode': 'magicNetwork'};
-    return Pair(SendBlobTask._(channel, blobToSendOverP2P), data);
+    return Pair(SendBlobTask._(channel, blobToSendOverP2P, hang: hang), data);
   }
 
   @override
@@ -117,7 +163,7 @@ class SendBlobTaskBuilder extends TaskBuilder {
     expect(magicId, isA<int>());
     final channel = FakeP2PChannel();
     channel.connect(magicId as int);
-    return SendBlobTask._(channel, blobToSendOverP2P);
+    return SendBlobTask._(channel, blobToSendOverP2P, hang: hang);
   }
 
   @override
@@ -139,13 +185,14 @@ class SendBlobTask extends Task {
   final FakeP2PChannel _channel;
   final Uint8List _blobToBeSend;
   State _state = State.waitForReady;
+  final bool hang;
 
-  SendBlobTask._(this._channel, this._blobToBeSend);
+  SendBlobTask._(this._channel, this._blobToBeSend, {this.hang = false});
 
   @override
   void handleCancel(CancelReason reason) {
     logger.d('[$id]handleCancel: $reason');
-    close(error: 'canceled: $reason');
+    close();
   }
 
   // in this example we can just use the default impl. of following methods:
@@ -184,6 +231,9 @@ class SendBlobTask extends Task {
   List<String> get supportedTypes => ['ready'];
 
   Future<void> sendBlob() async {
+    if (hang) {
+      await Future<void>.delayed(Duration(seconds: 20));
+    }
     _channel.sink.add(_blobToBeSend);
     logger.d('[$id]blobSend');
     //pretend it takes a while
@@ -195,18 +245,15 @@ class SendBlobTask extends Task {
     close();
   }
 
-  void close({String? error}) {
-    logger.d('[$id] error=$error, state=$_state');
+  void close() {
+    logger.d('[$id] closing on state=$_state');
     final CloseCode closeCode;
-    if (error != null) {
-      logger.e(error);
-      closeCode = CloseCode.protocolError;
-    } else if (_state == State.done) {
+    if (_state == State.done) {
       closeCode = CloseCode.closingNormal;
     } else {
       closeCode = CloseCode.goingAway;
     }
-    if (_state != State.done && error == null) {
+    if (_state != State.done) {
       // This only reaches the client if events hasn't already been closed.
       // Which is fine as in case it is already closed some other error event
       // was already emitted.

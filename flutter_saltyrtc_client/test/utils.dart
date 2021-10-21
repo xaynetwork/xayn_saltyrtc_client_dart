@@ -1,10 +1,12 @@
-import 'dart:typed_data';
+import 'dart:collection' show Queue;
+import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
     show Crypto, Event, TaskBuilder;
 import 'package:flutter_saltyrtc_client/client.dart'
     show InitiatorClient, ResponderClient, SaltyRtcClient;
-import 'package:hex/hex.dart';
+import 'package:hex/hex.dart' show HEX;
+import 'package:test/expect.dart';
 import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
 
@@ -82,17 +84,25 @@ class Setup {
   }
 
   Future<void> runAndTestEvents(List<void Function(Event)> testList) async {
-    final events = client.run();
+    final errors = Queue<Event>();
+    final events = client.run().timeout(Duration(seconds: 10)).handleError(
+      (Object? o) {
+        errors.add(o as Event);
+      },
+      test: (Object? o) => o is Event,
+    );
     final tests = testList.iterator;
-    await for (final event in events.timeout(Duration(seconds: 10))) {
+
+    await for (final event in events) {
       if (!tests.moveNext()) {
         throw AssertionError('expected no further events but got: $event');
       }
-      final test = tests.current;
-      test(event);
+      tests.current(event);
     }
-    if (tests.moveNext()) {
-      throw AssertionError('expected more events');
+    while (tests.moveNext()) {
+      expect(errors, isNotEmpty);
+      tests.current(errors.removeFirst());
     }
+    expect(errors, isEmpty);
   }
 }
