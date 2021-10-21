@@ -26,26 +26,22 @@ void main() {
 
   group('.close', () {
     test('calls phase.doClose and uses the returned close code', () {
-      void theTest(CloseCode? closeCode, int? closeCode2) {
-        final tests = <Function()>[];
-        final phase = TestPhase(doCloseFn: (closeCode, phase) {
-          tests.add(() {
-            expect(closeCode, equals(closeCode));
-          });
-          return closeCode2;
-        });
-        phase.close(closeCode, 'foo');
-        tests.removeLast()();
-        expect(tests, isEmpty);
-        expect(phase.webSocket.isClosed, isTrue);
-        expect(phase.webSocket.closeCode, equals(closeCode2));
-        expect(phase.io.sendEvents, isEmpty);
-      }
+      final closeCode = CloseCode.invalidKey;
+      final closeCode2 = CloseCode.goingAway.toInt();
 
-      theTest(CloseCode.invalidKey, CloseCode.goingAway.toInt());
-      theTest(CloseCode.invalidKey, null);
-      theTest(null, CloseCode.goingAway.toInt());
-      theTest(null, null);
+      final tests = <Function()>[];
+      final phase = TestPhase(doCloseFn: (closeCode, phase) {
+        tests.add(() {
+          expect(closeCode, equals(closeCode));
+        });
+        return closeCode2;
+      });
+      phase.close(closeCode, 'foo');
+      tests.removeLast()();
+      expect(tests, isEmpty);
+      expect(phase.webSocket.isClosed, isTrue);
+      expect(phase.webSocket.closeCode, equals(closeCode2));
+      expect(phase.io.sendEvents, isEmpty);
     });
     test(
         'if phase.doClose throws a InternalError even is emitted and internalError is used as close code',
@@ -75,11 +71,11 @@ void main() {
     test('sets isClosing before calling doClose', () {
       bool? isClosed;
       final phase = TestPhase(doCloseFn: (closeCode, phase) {
-        isClosed = phase.isClosing;
+        isClosed = phase.isClosingWsStream;
       });
       phase.close(CloseCode.closingNormal, 'lala');
       expect(isClosed, isTrue);
-      expect(phase.isClosing, isTrue);
+      expect(phase.isClosingWsStream, isTrue);
     });
   });
 
@@ -90,9 +86,9 @@ void main() {
         called = true;
       });
       phase.common.webSocket.sink.close(CloseCode.closingNormal.toInt());
-      phase.notifyConnectionClosed();
+      phase.notifyWsStreamClosed();
       expect(called, isFalse);
-      expect(phase.isClosing, isTrue);
+      expect(phase.isClosingWsStream, isTrue);
     });
 
     test('if not manually closed close the events and maybe emits an Event',
@@ -100,35 +96,35 @@ void main() {
       var phase = TestPhase();
       phase.common.webSocket.sink
           .close(CloseCode.initiatorCouldNotDecrypt.toInt());
-      phase.notifyConnectionClosed();
+      phase.notifyWsStreamClosed();
       phase.io.expectEventOfType<InitiatorCouldNotDecrypt>();
-      expect(phase.isClosing, isTrue);
+      expect(phase.isClosingWsStream, isTrue);
       expect(phase.io.sendEvents.isClosed, isTrue);
 
       phase = TestPhase();
       phase.common.webSocket.sink.close(CloseCode.closingNormal.toInt());
-      phase.notifyConnectionClosed();
+      phase.notifyWsStreamClosed();
       expect(phase.io.sendEvents, isEmpty);
-      expect(phase.isClosing, isTrue);
+      expect(phase.isClosingWsStream, isTrue);
       expect(phase.io.sendEvents.isClosed, isTrue);
     });
 
     test('if manually closed do not emit event but still close events', () {
       final phase = TestPhase();
       phase.close(CloseCode.initiatorCouldNotDecrypt, 'foo');
-      expect(phase.isClosing, isTrue);
+      expect(phase.isClosingWsStream, isTrue);
       expect(phase.io.sendEvents.isClosed, isFalse);
-      phase.notifyConnectionClosed();
-      expect(phase.isClosing, isTrue);
+      phase.notifyWsStreamClosed();
+      expect(phase.isClosingWsStream, isTrue);
       expect(phase.io.sendEvents.isClosed, isTrue);
     });
 
     test('runs only once', () {
       final phase = TestPhase();
       phase.close(CloseCode.goingAway, 'foo');
-      phase.notifyConnectionClosed();
+      phase.notifyWsStreamClosed();
       expect(() {
-        phase.notifyConnectionClosed();
+        phase.notifyWsStreamClosed();
       }, throwsA(isA<StateError>()));
     });
   });
@@ -141,9 +137,8 @@ void main() {
       };
       return CloseCode.goingAway.toInt();
     });
-    phase.enableHandover();
-    phase.close(CloseCode.handover, 'handover');
-    phase.notifyConnectionClosed();
+    phase.close(CloseCode.handover, 'handover', receivedCloseMsg: true);
+    phase.notifyWsStreamClosed();
     expect(phase.webSocket.isClosed, isTrue);
     expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
     doCloseTest!();
@@ -154,28 +149,24 @@ void main() {
 }
 
 class TestPhase extends Phase {
+  int cancelTaskCallCount = 0;
+  int closeMsgCallCount = 0;
+  bool closeMsgWillBeSend = false;
+  int handoverCallCount = 0;
   final MockSyncWebSocket webSocket;
   final Io io;
   @override
   final InitialCommon common;
-  final int? Function(CloseCode?, TestPhase) _doCloseFn;
 
-  factory TestPhase({int? Function(CloseCode?, TestPhase)? doCloseFn}) {
+  factory TestPhase() {
     final webSocket = MockSyncWebSocket();
     final io = Io(PackageQueue(), EventQueue());
     final common = InitialCommon(crypto, webSocket, io.sendEvents);
 
-    return TestPhase._(webSocket, io, common,
-        doCloseFn ?? ((closeCode, phase) => closeCode?.toInt()));
+    return TestPhase._(webSocket, io, common);
   }
 
-  TestPhase._(this.webSocket, this.io, this.common, this._doCloseFn);
-
-  @override
-  void enableHandover() {
-    //ignore: invalid_use_of_protected_member
-    common.enableHandover = true;
-  }
+  TestPhase._(this.webSocket, this.io, this.common);
 
   @override
   Uint8List buildPacket(Message msg, Peer receiver,
@@ -184,9 +175,6 @@ class TestPhase extends Phase {
 
   @override
   Config get config => throw UnimplementedError();
-
-  @override
-  int? doClose(CloseCode? closeCode) => _doCloseFn(closeCode, this);
 
   @override
   void emitEvent(Event event, [StackTrace? st]) =>
@@ -219,4 +207,20 @@ class TestPhase extends Phase {
 
   @override
   void validateNonceDestination(Nonce nonce) => throw UnimplementedError();
+
+  @override
+  void cancelTask({bool serverDisconnected = false}) {
+    cancelTaskCallCount += 1;
+  }
+
+  @override
+  bool sendCloseMsgToClientIfNecessary(CloseCode closeCode) {
+    closeMsgCallCount += 1;
+    return closeMsgWillBeSend;
+  }
+
+  @override
+  void tellTaskThatHandoverCompleted() {
+    handoverCallCount += 1;
+  }
 }

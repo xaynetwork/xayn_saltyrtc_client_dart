@@ -97,7 +97,7 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect(nextPhase.isClosing, isFalse);
+    expect(nextPhase.isClosingWsStream, isFalse);
     return phaseAs<N>(nextPhase);
   }
 
@@ -115,7 +115,7 @@ class PeerData {
         encryptWith: encryptWith, mapNonce: mapNonce));
 
     final nextPhase = sendTo.handleMessage(rawMessage);
-    expect(nextPhase.isClosing, isTrue);
+    expect(nextPhase.isClosingWsStream, isTrue);
     final sink = nextPhase.common.webSocket.sink as MockSyncWebSocketSink;
     expect(sink.isClosed, isTrue);
     return sink.closeCode;

@@ -299,7 +299,7 @@ class TaskDone extends Event {}
 /// This should be used if the `WebSocket` was closed without us closing it,
 /// to determine if we need to emit another event.
 @protected
-Event? eventFromWSCloseCode(int? closeCode) {
+Event? eventFromWSCloseCode(int? closeCode, {bool codeFromClient = false}) {
   if (closeCode == null) {
     logger.e('unexpectedly received no closeCode');
     return UnexpectedStatus.unchecked(UnexpectedStatusVariant.other, closeCode);
@@ -342,9 +342,14 @@ Event? eventFromWSCloseCode(int? closeCode) {
     case 3008:
       return LikelyTemporaryFailure(TempFailureVariant.timeout);
     case 3003:
-      logger.e('handover status should have been handled separately');
-      return UnexpectedStatus.unchecked(
-          UnexpectedStatusVariant.other, closeCode);
+      if (codeFromClient) {
+        // Handover events are emitted differently (at a later point after
+        // everything for the handover is setup).
+        return null;
+      } else {
+        return UnexpectedStatus.unchecked(
+            UnexpectedStatusVariant.other, closeCode);
+      }
     default:
       return UnexpectedStatus.unchecked(
           UnexpectedStatusVariant.other, closeCode);

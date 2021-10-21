@@ -121,7 +121,7 @@ void main() {
             .close(CloseCode.noSharedSubprotocol.toInt(), 'a word');
 
         /// we have no client so we need fake the wiring
-        setup.startPhase.notifyConnectionClosed();
+        setup.startPhase.notifyWsStreamClosed();
         expect(setup.task.handleCancelCallCount, equals(1));
         expect(setup.task.handleCancelReason,
             equals(CancelReason.serverDisconnected));
@@ -307,7 +307,7 @@ abstract class Setup {
 
       expect(task.messages, isEmpty);
       expect(closeCode, equals(CloseCode.goingAway.toInt()));
-      expect(initialPhase.isClosing, isTrue);
+      expect(initialPhase.isClosingWsStream, isTrue);
       final closeMsg = io.expectMessageOfType<Close>(
           sendTo: peer,
           decryptWith: crypto.createSharedKeyStore(
@@ -344,7 +344,7 @@ abstract class Setup {
       final event = io.expectEventOfType<events.PeerDisconnected>();
       expect(event.peerKind, PeerKind.authenticated);
       expect(task.handleCancelCallCount, equals(1));
-      expect(task.handleCancelReason, equals(CancelReason.peerDisconnected));
+      expect(task.handleCancelReason, equals(CancelReason.peerUnavailable));
       expect(task.events.removeLast(),
           equals(events.PeerDisconnected(PeerKind.authenticated)));
       return phase;
@@ -371,7 +371,7 @@ abstract class Setup {
       final event = io.expectEventOfType<events.SendingMessageToPeerFailed>();
       expect(event.peerKind, PeerKind.authenticated);
       expect(task.handleCancelCallCount, equals(1));
-      expect(task.handleCancelReason, equals(CancelReason.sendError));
+      expect(task.handleCancelReason, equals(CancelReason.peerUnavailable));
       expect(task.events.removeLast(),
           equals(events.SendingMessageToPeerFailed(PeerKind.authenticated)));
       return phase;
@@ -381,7 +381,7 @@ abstract class Setup {
   TestStep mkTriggerHandoverTest() {
     return (phase, io) {
       task.link.requestHandover();
-      expect(phase.isClosing, isTrue);
+      expect(phase.isClosingWsStream, isTrue);
       expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
           equals(CloseCode.goingAway.toInt()));
       final closeMsg = io.expectMessageOfType<Close>(
@@ -394,7 +394,7 @@ abstract class Setup {
       expect(closeMsg.reason, equals(CloseCode.handover));
       expect(io.sendEvents, isEmpty);
 
-      phase.notifyConnectionClosed();
+      phase.notifyWsStreamClosed();
       expect(task.handleHandoverCallCount, equals(1));
       expect(task.handoverGivenEventSink, same(phase.common.events));
       io.expectEventOfType<HandoverToTask>();
@@ -417,7 +417,7 @@ abstract class Setup {
       );
       expect(closeCode, isNull);
 
-      initialPhase.notifyConnectionClosed();
+      initialPhase.notifyWsStreamClosed();
       expect(task.handleHandoverCallCount, equals(1));
       expect(task.handoverGivenEventSink, same(initialPhase.common.events));
       io.expectEventOfType<HandoverToTask>();
@@ -525,7 +525,7 @@ abstract class Setup {
       );
       expect(closeMsg.reason, equals(CloseCode.handover));
 
-      phase.notifyConnectionClosed();
+      phase.notifyWsStreamClosed();
 
       final errorEvent = io.expectEventOfType<InternalError>();
       expect(errorEvent.error.toString(), contains('handleHandover'));

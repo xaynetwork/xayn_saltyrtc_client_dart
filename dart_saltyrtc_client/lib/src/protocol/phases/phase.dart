@@ -45,11 +45,7 @@ abstract class Common {
   final Crypto crypto;
 
   @protected
-  bool isClosing = false;
-  @protected
-  bool closedByUs = false;
-  @protected
-  bool enableHandover = false;
+  ClosingState closingState = ClosingState.notClosing;
 
   /// Server instance.
   Server get server;
@@ -69,6 +65,13 @@ abstract class Common {
     this.webSocket,
     this.events,
   );
+}
+
+enum ClosingState {
+  notClosing,
+  closing,
+  closed,
+  handoverStarted,
 }
 
 /// Data that is common during the initial setup/server handshake.
@@ -186,14 +189,6 @@ class ResponderConfig extends Config {
 /// A phase can handle a message and returns the next phase.
 /// This also contains common and auxiliary code.
 abstract class Phase {
-  bool get isClosing => common.isClosing;
-  bool get isHandoverEnabled => common.enableHandover;
-
-  /// If when the WS stream closes this will not close the events interface,
-  /// instead it will emit a [HandoverToTask] event.
-  void enableHandover() =>
-      throw StateError('handover is only possible in the task phase');
-
   /// Data common to all phases and role.
   Common get common;
 
@@ -232,9 +227,13 @@ abstract class Phase {
     }
   }
 
+  /// True is the WebSocket is in the process of being closed.
+  bool get isClosingWsStream => common.closingState != ClosingState.notClosing;
+
   @protected
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
-    close(e.closeCode, 'ProtocolError($source=>${common.address}): $e');
+    close(e.closeCode, 'ProtocolError($source=>${common.address}): $e',
+        receivedCloseMsg: false);
     emitEvent(ProtocolErrorWithServer());
     return this;
   }
@@ -324,32 +323,79 @@ abstract class Phase {
     peer.cookiePair.updateAndCheck(nonce.cookie, source);
   }
 
-  /// Close the client.
+  void killBecauseOf(Object error, StackTrace st) {
+    // mae sure we definitely don't do anything anymore
+    common.closingState = ClosingState.closed;
+    emitEvent(InternalError(error), st);
+    common.events.close();
+    common.webSocket.sink.close(CloseCode.internalError.toInt());
+    cancelTask();
+  }
+
+  /// Called by
   ///
   /// This will immediately call `doClose` on the current phase and close the
   /// `WebSocket` afterwards.
   ///
   /// This can be freely called from any async task.
-  void close(CloseCode? closeCode, String? reason) {
-    if (!isClosing) {
-      common.isClosing = true;
-      common.closedByUs = true;
-      logger.i('Closing connection (closeCode=$closeCode): $reason');
-      int? wsCloseCode;
-      // Give Phase a chance to send some remaining messages (e.g. `close`).
-      // Also allow Phase to determine the closeCode/status used to close the
-      // WebSocket Connection.
-      try {
-        wsCloseCode = doClose(closeCode);
-      } catch (e, s) {
-        emitEvent(InternalError(e), s);
-        wsCloseCode = CloseCode.internalError.toInt();
-      }
-      common.webSocket.sink.close(wsCloseCode);
+  void close(
+    CloseCode closeCode,
+    String reason, {
+    bool receivedCloseMsg = false,
+  }) {
+    final ClosingState nextStateIfWeClose;
+    if (closeCode == CloseCode.handover) {
+      nextStateIfWeClose = ClosingState.handoverStarted;
+    } else {
+      // If we close for whatever reason without a handover
+      // we need to (potentially) stop the task.
+      cancelTask();
+      nextStateIfWeClose = ClosingState.closing;
     }
+    CloseCode wsCloseCode;
+    switch (common.closingState) {
+      case ClosingState.notClosing:
+        logger.i('Closing connection (closeCode=$closeCode): $reason');
+        if (receivedCloseMsg) {
+          _emitEventFromRecvCloseCode(closeCode.toInt(), codeFromClient: true);
+          wsCloseCode = CloseCode.goingAway;
+        } else {
+          try {
+            if (sendCloseMsgToClientIfNecessary(closeCode)) {
+              wsCloseCode = CloseCode.goingAway;
+            } else {
+              wsCloseCode = closeCode;
+            }
+          } catch (e, s) {
+            emitEvent(InternalError(e), s);
+            wsCloseCode = CloseCode.internalError;
+          }
+        }
+        break;
+      case ClosingState.closing:
+      case ClosingState.closed:
+      case ClosingState.handoverStarted:
+        logger
+            .w('client already closed/closing. Ignoring: $closeCode, $reason');
+        return;
+    }
+    common.closingState = nextStateIfWeClose;
+    common.webSocket.sink.close(wsCloseCode.toInt());
   }
 
-  bool _notifyConnectionClosedAlreadyCalled = false;
+  /// If there is an authenticated client send a close message and return true,
+  /// else return false.
+  @protected
+  bool sendCloseMsgToClientIfNecessary(CloseCode closeCode) {
+    // nothing to do for all phases but the task phase
+    return false;
+  }
+
+  /// Cancel the task, calling this multiple times must be fine.
+  @protected
+  void cancelTask({bool serverDisconnected = false}) {
+    // nothing to do for all phases but the task phase
+  }
 
   /// Notify the closer that the connection is closed.
   ///
@@ -357,32 +403,43 @@ abstract class Phase {
   /// the stream is closed. It also MUST only be called in that specific case.
   ///
   /// This can be freely called from any async task.
-  void notifyConnectionClosed() {
-    if (_notifyConnectionClosedAlreadyCalled) {
-      throw StateError('notifyConnectionClosed was already called');
-    }
-    _notifyConnectionClosedAlreadyCalled = true;
-    common.isClosing = true;
-    if (!common.closedByUs) {
-      final event = eventFromWSCloseCode(common.webSocket.closeCode);
-      if (event != null) {
-        emitEvent(event);
-      }
-    }
-    if (isHandoverEnabled) {
-      emitEvent(HandoverToTask());
-    } else {
-      common.events.close();
+  void notifyWsStreamClosed() {
+    switch (common.closingState) {
+      case ClosingState.notClosing:
+        // The server (not peer!) closed the connection so we
+        // might need to emit an event based on the close code.
+        _emitEventFromRecvCloseCode(common.webSocket.closeCode);
+        cancelTask(serverDisconnected: true);
+        continue next;
+      next:
+      case ClosingState.closing:
+        common.events.close();
+        common.closingState = ClosingState.closed;
+        break;
+      case ClosingState.handoverStarted:
+        tellTaskThatHandoverCompleted();
+        emitEvent(HandoverToTask());
+        common.closingState = ClosingState.closed;
+        break;
+      case ClosingState.closed:
+        logger.w('notifyConnectionClosed called twice');
+        break;
     }
   }
 
-  /// Called when we are in the process of being closed.
-  ///
-  /// The returned `int?` is the status code used as close code for
-  /// the WebSocket connection.
-  ///
-  /// This can be freely called from any async task.
-  int? doClose(CloseCode? closeCode) => closeCode?.toInt();
+  @protected
+  void tellTaskThatHandoverCompleted() {
+    throw StateError('should only be reachable from task phase');
+  }
+
+  void _emitEventFromRecvCloseCode(int? closeCode,
+      {bool codeFromClient = false}) {
+    final event =
+        eventFromWSCloseCode(closeCode, codeFromClient: codeFromClient);
+    if (event != null) {
+      emitEvent(event);
+    }
+  }
 }
 
 mixin InitiatorIdentity implements Phase {
