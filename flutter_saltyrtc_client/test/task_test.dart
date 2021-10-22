@@ -9,6 +9,8 @@ import 'package:flutter_saltyrtc_client/events.dart'
         ResponderAuthenticated,
         ServerHandshakeDone;
 import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
+    show getCrypto, logger;
+import 'package:flutter_saltyrtc_client/task.dart'
     show
         CancelReason,
         CloseCode,
@@ -16,9 +18,7 @@ import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
         Task,
         TaskBuilder,
         TaskData,
-        TaskMessage,
-        getCrypto,
-        logger;
+        TaskMessage;
 import 'package:test/test.dart';
 
 import 'logging.dart' show setUpLogging;
