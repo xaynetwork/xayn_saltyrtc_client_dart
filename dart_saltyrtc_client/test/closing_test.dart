@@ -60,8 +60,25 @@ void main() {
       phase.notifyWsStreamClosed();
       phase.io.expectEventOfType<HandoverToTask>();
       phase.close(CloseCode.goingAway, 'dor');
+      // cancel task impl. are fused so multiple calls are fine
       expect(phase.cancelTaskCallCount, equals(1));
+      expect(phase.io.sendEvents.isClosed, isTrue);
+    });
+
+    test('CloseCode.handover after handoverDone', () {
+      final phase = TestPhase();
+      phase.close(CloseCode.handover, 'fly');
+      phase.notifyWsStreamClosed();
+      phase.io.expectEventOfType<HandoverToTask>();
+
+      // we expect CloseCode.handover to not have any effect
+      phase.close(CloseCode.handover, 'dor');
+      expect(phase.cancelTaskCallCount, equals(0));
       expect(phase.io.sendEvents.isClosed, isFalse);
+
+      phase.close(CloseCode.goingAway, 'dor');
+      expect(phase.cancelTaskCallCount, equals(1));
+      expect(phase.io.sendEvents.isClosed, isTrue);
     });
 
     test('send close msg if necessary', () {
@@ -111,7 +128,6 @@ void main() {
       expect(phase.io.sendEvents.isClosed, isFalse);
       phase.notifyWsStreamClosed();
       expect(phase.io.sendEvents.isClosed, isFalse);
-      expect(phase.handoverCallCount, equals(1));
       phase.io.expectEventOfType<HandoverToTask>();
       expect(phase.cancelTaskCallCount, equals(0));
     });
@@ -121,14 +137,12 @@ void main() {
       phase.close(CloseCode.handover, 'foo');
       phase.notifyWsStreamClosed();
       expect(phase.io.sendEvents.isClosed, isFalse);
-      expect(phase.handoverCallCount, equals(1));
       phase.io.expectEventOfType<HandoverToTask>();
       expect(phase.cancelTaskCallCount, equals(0));
       phase.notifyWsStreamClosed();
       expect(phase.io.sendEvents.isClosed, isFalse);
-      expect(phase.handoverCallCount, equals(1));
-      expect(phase.cancelTaskCallCount, equals(0));
       expect(phase.io.sendEvents, isEmpty);
+      expect(phase.cancelTaskCallCount, equals(0));
     });
 
     test('server closes connection', () {
@@ -158,7 +172,6 @@ class TestPhase extends Phase {
   int cancelTaskCallCount = 0;
   int closeMsgCallCount = 0;
   bool closeMsgWillBeSend = false;
-  int handoverCallCount = 0;
   CloseCode? lastSendCloseCode;
   final MockSyncWebSocket webSocket;
   final Io io;
@@ -227,10 +240,5 @@ class TestPhase extends Phase {
       lastSendCloseCode = closeCode;
     }
     return closeMsgWillBeSend;
-  }
-
-  @override
-  void tellTaskThatHandoverCompleted() {
-    handoverCallCount += 1;
   }
 }

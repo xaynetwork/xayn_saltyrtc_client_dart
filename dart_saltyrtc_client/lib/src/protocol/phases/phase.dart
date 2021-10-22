@@ -72,6 +72,7 @@ enum ClosingState {
   closing,
   closed,
   handoverStarted,
+  handoverDone,
 }
 
 /// Data that is common during the initial setup/server handshake.
@@ -394,6 +395,15 @@ abstract class Phase {
         logger
             .w('client already closed/closing. Ignoring: $closeCode, $reason');
         return;
+      case ClosingState.handoverDone:
+        if (closeCode == CloseCode.handover) {
+          logger.w(
+              'handover started after it was already completed, ignoring it');
+        } else {
+          common.events.close();
+          common.closingState = ClosingState.closed;
+        }
+        return;
     }
     common.closingState = nextStateIfWeClose;
     common.webSocket.sink.close(wsCloseCode.toInt());
@@ -433,19 +443,14 @@ abstract class Phase {
         common.closingState = ClosingState.closed;
         break;
       case ClosingState.handoverStarted:
-        tellTaskThatHandoverCompleted();
         emitEvent(HandoverToTask());
-        common.closingState = ClosingState.closed;
+        common.closingState = ClosingState.handoverDone;
         break;
+      case ClosingState.handoverDone:
       case ClosingState.closed:
         logger.w('notifyConnectionClosed called twice');
         break;
     }
-  }
-
-  @protected
-  void tellTaskThatHandoverCompleted() {
-    throw StateError('should only be reachable from task phase');
   }
 
   void _emitEventFromRecvCloseCode(int? closeCode,

@@ -4,6 +4,8 @@ analyzer:
   strong-mode:
     implicit-casts: false
     implicit-dynamic: false
+  errors:
+    missing_enum_constant_in_switch: error
 
 linter:
   rules:

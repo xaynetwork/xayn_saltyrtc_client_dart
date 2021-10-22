@@ -1,4 +1,3 @@
-import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
@@ -314,11 +313,4 @@ class TestTask extends Task {
 
   @override
   void start(SaltyRtcTaskLink link) {}
-
-  @override
-  void handleHandover(EventSink<Event> events) {
-    throw UnimplementedError();
-  }
 }
-
-Future<void> tick() => Future.microtask(() => null);

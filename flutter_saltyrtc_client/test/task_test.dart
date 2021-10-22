@@ -233,6 +233,7 @@ class SendBlobTask extends Task {
   final Uint8List _blobToBeSend;
   State _state = State.waitForReady;
   final bool hang;
+  bool handoverWasDone = false;
 
   SendBlobTask._(this._channel, this._blobToBeSend, {this.hang = false});
 
@@ -242,9 +243,12 @@ class SendBlobTask extends Task {
     close();
   }
 
-  // in this example we can just use the default impl. of following methods:
-  // - handleEvent
-  // - handleHandover
+  @override
+  void handleEvent(Event event) {
+    if (event is HandoverToTask) {
+      logger.d('[$id] handover done');
+    }
+  }
 
   @override
   void handleMessage(TaskMessage msg) {
@@ -287,7 +291,7 @@ class SendBlobTask extends Task {
     await Future<void>.delayed(Duration(milliseconds: 10));
     final blob = await _channel.stream.first;
     _state = State.done;
-    emitEvent(BlobReceived(blob));
+    link.emitEvent(BlobReceived(blob));
     logger.d('[$id]blobReceived');
     close();
   }
@@ -304,15 +308,9 @@ class SendBlobTask extends Task {
       // This only reaches the client if events hasn't already been closed.
       // Which is fine as in case it is already closed some other error event
       // was already emitted.
-      emitEvent(UnexpectedClosedBeforeCompletion());
+      link.emitEvent(UnexpectedClosedBeforeCompletion());
     }
-    if (handoverWasDone) {
-      eventsPostHandover!.close();
-    } else {
-      // Calling close even after a handover is fine,
-      // it will simply have no effect.
-      link.close(closeCode);
-    }
+    link.close(closeCode);
     _channel.sink.close();
   }
 }

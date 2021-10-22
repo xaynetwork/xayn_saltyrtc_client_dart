@@ -1,12 +1,10 @@
-import 'dart:async' show EventSink;
-
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show TaskData;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
-import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt, Pair;
+import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:meta/meta.dart' show protected;
 
 /// Information that are needed to negotiate and handover a task.
@@ -36,15 +34,17 @@ abstract class TaskBuilder {
   Task buildResponderTask(TaskData? initiatorData);
 }
 
-/// Type representing an initialized/running task.
-///
-/// This trait contains some default implementations to reduce some overhead
-/// for task implementors.
+/// Type representing the interface of an initialized/running task.
 abstract class Task {
+  @protected
+  late SaltyRtcTaskLink link;
+
   /// The custom message types that the task use.
   List<String> get supportedTypes;
 
-  /// Start given task
+  /// Start given task.
+  ///
+  /// Once the task is done [SaltyRtcTaskLink.close] must be called.
   void start(SaltyRtcTaskLink link) {
     this.link = link;
   }
@@ -52,11 +52,16 @@ abstract class Task {
   /// Called when a `TaskMessage` is received.
   void handleMessage(TaskMessage msg);
 
-  /// Called when an `Event` was emitted.
+  /// Called when an `Event` was emitted by the client.
   ///
-  /// As not all tasks need to listen for events this
-  /// has an empty default implementation.
-  void handleEvent(Event event) {}
+  /// # The `HandoverToTask` event.
+  ///
+  /// This is emitted after the original WebSocket is already closed,
+  /// it's not possible to cancel a handover.
+  ///
+  /// Once the event is emitted using [SaltyRtcTaskLink.sendMessage] will
+  /// throw an [Error].
+  void handleEvent(Event event);
 
   /// Called when the task needs to stop.
   ///
@@ -65,43 +70,8 @@ abstract class Task {
   ///
   /// The task will be "disconnected" from the client immediately after this
   /// handler returns, i.e. once the handler returns sending messages or
-  /// emitting events through the link will no longer work.
+  /// emitting events or calling `close` through the link will no longer work.
   void handleCancel(CancelReason reason);
-
-  /// Called after the handover is started.
-  ///
-  /// From now on the task is responsible for closing the events sink
-  /// when it's done (independent of weather it succeeds, fails or is
-  /// canceled).
-  ///
-  /// This is called after the original WebSocket is already closed,
-  /// it's not possible to cancel a handover.
-  ///
-  /// The default implementation stores `events` so that `handoverWasDone`
-  /// returns `true`, for some tasks this might be all they need.
-  void handleHandover(EventSink<Event> events) {
-    _eventsPostHandover = events;
-  }
-
-  @protected
-  EventSink<Event>? get eventsPostHandover => _eventsPostHandover;
-  EventSink<Event>? _eventsPostHandover;
-
-  @protected
-  bool get handoverWasDone => _eventsPostHandover != null;
-
-  @protected
-  late SaltyRtcTaskLink link;
-
-  @protected
-  void emitEvent(Event event) {
-    final eventsPostHandover = this.eventsPostHandover;
-    if (eventsPostHandover != null) {
-      eventsPostHandover.emitEvent(event);
-    } else {
-      link.emitEvent(event);
-    }
-  }
 }
 
 enum CancelReason {
@@ -151,9 +121,7 @@ abstract class SaltyRtcTaskLink {
 
   /// Trigger a handover.
   ///
-  /// This will lead to [necessary.handleHandover] being called. It might be called
-  /// before [requestHandover] returns or it might be called it might be called
-  /// async on a later tick.
-  ///
+  /// After this is called calling using [SaltyRtcTaskLink.sendMessage] will
+  /// throw an [Error].
   void requestHandover();
 }

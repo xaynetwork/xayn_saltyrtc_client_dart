@@ -1,4 +1,3 @@
-import 'dart:async' show EventSink;
 import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
@@ -157,11 +156,6 @@ void main() {
           final setup = mkSetup();
           setup.runTest([setup.mkPanicOnHandleCancelTest()]);
         });
-
-        test('handleHandover', () {
-          final setup = mkSetup();
-          setup.runTest([setup.mkPanicOnHandleHandoverTest()]);
-        });
       });
     });
   }
@@ -172,14 +166,11 @@ class TestTask implements Task {
   late SaltyRtcTaskLink link;
   int startCallCount = 0;
   int handleCancelCallCount = 0;
-  int handleHandoverCallCount = 0;
-  EventSink<Event>? handoverGivenEventSink;
   CancelReason? handleCancelReason;
   bool panicOnStart = false;
   bool panicOnHandleEvent = false;
   bool panicOnHandleMessage = false;
   bool panicOnHandleCancel = false;
-  bool panicOnHandleHandover = false;
   final Queue<TaskMessage> messages = Queue();
   final Queue<Event> events = Queue();
 
@@ -197,15 +188,6 @@ class TestTask implements Task {
     events.add(event);
     if (panicOnHandleEvent) {
       throw Exception('planned panic on handleEvent');
-    }
-  }
-
-  @override
-  void handleHandover(EventSink<Event> events) {
-    handleHandoverCallCount += 1;
-    handoverGivenEventSink = events;
-    if (panicOnHandleHandover) {
-      throw Exception('planned panic on handleHandover');
     }
   }
 
@@ -228,15 +210,6 @@ class TestTask implements Task {
 
   @override
   List<String> get supportedTypes => ['taskMsg1', 'taskMsg2'];
-
-  @override
-  void emitEvent(Event event) {}
-
-  @override
-  EventSink<Event>? get eventsPostHandover => throw UnimplementedError();
-
-  @override
-  bool get handoverWasDone => throw UnimplementedError();
 }
 
 abstract class Setup {
@@ -395,8 +368,6 @@ abstract class Setup {
       expect(io.sendEvents, isEmpty);
 
       phase.notifyWsStreamClosed();
-      expect(task.handleHandoverCallCount, equals(1));
-      expect(task.handoverGivenEventSink, same(phase.common.events));
       io.expectEventOfType<HandoverToTask>();
 
       expect(task.events.removeLast(), equals(HandoverToTask()));
@@ -418,8 +389,6 @@ abstract class Setup {
       expect(closeCode, equals(CloseCode.goingAway.toInt()));
 
       initialPhase.notifyWsStreamClosed();
-      expect(task.handleHandoverCallCount, equals(1));
-      expect(task.handoverGivenEventSink, same(initialPhase.common.events));
       io.expectEventOfType<HandoverToTask>();
       expect(task.events.removeLast(), equals(HandoverToTask()));
       return initialPhase;
@@ -508,34 +477,6 @@ abstract class Setup {
         ),
       );
       expect(closeMsg.reason, equals(CloseCode.internalError));
-      return phase;
-    };
-  }
-
-  TestStep mkPanicOnHandleHandoverTest() {
-    return (phase, io) {
-      task.panicOnHandleHandover = true;
-      task.link.requestHandover();
-      final closeMsg = io.expectMessageOfType<Close>(
-        sendTo: peer,
-        decryptWith: crypto.createSharedKeyStore(
-          ownKeyStore: peer.testedPeer.ourSessionKey!,
-          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
-        ),
-      );
-      expect(closeMsg.reason, equals(CloseCode.handover));
-
-      phase.notifyWsStreamClosed();
-
-      final errorEvent = io.expectEventOfType<InternalError>();
-      expect(errorEvent.error.toString(), contains('handleHandover'));
-      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
-          equals(CloseCode.goingAway.toInt()));
-      expect(task.messages, isEmpty);
-      // the task received this event before handleHandover was called
-      expect(task.events.removeLast(), equals(HandoverToTask()));
-      expect(task.events, isEmpty);
-
       return phase;
     };
   }
