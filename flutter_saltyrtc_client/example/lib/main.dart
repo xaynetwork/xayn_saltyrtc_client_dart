@@ -14,8 +14,8 @@ import 'package:flutter/material.dart'
         Text,
         Widget,
         runApp;
-import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
-    show CryptoProvider;
+import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
+    show getCrypto;
 
 void main() {
   runApp(const MyApp());
@@ -38,13 +38,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initCryptoState() async {
-    await CryptoProvider.init();
+    final crypto = await getCrypto();
 
     if (!mounted) return;
 
     setState(() {
-      _sodiumTest =
-          'nonce: ${base64Encode(CryptoProvider.instance.randomBytes(8))}';
+      _sodiumTest = 'nonce: ${base64Encode(crypto.randomBytes(8))}';
     });
   }
 

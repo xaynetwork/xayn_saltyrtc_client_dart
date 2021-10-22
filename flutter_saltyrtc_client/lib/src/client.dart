@@ -9,9 +9,11 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' as saltyrtc
         TaskBuilder,
         logger;
 import 'package:dart_saltyrtc_client/events.dart' show Event;
-import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
+
+import 'package:flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
     show crypto;
-import 'package:flutter_saltyrtc_client/network.dart' show WebSocket;
+import 'package:flutter_saltyrtc_client/src/network.dart' show WebSocket;
+
 import 'package:hex/hex.dart' show HEX;
 import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;

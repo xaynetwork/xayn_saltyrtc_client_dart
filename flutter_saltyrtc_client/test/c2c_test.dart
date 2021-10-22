@@ -1,9 +1,7 @@
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show Pair, Task, TaskBuilder, TaskData;
-import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
-    show getCrypto;
 import 'package:flutter_saltyrtc_client/events.dart'
     show NoSharedTaskFound, PeerDisconnected, ServerHandshakeDone, PeerKind;
+import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
+    show getCrypto, Pair, Task, TaskBuilder, TaskData;
 import 'package:test/test.dart';
 
 import 'logging.dart' show setUpLogging;
