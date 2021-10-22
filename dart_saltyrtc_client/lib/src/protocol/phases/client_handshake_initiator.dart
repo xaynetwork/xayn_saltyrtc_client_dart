@@ -1,5 +1,6 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
@@ -26,7 +27,6 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'

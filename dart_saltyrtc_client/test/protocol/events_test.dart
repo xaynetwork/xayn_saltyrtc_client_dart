@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
+import 'package:dart_saltyrtc_client/events.dart'
     show
         IncompatibleServerKey,
         InitiatorCouldNotDecrypt,
@@ -6,8 +6,9 @@ import 'package:dart_saltyrtc_client/src/protocol/events.dart'
         NoSharedTaskFound,
         TempFailureVariant,
         UnexpectedStatus,
-        UnexpectedStatusVariant,
-        eventFromWSCloseCode;
+        UnexpectedStatusVariant;
+import 'package:dart_saltyrtc_client/src/protocol/events_from_close_code.dart'
+    show eventFromWSCloseCode;
 import 'package:test/test.dart';
 
 void main() {

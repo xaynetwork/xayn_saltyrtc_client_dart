@@ -2,9 +2,10 @@ import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show Crypto, Event, KeyStore, TaskBuilder;
+    show Crypto, KeyStore, TaskBuilder;
 import 'package:flutter_saltyrtc_client/client.dart'
     show InitiatorClient, ResponderClient, SaltyRtcClient;
+import 'package:flutter_saltyrtc_client/events.dart' show Event;
 import 'package:hex/hex.dart' show HEX;
 import 'package:test/expect.dart';
 import 'package:web_socket_channel/web_socket_channel.dart'

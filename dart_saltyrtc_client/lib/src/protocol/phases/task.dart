@@ -1,5 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/events.dart' as events;
+import 'package:dart_saltyrtc_client/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/c2c/application.dart'
     show Application;
@@ -25,8 +27,6 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId, validateInitiatorId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'

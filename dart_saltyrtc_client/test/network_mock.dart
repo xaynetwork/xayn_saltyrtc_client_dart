@@ -3,7 +3,7 @@ import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:async/async.dart' show StreamQueue;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
+import 'package:dart_saltyrtc_client/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'
     show WebSocketSink, WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart'

@@ -1,6 +1,7 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:collection/collection.dart' show ListEquality;
+import 'package:dart_saltyrtc_client/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
 import 'package:dart_saltyrtc_client/src/messages/message.dart'
@@ -24,7 +25,6 @@ import 'package:dart_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException, ValidationException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;

@@ -1,6 +1,15 @@
 import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/events.dart'
+    show
+        AdditionalResponderEvent,
+        Event,
+        HandoverToTask,
+        InternalError,
+        PeerDisconnected,
+        PeerKind;
+import 'package:dart_saltyrtc_client/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod;
 import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
@@ -17,15 +26,6 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
 import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show
-        AdditionalResponderEvent,
-        Event,
-        HandoverToTask,
-        InternalError,
-        PeerDisconnected,
-        PeerKind;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' as events;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show Initiator, Peer, Responder;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
