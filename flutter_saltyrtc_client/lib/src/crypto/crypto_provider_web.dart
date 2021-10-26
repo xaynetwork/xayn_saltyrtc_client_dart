@@ -8,17 +8,9 @@ import 'package:flutter_saltyrtc_client/src/crypto/load_sodiumjs.dart'
 import 'package:flutter_saltyrtc_client/src/crypto/sodium.js.dart'
     show LibSodiumJS;
 
-Future<void> initCrypto() async {
-  _sodiumJS = await loadSodiumInBrowser();
-}
-
-Crypto? _instance;
-late LibSodiumJS _sodiumJS;
-
-Crypto get cryptoInstance {
-  _instance ??= _JSCrypto(_sodiumJS);
-
-  return _instance!;
+Future<Crypto> loadCrypto() async {
+  final sodiumJs = await loadSodiumInBrowser();
+  return _JSCrypto(sodiumJs);
 }
 
 T _wrapDecryptionFailure<T>(T Function() code) {

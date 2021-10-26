@@ -9,7 +9,7 @@ import 'package:flutter_saltyrtc_client/events.dart'
         ResponderAuthenticated,
         ServerHandshakeDone;
 import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
-    show getCrypto, logger;
+    show logger;
 import 'package:flutter_saltyrtc_client/task.dart'
     show
         CancelReason,
@@ -24,25 +24,25 @@ import 'package:test/test.dart';
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;
 
-void main() {
+void main() async {
   setUpLogging();
 
+  if (await Setup.skipIntegrationTests()) {
+    return;
+  }
+
   test('normal task phase execution works', () async {
-    final crypto = await getCrypto();
-    await Setup.serverReady();
-    final initiatorSetup = Setup.initiatorWithAuthToken(
-      crypto,
+    final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]))
       ],
     );
 
-    final responderSetup = Setup.responderWithAuthToken(
-      crypto,
+    final responderSetup = await Setup.responderWithAuthToken(
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]))
       ],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
       authToken: initiatorSetup.authToken!,
     );
 
@@ -50,8 +50,8 @@ void main() {
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
           event,
-          equals(
-              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
+          equals(ResponderAuthenticated(
+              responderSetup.client.identity.getPublicKey()))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(
           event, equals(BlobReceived(Uint8List.fromList([23, 42, 132])))),
@@ -61,8 +61,8 @@ void main() {
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
           event,
-          equals(
-              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
+          equals(ResponderAuthenticated(
+              responderSetup.client.identity.getPublicKey()))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(
           event,
@@ -128,22 +128,18 @@ void main() {
   });
 
   test('cancel after handover works', () async {
-    final crypto = await getCrypto();
-    await Setup.serverReady();
-    final initiatorSetup = Setup.initiatorWithAuthToken(
-      crypto,
+    final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]),
             hang: true)
       ],
     );
 
-    final responderSetup = Setup.responderWithAuthToken(
-      crypto,
+    final responderSetup = await Setup.responderWithAuthToken(
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]), hang: true)
       ],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
       authToken: initiatorSetup.authToken!,
     );
 
@@ -151,8 +147,8 @@ void main() {
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
           event,
-          equals(
-              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
+          equals(ResponderAuthenticated(
+              responderSetup.client.identity.getPublicKey()))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);
@@ -161,8 +157,8 @@ void main() {
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
           event,
-          equals(
-              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
+          equals(ResponderAuthenticated(
+              responderSetup.client.identity.getPublicKey()))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);

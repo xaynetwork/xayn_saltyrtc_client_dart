@@ -2,7 +2,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' show Crypto;
 import 'package:flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
-    show CryptoProvider;
+    show getCrypto;
 import 'package:test/test.dart';
 
 import 'protocol.dart' show EncryptedMessage, KeyExchangeMessage;
@@ -19,8 +19,7 @@ void main() async {
   final pong = Uint8List(8);
 
   test('Test the N key exchange variant with sodium.', () async {
-    await CryptoProvider.init();
-    var crypto = CryptoProvider.instance;
+    var crypto = await getCrypto();
     // Server generates keypair for it self
     final serverKeys = crypto.createKeyStore();
 
