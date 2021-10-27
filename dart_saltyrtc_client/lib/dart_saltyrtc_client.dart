@@ -3,7 +3,7 @@ library dart_saltyrtc_client;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show saltyrtcSubprotocol;
 export 'package:dart_saltyrtc_client/src/client.dart'
-    show InitiatorClient, ResponderClient, SaltyRtcClientError;
+    show InitiatorClient, ResponderClient;
 export 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show Crypto, KeyStore, SharedKeyStore, AuthToken, DecryptionFailedException;
 export 'package:dart_saltyrtc_client/src/logger.dart' show initLogger, logger;

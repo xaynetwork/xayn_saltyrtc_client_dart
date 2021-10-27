@@ -29,7 +29,7 @@ void main() async {
     return;
   }
 
-  group('Client server handhshake', () {
+  group('Client server handshake', () {
     final initiatorSetup = Setup.initiatorWithAuthToken(tasks: []);
     final responderSetup =
         initiatorSetup.then((initiatorSetup) => Setup.responderWithAuthToken(
