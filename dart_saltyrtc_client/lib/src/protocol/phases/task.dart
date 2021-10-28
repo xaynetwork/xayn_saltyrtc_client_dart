@@ -111,8 +111,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   TaskPhase(AfterServerHandshakeCommon common, this.task) : super(common) {
     _link = _Link(this);
+    //ignore: invalid_use_of_protected_member
+    task.link = _link;
     taskCallGuard(() {
-      task.start(_link);
+      task.start();
     });
   }
 

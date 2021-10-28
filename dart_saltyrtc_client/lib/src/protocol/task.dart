@@ -35,7 +35,23 @@ abstract class TaskBuilder {
 }
 
 /// Type representing the interface of an initialized/running task.
+///
+/// # Async, I/O and Tasks
+///
+/// Task implementation can do async operations including I/O independent of
+/// the client, to some degree that is the point of a Task.
+///
+/// But it needs to follow some rules:
+///
+/// - It should not do any async operations, I/O and similar before start was
+///   called.
+/// - It should stop any async operation, I/O and similar when
+///   [Task.handleCancel] is call.
 abstract class Task {
+  /// The link to the `TaskPhase`.
+  ///
+  /// It's automatically set before `start` is called,
+  /// you can not access it before it.
   @protected
   late SaltyRtcTaskLink link;
 
@@ -45,9 +61,7 @@ abstract class Task {
   /// Start given task.
   ///
   /// Once the task is done [SaltyRtcTaskLink.close] must be called.
-  void start(SaltyRtcTaskLink link) {
-    this.link = link;
-  }
+  void start();
 
   /// Called when a `TaskMessage` is received.
   void handleMessage(TaskMessage msg);
@@ -121,7 +135,7 @@ abstract class SaltyRtcTaskLink {
 
   /// Trigger a handover.
   ///
-  /// After this is called calling using [SaltyRtcTaskLink.sendMessage] will
+  /// After this is called using [SaltyRtcTaskLink.sendMessage] will
   /// throw an [Error].
   void requestHandover();
 }

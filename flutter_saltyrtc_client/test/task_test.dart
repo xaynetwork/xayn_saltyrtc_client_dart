@@ -10,7 +10,6 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
         HandoverToTask,
         Pair,
         ResponderAuthenticated,
-        SaltyRtcTaskLink,
         ServerHandshakeDone,
         Task,
         TaskBuilder,
@@ -143,22 +142,26 @@ void main() {
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]), hang: true)
       ],
-      initiatorTrustedKey: initiatorSetup.permanentPublicKey,
+      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
       authToken: initiatorSetup.authToken!,
     );
 
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(event,
-          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);
 
     final responderTests = responderSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(event,
-          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);
@@ -267,17 +270,15 @@ class SendBlobTask extends Task {
   }
 
   @override
-  void start(SaltyRtcTaskLink link) {
+  void start() {
     logger.d('[$id]start');
-    super.start(link);
     _channel.onReady.then((_) {
       logger.d('[$id]sending ready');
       link.sendMessage(TaskMessage('ready', {'ready': 'yes'}));
     });
   }
 
-  // The message is not really necessary but we also want to test sending
-  // task messages.
+  // A message for testing.
   @override
   List<String> get supportedTypes => ['ready'];
 

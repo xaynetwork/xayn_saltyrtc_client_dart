@@ -200,8 +200,7 @@ class TestTask implements Task {
   }
 
   @override
-  void start(SaltyRtcTaskLink link) {
-    this.link = link;
+  void start() {
     startCallCount += 1;
     if (panicOnStart) {
       throw Exception('planned panic on start');
