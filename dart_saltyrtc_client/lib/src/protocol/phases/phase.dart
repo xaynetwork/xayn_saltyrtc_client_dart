@@ -326,7 +326,10 @@ abstract class Phase {
   bool killedFuse = false;
   void killBecauseOf(Object error, StackTrace st) {
     logger.w('phase killed because of: $error\n$st');
-    //fuse to avoid endless recursion in certain edge cases
+    // Fuse to make sure any form of endless recursion is impossible.
+    // (E.g. through falling over when calling `cancelTask` in `close`.)
+    // In general this makes reasoning about the programs failure modes much
+    // easier.
     if (!killedFuse) {
       killedFuse = true;
       // by-pass any emitEvent overrides (risc of endless )

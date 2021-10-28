@@ -121,8 +121,7 @@ void main() {
       initiatorSetup.client.cancel();
     });
 
-    await Future.wait([initiatorTests, responderTests])
-        .timeout(Duration(seconds: 12));
+    await Future.wait([initiatorTests, responderTests]);
   });
 }
 

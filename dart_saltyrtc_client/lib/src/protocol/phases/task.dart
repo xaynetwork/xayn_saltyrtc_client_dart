@@ -218,12 +218,14 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   /// Cancels the task.
   ///
   /// This will call [Task.handleCancel] and disconnect the task and client.
-  /// This method executes only once, any further calls are ignore. Which is
-  /// important for certain error handling edge cases.
+  /// This method executes only once, any further calls are ignore.
   ///
   /// This can still cancel a task after the handover was done, which is
   /// important for allowing the user to cancel the client in all situations.
   void _cancelTask(CancelReason reason) {
+    // Making sure to only call this once makes it easier for us to reason
+    // about failure conditions and makes it easier for the task by guarantee
+    // `handleCancel` is only called once.
     if (!_taskCancelWasCalled) {
       _taskCancelWasCalled = true;
       taskCallGuard(() {
