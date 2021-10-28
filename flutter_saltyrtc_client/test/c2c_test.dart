@@ -47,7 +47,7 @@ void main() {
         .timeout(Duration(seconds: 12));
   });
 
-  test('responder connects first then client', () async {
+  test('responder connects first', () async {
     final crypto = await getCrypto();
     await Setup.serverReady();
     final initiatorSetup = Setup.initiatorWithAuthToken(
@@ -78,7 +78,7 @@ void main() {
         .timeout(Duration(seconds: 12));
   });
 
-  test('client connects first then responder', () async {
+  test('initiator connects first', () async {
     final crypto = await getCrypto();
     await Setup.serverReady();
     final initiatorSetup = Setup.initiatorWithAuthToken(
