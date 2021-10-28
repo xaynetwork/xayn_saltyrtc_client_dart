@@ -17,7 +17,8 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
         TaskData,
         TaskMessage,
         logger;
-import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart';
+import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
+    show Task, TaskBuilder, getCrypto;
 import 'package:test/test.dart';
 
 import 'logging.dart' show setUpLogging;
@@ -70,13 +71,13 @@ void main() {
               BlobReceived(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1])))),
     ]);
 
+    // more graceful failure/shutdown on timeout
     Future.delayed(Duration(seconds: 10), () {
       responderSetup.client.cancel();
       initiatorSetup.client.cancel();
     });
 
-    await Future.wait([initiatorTests, responderTests])
-        .timeout(Duration(seconds: 12));
+    await Future.wait([initiatorTests, responderTests]);
   });
 }
 
@@ -121,8 +122,7 @@ class SendBlobTaskBuilder extends TaskBuilder {
 
   @override
   TaskData? getInitialResponderData() {
-    // An app might use the returned TaskData to exchange information to
-    // setup an separate connection, e.g. the devices IP address.
+    // Tasks can use task data to exchange settings.
     return {'mode': 'magicNetwork'};
   }
 
