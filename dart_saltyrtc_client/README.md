@@ -1,19 +1,7 @@
-A library for Dart developers.
 
-## Usage
+Implementation of the SaltyRtc protocol.
 
-A simple usage example:
+See `flutter_saltyrtc_client` for better documentation.
 
-```dart
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart';
-
-main() {
-  var awesome = new Awesome();
-}
-```
-
-## Features and bugs
-
-Please file feature requests and bugs at the [issue tracker][tracker].
-
-[tracker]: http://example.com/issues/replaceme
+This packages brakes out all non platform, non flutter specific
+parts of the `flutter_saltyrtc_client` package.
