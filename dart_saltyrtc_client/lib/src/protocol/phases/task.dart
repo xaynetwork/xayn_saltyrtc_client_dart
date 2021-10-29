@@ -91,8 +91,7 @@ class _Link extends SaltyRtcTaskLink {
 
   /// Disconnects task from the client.
   ///
-  /// This means the task can no longer access the client (but the client
-  /// can still access the task).
+  /// This means the task can no longer access the client.
   void disconnect() {
     _phase = null;
   }
@@ -225,7 +224,11 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   void _cancelTask(CancelReason reason) {
     // Making sure to only call this once makes it easier for us to reason
     // about failure conditions and makes it easier for the task by guarantee
-    // `handleCancel` is only called once.
+    // `handleCancel` is only called once. (It can for example happen in case
+    // `cancelTask` throws an exception in which case `killBecauseOf` is called
+    // which also calls `cancelTask` as it doesn't know that it was called
+    // because of it. And with this fuse it's completely fine and we don't need
+    // to propagate what function did throw to `killBecauseOf`).
     if (!_taskCancelWasCalled) {
       _taskCancelWasCalled = true;
       taskCallGuard(() {
