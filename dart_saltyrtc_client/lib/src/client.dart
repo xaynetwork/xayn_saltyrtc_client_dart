@@ -13,7 +13,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
-import 'package:meta/meta.dart' show immutable, protected;
+import 'package:meta/meta.dart' show protected;
 
 extension BytesToAuthToken on Uint8List {
   AuthToken toAuthToken(Crypto crypto) =>
