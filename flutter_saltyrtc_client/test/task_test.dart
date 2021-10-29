@@ -80,54 +80,6 @@ void main() async {
   });
 
   test('cancel after handover works', () async {
-    final crypto = await getCrypto();
-    await Setup.serverReady();
-    final initiatorSetup = Setup.initiatorWithAuthToken(
-      crypto,
-      tasks: [
-        SendBlobTaskBuilder(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]),
-            hang: true)
-      ],
-    );
-
-    final responderSetup = Setup.responderWithAuthToken(
-      crypto,
-      tasks: [
-        SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]), hang: true)
-      ],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
-      authToken: initiatorSetup.authToken!,
-    );
-
-    final initiatorTests = initiatorSetup.runAndTestEvents([
-      (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(
-          event,
-          equals(
-              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
-      (event) => expect(event, equals(HandoverToTask())),
-      (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
-    ]);
-
-    final responderTests = responderSetup.runAndTestEvents([
-      (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(
-          event,
-          equals(
-              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
-      (event) => expect(event, equals(HandoverToTask())),
-      (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
-    ]);
-
-    Future.delayed(Duration(milliseconds: 100), () {
-      responderSetup.client.cancel();
-      initiatorSetup.client.cancel();
-    });
-
-    await Future.wait([initiatorTests, responderTests]);
-  });
-
-  test('cancel after handover works', () async {
     final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]),
