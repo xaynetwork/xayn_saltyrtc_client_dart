@@ -7,7 +7,7 @@ import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode, CloseCodeToFromInt;
+    show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
@@ -58,7 +58,7 @@ class _Link extends SaltyRtcTaskLink {
   void close(CloseCode closeCode, [String? reason]) {
     final phase = _phase;
     if (phase != null) {
-      phase.close(closeCode, reason);
+      phase.close(closeCode, reason ?? 'closed by task');
     }
   }
 
@@ -83,13 +83,15 @@ class _Link extends SaltyRtcTaskLink {
   void requestHandover() {
     final phase = _phase;
     if (phase != null) {
-      phase.enableHandover();
       phase.close(CloseCode.handover, 'handover');
     } else {
       throw StateError('already disconnected from phase');
     }
   }
 
+  /// Disconnects task from the client.
+  ///
+  /// This means the task can no longer access the client.
   void disconnect() {
     _phase = null;
   }
@@ -109,35 +111,37 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     });
   }
 
-  @override
-  void enableHandover() {
-    //ignore: invalid_use_of_protected_member
-    common.enableHandover = true;
-  }
-
   void taskCallGuard(void Function() func) {
     try {
       func();
     } catch (e, s) {
-      _link.disconnect();
-      // Do not use `this.emitEvent` here as we do not want to send this event to
-      // the task as this might case further errors or even infinite recursion.
-      common.events.emitEvent(events.InternalError(e), s);
-      common.events.close();
-      close(CloseCode.internalError, e.toString());
-      _cancelTask(CancelReason.handlerDidThrow);
+      killBecauseOf(e, s);
     }
   }
 
   @override
+  void tellTaskThatHandoverCompleted() {
+    taskCallGuard(() {
+      task.handleHandover(common.events);
+    });
+    _link.disconnect();
+  }
+
+  @override
+  void cancelTask({bool serverDisconnected = false}) {
+    _cancelTask(serverDisconnected
+        ? CancelReason.serverDisconnected
+        : CancelReason.closing);
+  }
+
+  @override
+  bool sendCloseMsgToClientIfNecessary(CloseCode closeCode) {
+    sendMessage(Close(closeCode), to: pairedClient);
+    return true;
+  }
+
+  @override
   void emitEvent(Event event, [StackTrace? st]) {
-    final isHandover = event is events.HandoverToTask;
-    if (isHandover) {
-      taskCallGuard(() {
-        task.handleHandover(common.events);
-      });
-      _link.disconnect();
-    }
     common.events.emitEvent(event, st);
     taskCallGuard(() {
       task.handleEvent(event);
@@ -186,37 +190,16 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
       taskCallGuard(() {
         task.handleMessage(msg);
       });
-      return this;
     } else if (msg is Close) {
       logger.d('Received close message');
-      return handleClose(msg);
+      close(msg.reason, 'close msg', receivedCloseMsg: true);
     } else if (msg is Application) {
-      return handleApplicationMessage(msg);
+      logger.e('application messages are currently not supported');
     } else {
       throw ProtocolErrorException(
         'Invalid message during task phase. Message type: ${msg.type}',
       );
     }
-  }
-
-  @protected
-  Phase handleClose(Close msg) {
-    final closeCode = msg.reason;
-    if (closeCode == CloseCode.handover) {
-      enableHandover();
-    } else {
-      final event = events.eventFromWSCloseCode(closeCode.toInt());
-      if (event != null) {
-        emitEvent(event);
-      }
-    }
-    close(null, 'close msg');
-    return this;
-  }
-
-  @protected
-  Phase handleApplicationMessage(Application msg) {
-    logger.e('application messages are currently not supported');
     return this;
   }
 
@@ -229,37 +212,29 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
         initiatorOverride: newInitiator, responderOverride: responderOverride);
   }
 
-  @override
-  void notifyConnectionClosed() {
-    taskCallGuard(() {
-      if (!isHandoverEnabled) {
-        _cancelTask(CancelReason.serverDisconnected);
-      }
-    });
-    super.notifyConnectionClosed();
-  }
-
   bool _taskCancelWasCalled = false;
+
+  /// Cancels the task.
+  ///
+  /// This will call [Task.handleCancel] and disconnect the task and client.
+  /// This method executes only once, any further calls are ignore.
+  ///
+  /// This can still cancel a task after the handover was done, which is
+  /// important for allowing the user to cancel the client in all situations.
   void _cancelTask(CancelReason reason) {
+    // Making sure to only call this once makes it easier for us to reason
+    // about failure conditions and makes it easier for the task by guarantee
+    // `handleCancel` is only called once. (It can for example happen in case
+    // `cancelTask` throws an exception in which case `killBecauseOf` is called
+    // which also calls `cancelTask` as it doesn't know that it was called
+    // because of it. And with this fuse it's completely fine and we don't need
+    // to propagate what function did throw to `killBecauseOf`).
     if (!_taskCancelWasCalled) {
       _taskCancelWasCalled = true;
       taskCallGuard(() {
         task.handleCancel(reason);
       });
       _link.disconnect();
-    }
-  }
-
-  @override
-  int? doClose(CloseCode? closeCode) {
-    // WARNING: Do not move any task cancellation/closing logic in here.
-    //          It would mess with handovers, instead use the `onClosed`
-    //          future.
-    if (closeCode != null) {
-      sendMessage(Close(closeCode), to: pairedClient);
-      return CloseCode.goingAway.toInt();
-    } else {
-      return super.doClose(closeCode);
     }
   }
 
@@ -292,7 +267,7 @@ class InitiatorTaskPhase extends TaskPhase
       return this;
     } else {
       emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-      return toClientHandshakePhase(CancelReason.peerDisconnected);
+      return toClientHandshakePhase(CancelReason.peerUnavailable);
     }
   }
 
@@ -305,7 +280,7 @@ class InitiatorTaskPhase extends TaskPhase
     } else {
       emitEvent(
           events.SendingMessageToPeerFailed(events.PeerKind.authenticated));
-      return toClientHandshakePhase(CancelReason.sendError);
+      return toClientHandshakePhase(CancelReason.peerUnavailable);
     }
   }
 
@@ -358,13 +333,13 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
     final id = msg.id;
     validateInitiatorId(id.value);
     emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-    return toClientHandshakePhase(CancelReason.peerDisconnected);
+    return toClientHandshakePhase(CancelReason.peerUnavailable);
   }
 
   @override
   Phase handleSendErrorByDestination(Id destination) {
     emitEvent(events.SendingMessageToPeerFailed(events.PeerKind.authenticated));
-    return toClientHandshakePhase(CancelReason.sendError);
+    return toClientHandshakePhase(CancelReason.peerUnavailable);
   }
 
   @override

@@ -9,7 +9,12 @@ import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
 import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, HandoverToTask, InitiatorCouldNotDecrypt, InternalError;
+    show
+        Event,
+        HandoverToTask,
+        InitiatorCouldNotDecrypt,
+        UnexpectedStatus,
+        UnexpectedStatusVariant;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Config, InitialCommon, Phase;
@@ -25,157 +30,150 @@ void main() {
   setUpTesting();
 
   group('.close', () {
-    test('calls phase.doClose and uses the returned close code', () {
-      void theTest(CloseCode? closeCode, int? closeCode2) {
-        final tests = <Function()>[];
-        final phase = TestPhase(doCloseFn: (closeCode, phase) {
-          tests.add(() {
-            expect(closeCode, equals(closeCode));
-          });
-          return closeCode2;
-        });
-        phase.close(closeCode, 'foo');
-        tests.removeLast()();
-        expect(tests, isEmpty);
-        expect(phase.webSocket.isClosed, isTrue);
-        expect(phase.webSocket.closeCode, equals(closeCode2));
-        expect(phase.io.sendEvents, isEmpty);
-      }
-
-      theTest(CloseCode.invalidKey, CloseCode.goingAway.toInt());
-      theTest(CloseCode.invalidKey, null);
-      theTest(null, CloseCode.goingAway.toInt());
-      theTest(null, null);
-    });
-    test(
-        'if phase.doClose throws a InternalError even is emitted and internalError is used as close code',
-        () {
-      final phase = TestPhase(doCloseFn: (closeCode, phase) {
-        throw StateError('foo bar');
-      });
-      phase.close(CloseCode.closingNormal, 'lala');
-      final event = phase.io.expectEventOfType<InternalError>();
-      expect(event.error, isA<StateError>());
-      expect(
-          phase.webSocket.closeCode, equals(CloseCode.internalError.toInt()));
-    });
-
-    test('calling close multiple times won\'t call doClose multiple times', () {
-      var callCount = 0;
-      final phase = TestPhase(doCloseFn: (closeCode, phase) {
-        callCount += 1;
-        return closeCode?.toInt();
-      });
-      phase.close(CloseCode.goingAway, 'a');
-      phase.close(CloseCode.internalError, 'b');
-      phase.close(CloseCode.invalidKey, 'c');
-      expect(callCount, equals(1));
-    });
-
-    test('sets isClosing before calling doClose', () {
-      bool? isClosed;
-      final phase = TestPhase(doCloseFn: (closeCode, phase) {
-        isClosed = phase.isClosing;
-      });
-      phase.close(CloseCode.closingNormal, 'lala');
-      expect(isClosed, isTrue);
-      expect(phase.isClosing, isTrue);
-    });
-  });
-
-  group('notifyConnectionClosed', () {
-    test('sets isClosed immediately but does not call doClose', () {
-      bool called = false;
-      final phase = TestPhase(doCloseFn: (closeCode, phase) {
-        called = true;
-      });
-      phase.common.webSocket.sink.close(CloseCode.closingNormal.toInt());
-      phase.notifyConnectionClosed();
-      expect(called, isFalse);
-      expect(phase.isClosing, isTrue);
-    });
-
-    test('if not manually closed close the events and maybe emits an Event',
-        () {
-      var phase = TestPhase();
-      phase.common.webSocket.sink
-          .close(CloseCode.initiatorCouldNotDecrypt.toInt());
-      phase.notifyConnectionClosed();
+    test('close ws and emit event if triggered by close msg', () {
+      final phase = TestPhase();
+      phase.close(CloseCode.initiatorCouldNotDecrypt, 'foo',
+          receivedCloseMsg: true);
       phase.io.expectEventOfType<InitiatorCouldNotDecrypt>();
-      expect(phase.isClosing, isTrue);
-      expect(phase.io.sendEvents.isClosed, isTrue);
+      expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
+    });
+
+    test('cancelTask exactly if not close code == handover', () {
+      var phase = TestPhase();
+      phase.close(CloseCode.goingAway, 'foo');
+      expect(phase.cancelTaskCallCount, equals(1));
 
       phase = TestPhase();
-      phase.common.webSocket.sink.close(CloseCode.closingNormal.toInt());
-      phase.notifyConnectionClosed();
-      expect(phase.io.sendEvents, isEmpty);
-      expect(phase.isClosing, isTrue);
-      expect(phase.io.sendEvents.isClosed, isTrue);
+      phase.close(CloseCode.handover, 'foo');
+      expect(phase.cancelTaskCallCount, equals(0));
     });
 
-    test('if manually closed do not emit event but still close events', () {
-      final phase = TestPhase();
-      phase.close(CloseCode.initiatorCouldNotDecrypt, 'foo');
-      expect(phase.isClosing, isTrue);
+    test('cancelTask on close even if handover proceeded', () {
+      var phase = TestPhase();
+      phase.close(CloseCode.handover, 'foo');
+      expect(phase.cancelTaskCallCount, equals(0));
+      phase.close(CloseCode.protocolError, 'bar');
+      expect(phase.cancelTaskCallCount, equals(1));
+
+      phase = TestPhase();
+      phase.close(CloseCode.handover, 'fly');
+      phase.notifyWsStreamClosed();
+      phase.io.expectEventOfType<HandoverToTask>();
+      phase.close(CloseCode.goingAway, 'dor');
+      expect(phase.cancelTaskCallCount, equals(1));
       expect(phase.io.sendEvents.isClosed, isFalse);
-      phase.notifyConnectionClosed();
-      expect(phase.isClosing, isTrue);
-      expect(phase.io.sendEvents.isClosed, isTrue);
     });
 
-    test('runs only once', () {
+    test('send close msg if necessary', () {
       final phase = TestPhase();
-      phase.close(CloseCode.goingAway, 'foo');
-      phase.notifyConnectionClosed();
-      expect(() {
-        phase.notifyConnectionClosed();
-      }, throwsA(isA<StateError>()));
+      phase.closeMsgWillBeSend = true;
+      phase.close(CloseCode.protocolError, 'foo');
+      expect(phase.lastSendCloseCode, equals(CloseCode.protocolError));
+      expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
+    });
+
+    test('if no close msg is send close WS with close code', () {
+      final phase = TestPhase();
+      phase.closeMsgWillBeSend = false;
+      phase.close(CloseCode.protocolError, 'foo');
+      expect(phase.lastSendCloseCode, isNull);
+      expect(
+          phase.webSocket.closeCode, equals(CloseCode.protocolError.toInt()));
+    });
+
+    test('calling close multiple times has no effect (besides cancelTask)', () {
+      final phase = TestPhase();
+      phase.close(CloseCode.protocolError, 'foo', receivedCloseMsg: true);
+      expect(phase.cancelTaskCallCount, equals(1));
+      phase.close(CloseCode.handover, 'foo', receivedCloseMsg: true);
+      expect(phase.cancelTaskCallCount, equals(1));
+      phase.close(CloseCode.initiatorCouldNotDecrypt, 'foo',
+          receivedCloseMsg: true);
+      expect(phase.cancelTaskCallCount, equals(2));
+      phase.close(CloseCode.protocolError, 'foo', receivedCloseMsg: true);
+      expect(phase.cancelTaskCallCount, equals(3));
+
+      final event = phase.io.expectEventOfType<UnexpectedStatus>();
+      expect(
+          event,
+          equals(UnexpectedStatus.unchecked(
+              UnexpectedStatusVariant.protocolError, 3001)));
+      expect(phase.io.sendEvents, isEmpty);
     });
   });
 
-  test('handover closes the WS but not events', () {
-    Function()? doCloseTest;
-    final phase = TestPhase(doCloseFn: (closeCode, phase) {
-      doCloseTest = () {
-        expect(closeCode, equals(CloseCode.handover));
-      };
-      return CloseCode.goingAway.toInt();
+  group('.notifyWsStreamClosed', () {
+    test('in case of a started handover complete it', () {
+      final phase = TestPhase();
+      phase.close(CloseCode.handover, 'foo');
+      expect(phase.io.sendEvents, isEmpty);
+      expect(phase.webSocket.closeCode, equals(CloseCode.handover.toInt()));
+      expect(phase.io.sendEvents.isClosed, isFalse);
+      phase.notifyWsStreamClosed();
+      expect(phase.io.sendEvents.isClosed, isFalse);
+      expect(phase.handoverCallCount, equals(1));
+      phase.io.expectEventOfType<HandoverToTask>();
+      expect(phase.cancelTaskCallCount, equals(0));
     });
-    phase.enableHandover();
-    phase.close(CloseCode.handover, 'handover');
-    phase.notifyConnectionClosed();
-    expect(phase.webSocket.isClosed, isTrue);
-    expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
-    doCloseTest!();
-    phase.io.expectEventOfType<HandoverToTask>();
-    expect(phase.io.sendEvents.isClosed, isFalse);
-    expect(phase.io.sendEvents.isClosed, isFalse);
+
+    test('handover can not complete multiple times', () {
+      final phase = TestPhase();
+      phase.close(CloseCode.handover, 'foo');
+      phase.notifyWsStreamClosed();
+      expect(phase.io.sendEvents.isClosed, isFalse);
+      expect(phase.handoverCallCount, equals(1));
+      phase.io.expectEventOfType<HandoverToTask>();
+      expect(phase.cancelTaskCallCount, equals(0));
+      phase.notifyWsStreamClosed();
+      expect(phase.io.sendEvents.isClosed, isFalse);
+      expect(phase.handoverCallCount, equals(1));
+      expect(phase.cancelTaskCallCount, equals(0));
+      expect(phase.io.sendEvents, isEmpty);
+    });
+
+    test('server closes connection', () {
+      final phase = TestPhase();
+      final closeCode = CloseCode.initiatorCouldNotDecrypt.toInt();
+      phase.webSocket.closeCode = closeCode;
+      phase.notifyWsStreamClosed();
+      expect(phase.webSocket.closeCode, equals(closeCode));
+      phase.io.expectEventOfType<InitiatorCouldNotDecrypt>();
+      expect(phase.cancelTaskCallCount, equals(1));
+      expect(phase.io.sendEvents.isClosed, isTrue);
+    });
+
+    test('close events even if we start closing', () {
+      final phase = TestPhase();
+      final closeCode = CloseCode.initiatorCouldNotDecrypt;
+      phase.close(closeCode, '');
+      expect(phase.webSocket.closeCode, equals(closeCode.toInt()));
+      phase.notifyWsStreamClosed();
+      expect(phase.cancelTaskCallCount, equals(1));
+      expect(phase.io.sendEvents.isClosed, isTrue);
+    });
   });
 }
 
 class TestPhase extends Phase {
+  int cancelTaskCallCount = 0;
+  int closeMsgCallCount = 0;
+  bool closeMsgWillBeSend = false;
+  int handoverCallCount = 0;
+  CloseCode? lastSendCloseCode;
   final MockSyncWebSocket webSocket;
   final Io io;
   @override
   final InitialCommon common;
-  final int? Function(CloseCode?, TestPhase) _doCloseFn;
 
-  factory TestPhase({int? Function(CloseCode?, TestPhase)? doCloseFn}) {
+  factory TestPhase() {
     final webSocket = MockSyncWebSocket();
     final io = Io(PackageQueue(), EventQueue());
     final common = InitialCommon(crypto, webSocket, io.sendEvents);
 
-    return TestPhase._(webSocket, io, common,
-        doCloseFn ?? ((closeCode, phase) => closeCode?.toInt()));
+    return TestPhase._(webSocket, io, common);
   }
 
-  TestPhase._(this.webSocket, this.io, this.common, this._doCloseFn);
-
-  @override
-  void enableHandover() {
-    //ignore: invalid_use_of_protected_member
-    common.enableHandover = true;
-  }
+  TestPhase._(this.webSocket, this.io, this.common);
 
   @override
   Uint8List buildPacket(Message msg, Peer receiver,
@@ -184,9 +182,6 @@ class TestPhase extends Phase {
 
   @override
   Config get config => throw UnimplementedError();
-
-  @override
-  int? doClose(CloseCode? closeCode) => _doCloseFn(closeCode, this);
 
   @override
   void emitEvent(Event event, [StackTrace? st]) =>
@@ -219,4 +214,23 @@ class TestPhase extends Phase {
 
   @override
   void validateNonceDestination(Nonce nonce) => throw UnimplementedError();
+
+  @override
+  void cancelTask({bool serverDisconnected = false}) {
+    cancelTaskCallCount += 1;
+  }
+
+  @override
+  bool sendCloseMsgToClientIfNecessary(CloseCode closeCode) {
+    closeMsgCallCount += 1;
+    if (closeMsgWillBeSend) {
+      lastSendCloseCode = closeCode;
+    }
+    return closeMsgWillBeSend;
+  }
+
+  @override
+  void tellTaskThatHandoverCompleted() {
+    handoverCallCount += 1;
+  }
 }

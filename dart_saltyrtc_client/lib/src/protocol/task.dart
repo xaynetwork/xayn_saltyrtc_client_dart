@@ -70,16 +70,12 @@ abstract class Task {
 
   /// Called after the handover is started.
   ///
-  /// From now on the task is responsible for closing events when it's done or
-  /// failed.
+  /// From now on the task is responsible for closing the events sink
+  /// when it's done (independent of weather it succeeds, fails or is
+  /// canceled).
   ///
-  /// This is called after the original WebSocket is already closed.
-  ///
-  /// As important parts of the handover are already it *cannot* stop the
-  /// handover in any way. If this panics it will be handled like any other
-  /// handler panicking, but as the connection is already closed we can't
-  /// inform the peer of it. Through `handleCancel` is still called, so the
-  /// task can still "clean up" any additional connections it opened.
+  /// This is called after the original WebSocket is already closed,
+  /// it's not possible to cancel a handover.
   ///
   /// The default implementation stores `events` so that `handoverWasDone`
   /// returns `true`, for some tasks this might be all they need.
@@ -109,22 +105,11 @@ abstract class Task {
 }
 
 enum CancelReason {
-  /// The peer disconnected.
-  peerDisconnected,
-
-  /// Sending message to the peer failed.
-  sendError,
+  /// The server can not deliver messages to the peer anymore.
+  peerUnavailable,
 
   /// The peer was replaced with a new peer.
   peerOverwrite,
-
-  /// A handler (e.g. handleMessage) did throw an exception.
-  ///
-  /// When [Task.handleCancel] is called with this reason the task
-  /// is already disconnected from the client, the closing of the
-  /// WebSocket was already initiated and the and a InternalError event
-  /// was already emitted and the events sink was already closed.
-  handlerDidThrow,
 
   /// WebSocket closed without a handover.
   ///
@@ -132,6 +117,13 @@ enum CancelReason {
   /// event sink is still open (it will be closed immediately after this
   /// handler is called).
   serverDisconnected,
+
+  /// The client is closing, so the task needs to be canceled.
+  ///
+  /// In difference to the other reason this can still happen after
+  /// [Task.handleHandover] was called and must still be handled by
+  /// canceling the task.
+  closing
 }
 
 /// Links the Task and the SaltyRtc client together.

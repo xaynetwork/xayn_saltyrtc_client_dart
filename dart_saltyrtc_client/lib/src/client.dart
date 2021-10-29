@@ -6,15 +6,13 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, InternalError;
+import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show InitialCommon, InitiatorConfig, Phase, ResponderConfig;
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
-import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
 import 'package:meta/meta.dart' show immutable, protected;
 
 extension BytesToAuthToken on Uint8List {
@@ -45,7 +43,7 @@ abstract class Client {
   Future<void> _run() async {
     try {
       await for (final message in _ws.stream) {
-        if (_phase.isClosing) {
+        if (_phase.isClosingWsStream) {
           // Can happen as closing the sink doesn't drop any pending incoming
           // messages, isClosing SHOULD only be true after `doClose` was called
           // on the `Phase`.
@@ -55,10 +53,9 @@ abstract class Client {
         _phase = _phase.handleMessage(message);
       }
     } catch (e, s) {
-      _events.sink.emitEvent(InternalError(e), s);
-      _phase.close(CloseCode.internalError, e.toString());
+      _phase.killBecauseOf(e, s);
     } finally {
-      _phase.notifyConnectionClosed();
+      _phase.notifyWsStreamClosed();
     }
   }
 
