@@ -10,7 +10,6 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
         HandoverToTask,
         Pair,
         ResponderAuthenticated,
-        SaltyRtcTaskLink,
         ServerHandshakeDone,
         Task,
         TaskBuilder,
@@ -126,6 +125,55 @@ void main() {
 
     await Future.wait([initiatorTests, responderTests]);
   });
+
+  test('cancel after handover works', () async {
+    final crypto = await getCrypto();
+    await Setup.serverReady();
+    final initiatorSetup = Setup.initiatorWithAuthToken(
+      crypto,
+      tasks: [
+        SendBlobTaskBuilder(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]),
+            hang: true)
+      ],
+    );
+
+    final responderSetup = Setup.responderWithAuthToken(
+      crypto,
+      tasks: [
+        SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]), hang: true)
+      ],
+      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      authToken: initiatorSetup.authToken!,
+    );
+
+    final initiatorTests = initiatorSetup.runAndTestEvents([
+      (event) => expect(event, equals(ServerHandshakeDone())),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
+      (event) => expect(event, equals(HandoverToTask())),
+      (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
+    ]);
+
+    final responderTests = responderSetup.runAndTestEvents([
+      (event) => expect(event, equals(ServerHandshakeDone())),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
+      (event) => expect(event, equals(HandoverToTask())),
+      (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
+    ]);
+
+    Future.delayed(Duration(milliseconds: 100), () {
+      responderSetup.client.cancel();
+      initiatorSetup.client.cancel();
+    });
+
+    await Future.wait([initiatorTests, responderTests])
+        .timeout(Duration(seconds: 12));
+  });
 }
 
 class BlobReceived extends Event {
@@ -188,6 +236,7 @@ class SendBlobTask extends Task {
   final Uint8List _blobToBeSend;
   State _state = State.waitForReady;
   final bool hang;
+  bool handoverWasDone = false;
 
   SendBlobTask._(this._channel, this._blobToBeSend, {this.hang = false});
 
@@ -197,9 +246,12 @@ class SendBlobTask extends Task {
     close();
   }
 
-  // in this example we can just use the default impl. of following methods:
-  // - handleEvent
-  // - handleHandover
+  @override
+  void handleEvent(Event event) {
+    if (event is HandoverToTask) {
+      logger.d('[$id] handover done');
+    }
+  }
 
   @override
   void handleMessage(TaskMessage msg) {
@@ -218,17 +270,15 @@ class SendBlobTask extends Task {
   }
 
   @override
-  void start(SaltyRtcTaskLink link) {
+  void start() {
     logger.d('[$id]start');
-    super.start(link);
     _channel.onReady.then((_) {
       logger.d('[$id]sending ready');
       link.sendMessage(TaskMessage('ready', {'ready': 'yes'}));
     });
   }
 
-  // The message is not really necessary but we also want to test sending
-  // task messages.
+  // A message for testing.
   @override
   List<String> get supportedTypes => ['ready'];
 
@@ -242,7 +292,7 @@ class SendBlobTask extends Task {
     await Future<void>.delayed(Duration(milliseconds: 10));
     final blob = await _channel.stream.first;
     _state = State.done;
-    emitEvent(BlobReceived(blob));
+    link.emitEvent(BlobReceived(blob));
     logger.d('[$id]blobReceived');
     close();
   }
@@ -259,15 +309,9 @@ class SendBlobTask extends Task {
       // This only reaches the client if events hasn't already been closed.
       // Which is fine as in case it is already closed some other error event
       // was already emitted.
-      emitEvent(UnexpectedClosedBeforeCompletion());
+      link.emitEvent(UnexpectedClosedBeforeCompletion());
     }
-    if (handoverWasDone) {
-      eventsPostHandover!.close();
-    } else {
-      // Calling close even after a handover is fine,
-      // it will simply have no effect.
-      link.close(closeCode);
-    }
+    link.close(closeCode);
     _channel.sink.close();
   }
 }

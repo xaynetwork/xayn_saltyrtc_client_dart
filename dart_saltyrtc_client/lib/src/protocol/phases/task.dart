@@ -51,6 +51,7 @@ import 'package:meta/meta.dart' show protected;
 
 class _Link extends SaltyRtcTaskLink {
   TaskPhase? _phase;
+  bool handoverStarted = false;
 
   _Link(TaskPhase this._phase);
 
@@ -73,6 +74,9 @@ class _Link extends SaltyRtcTaskLink {
 
   @override
   void sendMessage(TaskMessage msg) {
+    if (handoverStarted) {
+      throw StateError('can not send messages after requesting handover');
+    }
     final phase = _phase;
     if (phase != null) {
       phase.sendMessage(msg, to: phase.pairedClient);
@@ -83,6 +87,7 @@ class _Link extends SaltyRtcTaskLink {
   void requestHandover() {
     final phase = _phase;
     if (phase != null) {
+      handoverStarted = true;
       phase.close(CloseCode.handover, 'handover');
     } else {
       throw StateError('already disconnected from phase');
@@ -106,8 +111,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   TaskPhase(AfterServerHandshakeCommon common, this.task) : super(common) {
     _link = _Link(this);
+    //ignore: invalid_use_of_protected_member
+    task.link = _link;
     taskCallGuard(() {
-      task.start(_link);
+      task.start();
     });
   }
 
@@ -117,14 +124,6 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
     } catch (e, s) {
       killBecauseOf(e, s);
     }
-  }
-
-  @override
-  void tellTaskThatHandoverCompleted() {
-    taskCallGuard(() {
-      task.handleHandover(common.events);
-    });
-    _link.disconnect();
   }
 
   @override

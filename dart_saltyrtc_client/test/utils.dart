@@ -1,4 +1,3 @@
-import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
@@ -21,7 +20,7 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show AfterServerHandshakeCommon, InitialCommon, Phase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart'
-    show Task, TaskBuilder, SaltyRtcTaskLink, CancelReason;
+    show Task, TaskBuilder, CancelReason;
 import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/expect.dart';
 
@@ -313,12 +312,5 @@ class TestTask extends Task {
   }
 
   @override
-  void start(SaltyRtcTaskLink link) {}
-
-  @override
-  void handleHandover(EventSink<Event> events) {
-    throw UnimplementedError();
-  }
+  void start() {}
 }
-
-Future<void> tick() => Future.microtask(() => null);
