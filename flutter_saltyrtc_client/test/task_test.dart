@@ -27,11 +27,6 @@ import 'utils.dart' show Setup;
 void main() {
   setUpLogging();
 
-  // setup clients (initiator and responder)
-  // async interleaved do:
-  //   - server handshake
-  //   - client handshake
-  //   - task phase
   test('normal task phase execution works', () async {
     final crypto = await getCrypto();
     await Setup.serverReady();
@@ -47,14 +42,16 @@ void main() {
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]))
       ],
-      initiatorTrustedKey: initiatorSetup.permanentPublicKey,
+      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
       authToken: initiatorSetup.authToken!,
     );
 
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(event,
-          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(
           event, equals(BlobReceived(Uint8List.fromList([23, 42, 132])))),
@@ -62,8 +59,10 @@ void main() {
 
     final responderTests = responderSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(event,
-          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(
           event,
@@ -96,22 +95,26 @@ void main() {
       tasks: [
         SendBlobTaskBuilder(Uint8List.fromList([23, 42, 132]), hang: true)
       ],
-      initiatorTrustedKey: initiatorSetup.permanentPublicKey,
+      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
       authToken: initiatorSetup.authToken!,
     );
 
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(event,
-          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);
 
     final responderTests = responderSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) => expect(event,
-          equals(ResponderAuthenticated(responderSetup.permanentPublicKey))),
+      (event) => expect(
+          event,
+          equals(
+              ResponderAuthenticated(responderSetup.permanentKey.publicKey))),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);

@@ -2,7 +2,7 @@ import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show Crypto, Event, TaskBuilder;
+    show Crypto, Event, KeyStore, TaskBuilder;
 import 'package:flutter_saltyrtc_client/client.dart'
     show InitiatorClient, ResponderClient, SaltyRtcClient;
 import 'package:hex/hex.dart' show HEX;
@@ -32,9 +32,9 @@ class Setup {
   final SaltyRtcClient client;
   final String name;
   final Uint8List? authToken;
-  final Uint8List permanentPublicKey;
+  final KeyStore permanentKey;
 
-  Setup(this.client, this.name, this.authToken, this.permanentPublicKey);
+  Setup(this.client, this.name, this.authToken, this.permanentKey);
 
   static Future<void> serverReady() async {
     if (!await isServerActive(serverUri)) {
@@ -48,19 +48,19 @@ class Setup {
     required List<TaskBuilder> tasks,
     Uint8List? expectedServerKey,
     Uint8List? authToken,
+    KeyStore? privateKey,
   }) {
     final authTokenBytes = authToken ?? crypto.createAuthToken().bytes;
-    final ourKeys = crypto.createKeyStore();
+    final ourKey = privateKey ?? crypto.createKeyStore();
     final client = InitiatorClient.withUntrustedResponder(
       serverUri,
-      ourKeys,
+      ourKey,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey ?? serverPublicKey,
       sharedAuthToken: authTokenBytes,
     );
-    return Setup(
-        client, 'initiator(auth token)', authTokenBytes, ourKeys.publicKey);
+    return Setup(client, 'initiator(auth token)', authTokenBytes, ourKey);
   }
 
   factory Setup.responderWithAuthToken(
@@ -80,7 +80,7 @@ class Setup {
       initiatorTrustedKey: initiatorTrustedKey,
       sharedAuthToken: authToken,
     );
-    return Setup(client, 'responder(auth token)', authToken, ourKeys.publicKey);
+    return Setup(client, 'responder(auth token)', authToken, ourKeys);
   }
 
   Future<void> runAndTestEvents(List<void Function(Event)> testList) async {
