@@ -8,12 +8,18 @@ import 'package:meta/meta.dart' show immutable;
   definitions and nothing else.
 */
 
+/// Event base class.
 abstract class Event extends Equatable {
   @override
   List<Object?> get props => [];
 }
 
 /// An event which will lead to the SaltyRtc client being closed.
+///
+/// Emitting a event which is a subtype of this type will add it to
+/// the stream using `addError` which means it will throw and exception
+/// if you listen on the stream using `await for(...)`. Or it will trigger
+/// the error handler if you don't use async.
 abstract class ClosingErrorEvent extends Event implements Exception {}
 
 /// An error which can't be recovered from.
@@ -28,13 +34,25 @@ abstract class ClosingErrorEvent extends Event implements Exception {}
 ///
 abstract class FatalErrorEvent extends ClosingErrorEvent {}
 
+/// Event emitted when the server client to handshake completed.
 @immutable
 class ServerHandshakeDone extends Event {}
 
+/// Event emitted when the client to client handshake completed.
+///
+/// This is useful during the initial peering of two clients as
+/// it will contains the public key of the responder (which the
+/// initiator would need to remember to allow a repairing without
+/// an auth token).
+///
+/// For consistency this is emitted by both the initiator and responder,
+/// it always contains the public key of the responder no matter what kind
+/// of client emitted it.
 @immutable
 class ResponderAuthenticated extends Event {
   /// Permanent key of the responder.
-  /// After this has been received the authentication token must not
+  ///
+  /// After this has been received the auth token must not
   /// be used again, this key must be use instead.
   ///
   /// But be aware that the responder might not yet be aware of being
