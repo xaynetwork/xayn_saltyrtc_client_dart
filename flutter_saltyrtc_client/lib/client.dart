@@ -7,7 +7,8 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' as saltyrtc
         websocketProtocols,
         KeyStore,
         TaskBuilder,
-        Event;
+        Event,
+        logger;
 import 'package:flutter_saltyrtc_client/crypto/crypto_provider.dart'
     show crypto;
 import 'package:flutter_saltyrtc_client/network.dart' show WebSocket;
@@ -81,6 +82,7 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
     Uint8List? sharedAuthToken,
   }) {
     final uri = _getUri(baseUri, ourPermanentKeys.publicKey);
+    saltyrtc.logger.i('connecting as initiator to uri: $uri');
     final client = saltyrtc.InitiatorClient.build(
       // we get a KeyStore that can only be created from a Crypto
       // so it is already initialized
@@ -170,7 +172,8 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
     required Uint8List initiatorTrustedKey,
     Uint8List? sharedAuthToken,
   }) {
-    final uri = _getUri(baseUri, ourPermanentKeys.publicKey);
+    final uri = _getUri(baseUri, initiatorTrustedKey);
+    saltyrtc.logger.i('connecting as responder to uri: $uri');
     final client = saltyrtc.ResponderClient.build(
       crypto(),
       WebSocket(WebSocketChannel.connect(
