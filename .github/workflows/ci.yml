@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.UBUNTU_FLUTTER_PATH }}
-          key: ${{ steps.cache-key.outputs.key }} 
+          key: ${{ steps.cache-key.outputs.key }}
 
       - name: Install flutter
         uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
@@ -177,37 +177,3 @@ jobs:
       - name: Test ${{ matrix.project }} code
         working-directory: ${{ matrix.project }}
         run: flutter test
-
-  flutter-build-example:
-    name: flutter-build-example
-    needs: [flutter-cache, flutter-test]
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [android, web]
-        include:
-          - target: android
-            cmd: flutter build apk --debug --split-per-abi
-          - target: web
-            cmd: flutter build web
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
-
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.UBUNTU_FLUTTER_PATH }}
-          key: ${{ needs.flutter-cache.outputs.cache-key }}
-
-      - name: Install flutter
-        uses: subosito/flutter-action@4389e6cbc6cb8a4b18c628ff96ff90be0e926aa8 # v1.5.3
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: ${{ env.FLUTTER_CHANNEL }}
-
-      - name: Build flutter example for ${{ matrix.target }}
-        working-directory: flutter_saltyrtc_client/example
-        run: ${{ matrix.cmd }}

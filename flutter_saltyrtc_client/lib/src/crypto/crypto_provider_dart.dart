@@ -4,14 +4,8 @@ import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
     show SharedKeyStore, KeyStore, AuthToken, Crypto, DecryptionFailedException;
 import 'package:libsodium/libsodium.dart' as _sodium;
 
-Crypto? _instance;
-
-Future<void> initCrypto() async {}
-
-Crypto get cryptoInstance {
-  _instance ??= _DartSodiumCrypto();
-
-  return _instance!;
+Future<Crypto> loadCrypto() async {
+  return _DartSodiumCrypto();
 }
 
 T _wrapDecryptionFailure<T>(T Function() code) {

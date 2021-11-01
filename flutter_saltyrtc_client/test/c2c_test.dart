@@ -1,7 +1,5 @@
 import 'package:flutter_saltyrtc_client/events.dart'
     show NoSharedTaskFound, PeerDisconnected, ServerHandshakeDone, PeerKind;
-import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
-    show getCrypto;
 import 'package:flutter_saltyrtc_client/task.dart'
     show Pair, Task, TaskBuilder, TaskData;
 import 'package:test/test.dart';
@@ -9,21 +7,21 @@ import 'package:test/test.dart';
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;
 
-void main() {
+void main() async {
   setUpLogging();
 
+  if (await Setup.skipIntegrationTests()) {
+    return;
+  }
+
   test('no shared task found', () async {
-    final crypto = await getCrypto();
-    await Setup.serverReady();
-    final initiatorSetup = Setup.initiatorWithAuthToken(
-      crypto,
+    final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [NoTask('no-task.v0'), NoTask('no-task.v2')],
     );
 
-    final responderSetup = Setup.responderWithAuthToken(
-      crypto,
+    final responderSetup = await Setup.responderWithAuthToken(
       tasks: [NoTask('no-task.v1'), NoTask('dodo')],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
       authToken: initiatorSetup.authToken!,
     );
 
@@ -42,17 +40,13 @@ void main() {
   });
 
   test('responder connects first', () async {
-    final crypto = await getCrypto();
-    await Setup.serverReady();
-    final initiatorSetup = Setup.initiatorWithAuthToken(
-      crypto,
+    final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [NoTask('no-task.v0'), NoTask('no-task.v2')],
     );
 
-    final responderSetup = Setup.responderWithAuthToken(
-      crypto,
+    final responderSetup = await Setup.responderWithAuthToken(
       tasks: [NoTask('no-task.v1'), NoTask('dodo')],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
       authToken: initiatorSetup.authToken!,
     );
 
@@ -73,17 +67,13 @@ void main() {
   });
 
   test('initiator connects first', () async {
-    final crypto = await getCrypto();
-    await Setup.serverReady();
-    final initiatorSetup = Setup.initiatorWithAuthToken(
-      crypto,
+    final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [NoTask('no-task.v0'), NoTask('no-task.v2')],
     );
 
-    final responderSetup = Setup.responderWithAuthToken(
-      crypto,
+    final responderSetup = await Setup.responderWithAuthToken(
       tasks: [NoTask('no-task.v1'), NoTask('dodo')],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
       authToken: initiatorSetup.authToken!,
     );
 
@@ -104,17 +94,13 @@ void main() {
   });
 
   test('responder disconnects and then reconnects', () async {
-    final crypto = await getCrypto();
-    await Setup.serverReady();
-    final initiatorSetup = Setup.initiatorWithAuthToken(
-      crypto,
+    final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [NoTask('no-task.v0'), NoTask('no-task.v2')],
     );
 
-    var responderSetup = Setup.responderWithAuthToken(
-      crypto,
+    var responderSetup = await Setup.responderWithAuthToken(
       tasks: [NoTask('no-task.v1'), NoTask('dodo')],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
       authToken: initiatorSetup.authToken!,
     );
 
@@ -129,10 +115,9 @@ void main() {
     expect(event, equals(ServerHandshakeDone()));
     responderSetup.client.cancel();
 
-    responderSetup = Setup.responderWithAuthToken(
-      crypto,
+    responderSetup = await Setup.responderWithAuthToken(
       tasks: [NoTask('no-task.v1'), NoTask('dodo')],
-      initiatorTrustedKey: initiatorSetup.permanentKey.publicKey,
+      initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
       authToken: initiatorSetup.authToken!,
     );
 

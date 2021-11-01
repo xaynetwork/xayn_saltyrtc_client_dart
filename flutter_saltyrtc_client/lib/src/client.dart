@@ -1,17 +1,12 @@
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' as saltyrtc
-    show
-        InitiatorClient,
-        ResponderClient,
-        websocketProtocols,
-        KeyStore,
-        TaskBuilder,
-        logger;
+    show InitiatorClient, ResponderClient;
+import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
+    show websocketProtocols, KeyStore, TaskBuilder, logger;
 import 'package:dart_saltyrtc_client/events.dart' show Event;
-
 import 'package:flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
-    show crypto;
+    show getCrypto;
 import 'package:flutter_saltyrtc_client/src/network.dart' show WebSocket;
 
 import 'package:hex/hex.dart' show HEX;
@@ -19,6 +14,9 @@ import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
 
 abstract class SaltyRtcClient {
+  /// The identity of this client
+  Identity get identity;
+
   /// Start the SaltyRtc client returning a stream of events about it's state.
   Stream<Event> run();
 
@@ -27,73 +25,115 @@ abstract class SaltyRtcClient {
   void cancel();
 }
 
+class Identity {
+  final KeyStore _permanentKeyPair;
+
+  Identity._(this._permanentKeyPair);
+
+  static Future<Identity> fromRawKeys({
+    required Uint8List publicKey,
+    required Uint8List privateKey,
+  }) async {
+    final crypto = await getCrypto();
+    final keyStore = crypto.createKeyStoreFromKeys(
+      privateKey: privateKey.sublist(0),
+      publicKey: publicKey.sublist(0),
+    );
+    return Identity._(keyStore);
+  }
+
+  static Future<Identity> newIdentity() async {
+    final crypto = await getCrypto();
+    return Identity._(crypto.createKeyStore());
+  }
+
+  Uint8List getPrivateKey() => _permanentKeyPair.privateKey.sublist(0);
+  Uint8List getPublicKey() => _permanentKeyPair.publicKey.sublist(0);
+}
+
 /// Client for an initiator.
 class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
+  /// Creates a fresh authentication token.
+  ///
+  /// It should only be used once to peer two clients, but once the peering
+  /// is done or restarted from scratch (instead of just retried due to, e.g.
+  /// network problems) it should no longer be used.
+  static Future<Uint8List> createAuthToken() async {
+    final crypto = await getCrypto();
+    final token = crypto.createAuthToken();
+    return token.bytes;
+  }
+
+  @override
+  final Identity identity;
   final saltyrtc.InitiatorClient _client;
 
-  InitiatorClient._(this._client);
+  InitiatorClient._(this.identity, this._client);
 
   /// Create an initiator that needs to communicate with a responder that has
   /// not yet been authenticated. The some authentication token must be used only
-  /// once. If an errors accurs before the selection of a task is completed a
+  /// once. If an errors occurs before the selection of a task is completed a
   /// different value for `sharedAuthToken` must be passed.
-  factory InitiatorClient.withUntrustedResponder(
+  static Future<InitiatorClient> withUntrustedResponder(
     Uri baseUri,
-    saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.TaskBuilder> tasks, {
-    required int pingInterval,
+    List<TaskBuilder> tasks, {
     required Uint8List expectedServerKey,
     required Uint8List sharedAuthToken,
+    int? pingInterval,
+    Identity? identity,
   }) {
     return InitiatorClient._build(
       baseUri,
-      ourPermanentKeys,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey,
       sharedAuthToken: sharedAuthToken,
+      identity: identity,
     );
   }
 
   /// Create an initiator that needs to communicate with a responder
   /// that is considered trusted and that.
-  factory InitiatorClient.withTrustedResponder(
+  static Future<InitiatorClient> withTrustedResponder(
     Uri baseUri,
-    saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.TaskBuilder> tasks, {
-    required int pingInterval,
+    List<TaskBuilder> tasks, {
     required Uint8List expectedServerKey,
     required Uint8List responderTrustedKey,
+    int? pingInterval,
+    Identity? identity,
   }) {
     return InitiatorClient._build(
       baseUri,
-      ourPermanentKeys,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey,
+      identity: identity,
     );
   }
 
-  factory InitiatorClient._build(
+  static Future<InitiatorClient> _build(
     Uri baseUri,
-    saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.TaskBuilder> tasks, {
-    required int pingInterval,
+    List<TaskBuilder> tasks, {
+    int? pingInterval,
     required Uint8List expectedServerKey,
     Uint8List? responderTrustedKey,
     Uint8List? sharedAuthToken,
-  }) {
-    final uri = _getUri(baseUri, ourPermanentKeys.publicKey);
-    saltyrtc.logger.i('connecting as initiator to uri: $uri');
+    Identity? identity,
+  }) async {
+    final crypto = await getCrypto();
+    identity ??= Identity._(crypto.createKeyStore());
+    pingInterval ??= 0;
+    final uri = _getUri(baseUri, identity._permanentKeyPair.publicKey);
+    logger.i('connecting as initiator to uri: $uri');
     final client = saltyrtc.InitiatorClient.build(
       // we get a KeyStore that can only be created from a Crypto
       // so it is already initialized
-      crypto(),
+      crypto,
       WebSocket(WebSocketChannel.connect(
         uri,
-        protocols: saltyrtc.websocketProtocols,
+        protocols: websocketProtocols,
       )),
-      ourPermanentKeys,
+      identity._permanentKeyPair,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey,
@@ -101,7 +141,7 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
       sharedAuthToken: sharedAuthToken,
     );
 
-    return InitiatorClient._(client);
+    return InitiatorClient._(identity, client);
   }
 
   /// Starts the SaltyRtc client returning a stream of events about it's state.
@@ -118,71 +158,76 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
 
 /// Client for an responder
 class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
+  @override
+  final Identity identity;
   final saltyrtc.ResponderClient _client;
 
-  ResponderClient._(this._client);
+  ResponderClient._(this.identity, this._client);
 
   /// Create a responder that needs to authenticate itself with the initiator
   /// using the authentication token. The some authentication token must be used only
   /// once. If an errors accurs before the selection of a task is completed a
   /// different value for `sharedAuthToken` must be passed.
-  factory ResponderClient.withAuthToken(
+  static Future<ResponderClient> withAuthToken(
     Uri baseUri,
-    saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.TaskBuilder> tasks, {
-    required int pingInterval,
+    List<TaskBuilder> tasks, {
     required Uint8List expectedServerKey,
     required Uint8List initiatorTrustedKey,
     required Uint8List sharedAuthToken,
+    Identity? identity,
+    int? pingInterval,
   }) {
     return ResponderClient._build(
       baseUri,
-      ourPermanentKeys,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey,
       initiatorTrustedKey: initiatorTrustedKey,
       sharedAuthToken: sharedAuthToken,
+      identity: identity,
     );
   }
 
   /// Create an responder that has already authenticated itself with the initiator.
-  factory ResponderClient.withTrustedKey(
+  static Future<ResponderClient> withTrustedKey(
     Uri baseUri,
-    saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.TaskBuilder> tasks, {
-    required int pingInterval,
+    List<TaskBuilder> tasks, {
     required Uint8List expectedServerKey,
     required Uint8List initiatorTrustedKey,
+    int? pingInterval,
+    Identity? identity,
   }) {
     return ResponderClient._build(
       baseUri,
-      ourPermanentKeys,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey,
       initiatorTrustedKey: initiatorTrustedKey,
+      identity: identity,
     );
   }
 
-  factory ResponderClient._build(
+  static Future<ResponderClient> _build(
     Uri baseUri,
-    saltyrtc.KeyStore ourPermanentKeys,
-    List<saltyrtc.TaskBuilder> tasks, {
-    required int pingInterval,
+    List<TaskBuilder> tasks, {
     required Uint8List expectedServerKey,
     required Uint8List initiatorTrustedKey,
+    int? pingInterval,
     Uint8List? sharedAuthToken,
-  }) {
+    Identity? identity,
+  }) async {
+    final crypto = await getCrypto();
+    identity ??= Identity._(crypto.createKeyStore());
+    pingInterval ??= 0;
     final uri = _getUri(baseUri, initiatorTrustedKey);
-    saltyrtc.logger.i('connecting as responder to uri: $uri');
+    logger.i('connecting as responder to uri: $uri');
     final client = saltyrtc.ResponderClient.build(
-      crypto(),
+      crypto,
       WebSocket(WebSocketChannel.connect(
         uri,
-        protocols: saltyrtc.websocketProtocols,
+        protocols: websocketProtocols,
       )),
-      ourPermanentKeys,
+      identity._permanentKeyPair,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey,
@@ -190,7 +235,7 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
       sharedAuthToken: sharedAuthToken,
     );
 
-    return ResponderClient._(client);
+    return ResponderClient._(identity, client);
   }
 
   /// Start the SaltyRtc client returning a stream of events about it's state.

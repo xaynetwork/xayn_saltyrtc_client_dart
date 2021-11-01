@@ -2,12 +2,12 @@ import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show Crypto, KeyStore, TaskBuilder;
+    show TaskBuilder;
 import 'package:flutter_saltyrtc_client/events.dart' show Event;
 import 'package:flutter_saltyrtc_client/src/client.dart'
-    show InitiatorClient, ResponderClient, SaltyRtcClient;
+    show Identity, InitiatorClient, ResponderClient, SaltyRtcClient;
 import 'package:hex/hex.dart' show HEX;
-import 'package:test/expect.dart';
+import 'package:test/test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
 
@@ -31,57 +31,52 @@ class Setup {
   );
 
   final SaltyRtcClient client;
-  final String name;
   final Uint8List? authToken;
-  final KeyStore permanentKey;
 
-  Setup(this.client, this.name, this.authToken, this.permanentKey);
+  Setup(this.client, this.authToken);
 
-  static Future<void> serverReady() async {
+  static Future<bool> skipIntegrationTests() async {
     if (!await isServerActive(serverUri)) {
       print('W: Server is down, no integration test will be performed');
-      return;
+      return true;
     }
+    return false;
   }
 
-  factory Setup.initiatorWithAuthToken(
-    Crypto crypto, {
+  static Future<Setup> initiatorWithAuthToken({
     required List<TaskBuilder> tasks,
     Uint8List? expectedServerKey,
     Uint8List? authToken,
-    KeyStore? privateKey,
-  }) {
-    final authTokenBytes = authToken ?? crypto.createAuthToken().bytes;
-    final ourKey = privateKey ?? crypto.createKeyStore();
-    final client = InitiatorClient.withUntrustedResponder(
+    Identity? identity,
+  }) async {
+    final authTokenBytes = authToken ?? await InitiatorClient.createAuthToken();
+    final client = await InitiatorClient.withUntrustedResponder(
       serverUri,
-      ourKey,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey ?? serverPublicKey,
       sharedAuthToken: authTokenBytes,
+      identity: identity,
     );
-    return Setup(client, 'initiator(auth token)', authTokenBytes, ourKey);
+    return Setup(client, authTokenBytes);
   }
 
-  factory Setup.responderWithAuthToken(
-    Crypto crypto, {
+  static Future<Setup> responderWithAuthToken({
     required List<TaskBuilder> tasks,
     Uint8List? expectedServerKey,
     required Uint8List authToken,
     required Uint8List initiatorTrustedKey,
-  }) {
-    final ourKeys = crypto.createKeyStore();
-    final client = ResponderClient.withAuthToken(
+    Identity? identity,
+  }) async {
+    final client = await ResponderClient.withAuthToken(
       serverUri,
-      ourKeys,
       tasks,
       pingInterval: pingInterval,
       expectedServerKey: expectedServerKey ?? serverPublicKey,
       initiatorTrustedKey: initiatorTrustedKey,
       sharedAuthToken: authToken,
     );
-    return Setup(client, 'responder(auth token)', authToken, ourKeys);
+    return Setup(client, authToken);
   }
 
   Future<void> runAndTestEvents(List<void Function(Event)> testList) async {

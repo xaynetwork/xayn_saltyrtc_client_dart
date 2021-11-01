@@ -55,6 +55,7 @@ abstract class AuthToken implements CryptoBox {
   Uint8List get bytes;
 }
 
+/// Abstraction over various NaCL specific crypto methods.
 abstract class Crypto {
   // specified by NaCl.
   static const publicKeyBytes = 32;
