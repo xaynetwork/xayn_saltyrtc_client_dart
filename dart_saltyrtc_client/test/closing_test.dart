@@ -1,5 +1,12 @@
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/events.dart'
+    show
+        Event,
+        HandoverToTask,
+        InitiatorCouldNotDecrypt,
+        UnexpectedStatus,
+        UnexpectedStatusVariant;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show AuthToken;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
@@ -8,13 +15,6 @@ import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show
-        Event,
-        HandoverToTask,
-        InitiatorCouldNotDecrypt,
-        UnexpectedStatus,
-        UnexpectedStatusVariant;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
 import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
     show Config, InitialCommon, Phase;

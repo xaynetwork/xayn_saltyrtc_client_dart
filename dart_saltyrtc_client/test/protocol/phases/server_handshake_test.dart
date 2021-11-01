@@ -1,6 +1,7 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
+import 'package:dart_saltyrtc_client/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod, KeyStore;
 import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
@@ -12,7 +13,6 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/client_hello.dart'
     show ClientHello;
 import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
     show DropResponder;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'

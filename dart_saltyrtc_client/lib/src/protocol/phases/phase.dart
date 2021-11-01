@@ -1,6 +1,8 @@
 import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
+import 'package:dart_saltyrtc_client/events.dart'
+    show Event, HandoverToTask, InternalError, ProtocolErrorWithServer;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod, Crypto, AuthToken, KeyStore;
 import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
@@ -20,13 +22,7 @@ import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
 import 'package:dart_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException, ValidationException;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show
-        Event,
-        HandoverToTask,
-        InternalError,
-        ProtocolErrorWithServer,
-        eventFromWSCloseCode;
+import 'package:dart_saltyrtc_client/src/protocol/events_from_close_code.dart';
 import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
 import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedServer, Client, Peer, Server;

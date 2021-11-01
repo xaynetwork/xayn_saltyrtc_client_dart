@@ -3,9 +3,10 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
     show SharedKeyStore, KeyStore, AuthToken, Crypto, DecryptionFailedException;
-import 'package:flutter_saltyrtc_client/crypto/load_sodiumjs.dart'
+import 'package:flutter_saltyrtc_client/src/crypto/load_sodiumjs.dart'
     show loadSodiumInBrowser;
-import 'package:flutter_saltyrtc_client/crypto/sodium.js.dart' show LibSodiumJS;
+import 'package:flutter_saltyrtc_client/src/crypto/sodium.js.dart'
+    show LibSodiumJS;
 
 Future<void> initCrypto() async {
   _sodiumJS = await loadSodiumInBrowser();

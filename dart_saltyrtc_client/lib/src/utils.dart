@@ -1,7 +1,6 @@
 import 'dart:async' show EventSink;
 
-import 'package:dart_saltyrtc_client/src/protocol/events.dart'
-    show Event, ClosingErrorEvent;
+import 'package:dart_saltyrtc_client/events.dart' show Event, ClosingErrorEvent;
 
 import 'logger.dart' show logger;
 

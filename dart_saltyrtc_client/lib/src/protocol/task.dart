@@ -1,9 +1,9 @@
+import 'package:dart_saltyrtc_client/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
 import 'package:dart_saltyrtc_client/src/messages/message.dart' show TaskData;
-import 'package:dart_saltyrtc_client/src/protocol/events.dart' show Event;
 import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:meta/meta.dart' show protected;
 
