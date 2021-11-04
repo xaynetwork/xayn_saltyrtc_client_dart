@@ -97,8 +97,8 @@ void main() async {
 
       final crypto = await getCrypto();
 
-      final ssbOfA = crypto.createKXSecretStreamBuilder(isServer: true);
-      final ssbOfB = crypto.createKXSecretStreamBuilder(isServer: false);
+      final ssbOfA = crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: true);
+      final ssbOfB = crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: false);
       final ssOfA = ssbOfA.build(ssbOfB.publicKey);
       final ssOfB = ssbOfB.build(ssbOfA.publicKey);
 
@@ -122,8 +122,8 @@ void main() async {
 
       final crypto = await getCrypto();
 
-      final ssbOfA = crypto.createKXSecretStreamBuilder(isServer: true);
-      final ssbOfB = crypto.createKXSecretStreamBuilder(isServer: false);
+      final ssbOfA = crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: true);
+      final ssbOfB = crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: false);
       final ssOfA = ssbOfA.build(ssbOfB.publicKey);
       final ssOfB = ssbOfB.build(ssbOfA.publicKey);
 
@@ -145,8 +145,8 @@ void main() async {
 
       final crypto = await getCrypto();
 
-      final ssbOfA = crypto.createKXSecretStreamBuilder(isServer: true);
-      final ssbOfB = crypto.createKXSecretStreamBuilder(isServer: false);
+      final ssbOfA = crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: true);
+      final ssbOfB = crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: false);
       final ssOfA = ssbOfA.build(ssbOfB.publicKey);
       final ssOfB = ssbOfB.build(ssbOfA.publicKey);
 

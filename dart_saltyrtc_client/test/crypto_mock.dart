@@ -265,7 +265,9 @@ class MockCrypto extends Crypto {
   }
 
   @override
-  KXSecretStreamBuilder createKXSecretStreamBuilder({required bool isServer}) {
+  KXSecretStreamBuilder createKXSecretStreamBuilder({
+    required bool onePeerTrueOneFalse,
+  }) {
     throw UnimplementedError();
   }
 }

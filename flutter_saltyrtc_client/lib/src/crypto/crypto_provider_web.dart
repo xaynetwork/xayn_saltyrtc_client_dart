@@ -156,9 +156,14 @@ class _JSCrypto extends Crypto {
   }
 
   @override
-  _KXSecretStreamBuilder createKXSecretStreamBuilder(
-          {required bool isServer}) =>
-      _KXSecretStreamBuilder(_sodium, _sodium.crypto_kx_keypair(), isServer);
+  _KXSecretStreamBuilder createKXSecretStreamBuilder({
+    required bool onePeerTrueOneFalse,
+  }) =>
+      _KXSecretStreamBuilder(
+        _sodium,
+        _sodium.crypto_kx_keypair(),
+        onePeerTrueOneFalse,
+      );
 }
 
 class _KXSecretStreamBuilder extends KXSecretStreamBuilder {

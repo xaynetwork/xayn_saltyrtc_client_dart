@@ -137,22 +137,27 @@ class _DartSodiumCrypto extends Crypto {
   }
 
   @override
-  KXSecretStreamBuilder createKXSecretStreamBuilder({required bool isServer}) =>
-      _KXSecretStreamBuilder(_sodium.Sodium.cryptoKxKeypair(), isServer);
+  KXSecretStreamBuilder createKXSecretStreamBuilder({
+    required bool onePeerTrueOneFalse,
+  }) =>
+      _KXSecretStreamBuilder(
+        _sodium.Sodium.cryptoKxKeypair(),
+        onePeerTrueOneFalse,
+      );
 }
 
 class _KXSecretStreamBuilder extends KXSecretStreamBuilder {
   final _sodium.KeyPair keyPair;
-  final bool isServer;
+  final bool onePeerTrueOneFalse;
 
   @override
   Uint8List get publicKey => keyPair.pk;
 
-  _KXSecretStreamBuilder(this.keyPair, this.isServer);
+  _KXSecretStreamBuilder(this.keyPair, this.onePeerTrueOneFalse);
 
   @override
   _SecretStream build(Uint8List peerPublicKey) {
-    final mkKeys = isServer
+    final mkKeys = onePeerTrueOneFalse
         ? _sodium.Sodium.cryptoKxServerSessionKeys
         : _sodium.Sodium.cryptoKxClientSessionKeys;
     final sessionKeys = mkKeys(keyPair.pk, keyPair.sk, peerPublicKey);
