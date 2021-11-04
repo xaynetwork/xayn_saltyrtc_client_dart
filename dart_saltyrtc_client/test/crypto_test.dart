@@ -1,5 +1,5 @@
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show InitialClientAuthMethod;
+    show InitialClientAuthMethod, SecretStream, SecretStreamTag;
 import 'package:test/test.dart';
 
 import 'crypto_mock.dart' show crypto;
@@ -56,5 +56,34 @@ void main() {
       expect(authMethod.trustedResponderSharedKey, same(expectedKey));
       expect(authMethod.authToken, isNull);
     });
+  });
+
+  test('from to int conversion works for tag', () {
+    void test1(int tag) {
+      //ignore:invalid_use_of_protected_member
+      expect(SecretStream.tagToInt(SecretStream.intToTag(tag)), equals(tag));
+    }
+
+    test1(0);
+    test1(1);
+    test1(2);
+    test1(3);
+
+    void test2(SecretStreamTag tag) {
+      //ignore:invalid_use_of_protected_member
+      expect(SecretStream.intToTag(SecretStream.tagToInt(tag)), equals(tag));
+    }
+
+    test2(SecretStreamTag.message);
+    test2(SecretStreamTag.push);
+    test2(SecretStreamTag.rekey);
+    test2(SecretStreamTag.finalMessage);
+
+    expect(() {
+      test1(4);
+    }, throwsArgumentError);
+    expect(() {
+      test1(-1);
+    }, throwsArgumentError);
   });
 }

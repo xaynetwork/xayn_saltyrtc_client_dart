@@ -4,6 +4,14 @@ import 'dart:typed_data' show BytesBuilder, Uint8List;
 import 'package:collection/collection.dart' show ListEquality;
 import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
     show SharedKeyStore, Crypto, AuthToken, KeyStore, DecryptionFailedException;
+import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+    show
+        AuthToken,
+        Crypto,
+        DecryptionFailedException,
+        KXSecretStreamBuilder,
+        KeyStore,
+        SharedKeyStore;
 import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show Equatable;
 import 'package:fixnum/fixnum.dart' show Int64;
@@ -254,6 +262,11 @@ class MockCrypto extends Crypto {
           'Message was encrypted with different nonce:\nexpected = $expectedNonce\nreceived = $receivedNonce');
     }
     return info.decryptedData;
+  }
+
+  @override
+  KXSecretStreamBuilder createKXSecretStreamBuilder({required bool isServer}) {
+    throw UnimplementedError();
   }
 }
 

@@ -4,8 +4,6 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show saltyrtcSubprotocol;
 export 'package:dart_saltyrtc_client/src/client.dart'
     show InitiatorClient, ResponderClient;
-export 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, KeyStore, SharedKeyStore, AuthToken, DecryptionFailedException;
 export 'package:dart_saltyrtc_client/src/logger.dart' show initLogger, logger;
 export 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
