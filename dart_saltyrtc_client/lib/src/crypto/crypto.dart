@@ -84,7 +84,9 @@ abstract class Crypto {
   /// The `onePeerTrueOneFalse` must bee `true` for one peer and `false`
   /// for the other, this is needed to decide which peer uses the first key
   /// for the receiver channel and which uses it for the transmitter channel.
-  KXSecretStreamBuilder createKXSecretStreamBuilder({required bool onePeerTrueOneFalse});
+  KXSecretStreamBuilder createKXSecretStreamBuilder({
+    required bool onePeerTrueOneFalse,
+  });
 
   static void checkNonce(Uint8List nonce) {
     _checkLength(nonce, Crypto.nonceBytes, 'nonce');
