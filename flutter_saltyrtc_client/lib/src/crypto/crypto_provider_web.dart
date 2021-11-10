@@ -27,12 +27,10 @@ T _wrapDecryptionFailure<T>(T Function() code) {
   try {
     return code();
   } on JsObject catch (cause) {
-    if (cause.hasProperty('message') &&
-        cause['message'] == 'incorrect secret key for the given ciphertext') {
-      throw DecryptionFailedException(cause);
-    } else {
-      rethrow;
-    }
+    // We treat all exceptions during decryption as "wrong key"
+    // as checking the message is prone to brake as it can change
+    // with libsodium.js updates.
+    throw DecryptionFailedException(cause);
   }
 }
 
