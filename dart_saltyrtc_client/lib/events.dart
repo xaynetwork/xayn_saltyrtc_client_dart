@@ -32,20 +32,22 @@ abstract class ClosingErrorEvent extends Event implements Exception {}
 ///
 abstract class FatalErrorEvent extends ClosingErrorEvent {}
 
-/// Event emitted when the server to client handshake completed.
+/// Event emitted when the server to client handshake is completed.
 @immutable
 class ServerHandshakeDone extends Event {}
 
-/// Event emitted when the client to client handshake completed.
+/// Event emitted when the client to client handshake is completed.
 ///
-/// This is useful during the initial peering of two clients as
+/// This is useful during the peering of two clients as
 /// it will contains the public key of the responder (which the
 /// initiator would need to remember to allow a repairing without
 /// an auth token).
 ///
-/// For consistency this is emitted by both the initiator and responder,
-/// it always contains the public key of the responder no matter what kind
-/// of client emitted it.
+/// For consistency this is emitted by both the initiator and responder.
+/// It also is emitted independent of weather or not the establishing
+/// a connection entailed peering the client or if they already had been
+/// peered. It always contains the public key of the responder no
+/// matter what kind of client emitted it.
 @immutable
 class ResponderAuthenticated extends Event {
   /// Permanent key of the responder.

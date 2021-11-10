@@ -1,6 +1,6 @@
 /// Contains all events raised by the SlatyRtc client.
 ///
-/// Tasks can define addition events based on either of:
+/// Tasks can define additional events based on either:
 ///
 /// - [Event]
 /// - [ClosingErrorEvent] (which will cause an exception)

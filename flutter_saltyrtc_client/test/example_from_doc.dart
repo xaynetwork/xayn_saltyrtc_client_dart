@@ -88,7 +88,7 @@ class SendBlobsTaskBuilder extends TaskBuilder {
 
   @override
   Task buildResponderTask(TaskData? initiatorData) {
-    // preferably do not throw on bad data, instead emit a event
+    // preferably do not throw on bad data, instead emit an event
     // subtype of `ClosingErrorEvent` and call `link.close`.
     final expectNrMessages = initiatorData!['nr_messages']! as int;
     return SendBlobsTask(expectNrMessages, blobs);
@@ -129,15 +129,12 @@ class SendBlobsTask extends Task {
 
   @override
   void handleCancel(CancelReason reason) {
-    // We didn't do async, I/O, background computation or similar
-    // so not much to do.
-    //
     // If we e.g. had opened a WebRtc data channel we would close it here.
 
-    // emit an error if we where not done
+    // emit an error if we were not done
     if (waitingForNBlobs > 0) {
       // In some cases like an internal error this event will not be seen
-      // by anyone as the events channel is already closed. (But a internal
+      // by anyone as the events channel is already closed. (But an internal
       // error is seen instead, so you can just emit the event without caring
       // about such edge cases.)
       link.emitEvent(TaskClosedBeforeDone());
@@ -151,7 +148,7 @@ class SendBlobsTask extends Task {
 
   @override
   void handleMessage(TaskMessage msg) {
-    // Again better error handling would be grate
+    // Again better error handling would be great
     switch (msg.type) {
       case 'blob':
         final blob = msg.data['blob']! as Uint8List;

@@ -3,5 +3,5 @@ Implementation of the SaltyRtc protocol.
 
 See `flutter_saltyrtc_client` for better documentation.
 
-This packages brakes out all non platform, non flutter specific
+This contains out all non platform, non flutter specific
 parts of the `flutter_saltyrtc_client` package.

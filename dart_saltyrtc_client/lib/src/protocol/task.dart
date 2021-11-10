@@ -22,7 +22,7 @@ import 'package:meta/meta.dart' show protected;
 ///    the initiator.
 ///
 /// Be aware that `TaskBuilder` instances are reused if a failure doesn't cause
-/// the connection to be closed. Even if they where already used to create a
+/// the connection to be closed. Even if they were already used to create a
 /// `Task`.
 abstract class TaskBuilder {
   /// Name of the task.
