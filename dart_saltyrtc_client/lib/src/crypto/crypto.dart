@@ -175,8 +175,8 @@ class InitialClientAuthMethod {
 abstract class KXSecretStreamBuilder {
   /// This public key needs to be "safely" transmitted to the peer.
   ///
-  /// This could be done by e.g. using a existing end-to-end encrypted signaling
-  /// channel. While the public key doesn't need be send through such a channel
+  /// This could be done by using a existing end-to-end encrypted signaling
+  /// channel. While the public key doesn't need to be sent through such a channel
   /// it's the easiest way as it mean you don't have to take various precautions
   /// to avoid MITM attacks, replay attacks and similar.
   Uint8List get publicKey;
@@ -185,17 +185,15 @@ abstract class KXSecretStreamBuilder {
   ///
   /// # SecretStream Header
   ///
-  /// To quote the documentation of libsodium:
+  /// As this API doesn't provide a way to exchange a header during setup,
+  /// the only possible implementation is to attach the header to the
+  /// first exchanged message.
+  ///
+  /// This is secure, to quote the documentation of libsodium:
   ///
   /// >  The header content doesn't have to be secret and decryption with
   ///    a different header would fail.
   ///
-  /// Because of this we prepend the header to the first encrypted message
-  /// which means the user doesn't has to care about exchanging the headers.
-  ///
-  /// This is in the end more or less the same as how we "accept" the magic
-  /// cookie and sequence number in the nonce in SaltyRtc the first time we
-  /// see a cookie/SN from the given peer.
   SecretStream build(Uint8List peerPublicKey);
 }
 
@@ -238,9 +236,9 @@ abstract class SecretStream {
   /// the decryption function or the message authentication will fail (it
   /// uses AEAD).
   ///
-  /// If the tag is set to [SecretStreamTag.finalMessage] the it will close
+  /// If the tag is set to [SecretStreamTag.finalMessage] then it will close
   /// the encryption after encrypting the message and will cause the peer
-  /// decryption to be closed after it decrypts the tag.
+  /// decryption to be closed after it decrypts the message containing the tag.
   ///
   /// Trying to encrypt packages when the encryption part was already closed
   /// will throw an exception.

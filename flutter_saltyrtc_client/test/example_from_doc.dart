@@ -129,7 +129,7 @@ class SendBlobsTask extends Task {
 
   @override
   void handleCancel(CancelReason reason) {
-    // If we e.g. had opened a WebRtc data channel we would close it here.
+    // If we had opened a WebRtc data channel we would close it here.
 
     // emit an error if we were not done
     if (waitingForNBlobs > 0) {

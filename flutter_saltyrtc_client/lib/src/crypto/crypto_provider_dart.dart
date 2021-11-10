@@ -1,4 +1,4 @@
-import 'dart:ffi';
+import 'dart:ffi' show Pointer, Uint8;
 import 'dart:typed_data' show BytesBuilder, Uint8List;
 
 import 'package:dart_saltyrtc_client/crypto.dart'
@@ -186,6 +186,13 @@ class _SecretStream extends SecretStream {
   });
 
   @override
+  bool get isDecryptionClosed =>
+      decryptionState == null && decryptionKey == null;
+
+  @override
+  bool get isEncryptionClosed => encryptionState == null;
+
+  @override
   SecretStreamDecryptionResult decryptPackage(
     Uint8List encrypted, {
     Uint8List? additionalData,
@@ -249,11 +256,4 @@ class _SecretStream extends SecretStream {
       return bytes.takeBytes();
     }
   }
-
-  @override
-  bool get isDecryptionClosed =>
-      decryptionState == null && decryptionKey == null;
-
-  @override
-  bool get isEncryptionClosed => encryptionState == null;
 }
