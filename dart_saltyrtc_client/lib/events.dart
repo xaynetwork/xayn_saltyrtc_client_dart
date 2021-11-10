@@ -16,10 +16,8 @@ abstract class Event extends Equatable {
 
 /// An event which will lead to the SaltyRtc client being closed.
 ///
-/// Emitting a event which is a subtype of this type will add it to
-/// the stream using `addError` which means it will throw and exception
-/// if you listen on the stream using `await for(...)`. Or it will trigger
-/// the error handler if you don't use async.
+/// Emitting an event which is a subtype of this type will add it to
+/// the stream using `addError`.
 abstract class ClosingErrorEvent extends Event implements Exception {}
 
 /// An error which can't be recovered from.
@@ -34,7 +32,7 @@ abstract class ClosingErrorEvent extends Event implements Exception {}
 ///
 abstract class FatalErrorEvent extends ClosingErrorEvent {}
 
-/// Event emitted when the server client to handshake completed.
+/// Event emitted when the server to client handshake completed.
 @immutable
 class ServerHandshakeDone extends Event {}
 

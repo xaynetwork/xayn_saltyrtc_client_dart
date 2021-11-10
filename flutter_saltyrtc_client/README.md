@@ -36,10 +36,10 @@ events mostly relevant for analytics or fine-tuning retry/back-of logic.
 There are a few other relevant events:
 
 - `ResponderAuthenticated` is emitted once the client to client handshake succeeded,
-  it matters during the initial peering as once it's emitted the auth token should
+  it matters during the initial peering as once it's emitted the auth token must
   no longer be used. It's emitted by both kinds of clients and always contains the
   public key of the `Responder` independent of which client emitted it.
-- Events specific to the `Task` implementation, like a e.g. `DataReceived`
+- Events specific to the `Task` implementation, like a `DataReceived`
   event containing some data or a  `DataChannelOpened` event which provides
   a instance allowing sending/receiving data over the data channel.
 
@@ -89,7 +89,7 @@ other client by e.g. using WebRTC or ORTC.
 
 The protocol works by first establishing a secure connection to a server under a specific
 path defined through the per-peering identity (public key) of the initiating peer and then
-using that to create a end-to-end encrypted tunnel through the server to the given peer.
+using that to create an end-to-end encrypted tunnel through the server to the given peer.
 
 The *protocol* does *not* rely on the integrity of the server (or any 3rd party) for the security
 of the end-to-end encrypted connection. This means it also doesn't rely on the transport layer
@@ -101,7 +101,7 @@ each peering a different identity is (should) be used.
 The protocol contains a mechanism to determine a shared *task* (roughly a sub-protocol or extension)
 which then gains control over the end-to-end encrypted channel. This implementation does
 encapsulate the client to server handshake, client to client handshake and following task phase.
-Users of this implementation can (are meant to) implement custom task to use the protocol for
+Users of this implementation must implement custom task to use the protocol for
 whatever they need.
 
 ## Security
@@ -136,9 +136,6 @@ Through user of this library should consider following:
 - While SaltyRTC can be setup without using TLS for WebSockets it's not recommended.
 - While SaltyRTC can be setup without pre-sharing the servers permanent public key
   (!= TLS cert key) it's neither recommended nor supported.
-- While we currently export the shared session key of the signaling channel to the task, it's generally not a good
-  idea to use it for anything and this will likely be removed in the future.
-
 
 ## SaltyRtc spec compliance/completion
 
