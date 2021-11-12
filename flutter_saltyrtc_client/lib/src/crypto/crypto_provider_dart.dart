@@ -174,8 +174,23 @@ class _KXSecretStreamBuilder extends KXSecretStreamBuilder {
 }
 
 class _SecretStream extends SecretStream {
+  /// encryptionState | encryptionHeader |	state
+  /// ----------------|------------------|------------
+  /// == null         | == null          | closed
+  /// == null         | != null          | unreachable
+  /// != null         | == null          | running
+  /// != null         | != null          | attach header to next msg
+  ///
   Pointer<Uint8>? encryptionState;
   Uint8List? encryptionHeader;
+
+  /// decryptionState | decryptionKey |	state
+  /// ----------------|---------------|------------
+  /// == null         | == null       | closed
+  /// == null         | != null       | setup
+  /// != null         | == null       | running
+  /// != null         | != null       | unreachable
+  ///
   Pointer<Uint8>? decryptionState;
   Uint8List? decryptionKey;
 

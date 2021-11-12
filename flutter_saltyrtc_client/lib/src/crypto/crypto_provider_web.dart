@@ -197,8 +197,24 @@ class _KXSecretStreamBuilder extends KXSecretStreamBuilder {
 
 class _SecretStream extends SecretStream {
   final LibSodiumJS _sodium;
+
+  /// encryptionState | encryptionHeader |	state
+  /// ----------------|------------------|------------
+  /// == null         | == null          | closed
+  /// == null         | != null          | unreachable
+  /// != null         | == null          | running
+  /// != null         | != null          | attach header to next msg
+  ///
   num? encryptionState;
   Uint8List? encryptionHeader;
+
+  /// decryptionState | decryptionKey |	state
+  /// ----------------|---------------|------------
+  /// == null         | == null       | closed
+  /// == null         | != null       | setup
+  /// != null         | == null       | running
+  /// != null         | != null       | unreachable
+  ///
   num? decryptionState;
   Uint8List? decryptionKey;
 
