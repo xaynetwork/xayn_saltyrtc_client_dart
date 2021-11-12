@@ -1,5 +1,10 @@
 import 'package:flutter_saltyrtc_client/events.dart'
-    show NoSharedTaskFound, PeerDisconnected, ServerHandshakeDone, PeerKind;
+    show
+        NoSharedTaskFound,
+        PeerDisconnected,
+        PeerKind,
+        SendingMessageToPeerFailed,
+        ServerHandshakeDone;
 import 'package:flutter_saltyrtc_client/task.dart'
     show Pair, Task, TaskBuilder, TaskData;
 import 'package:test/test.dart';
@@ -106,8 +111,10 @@ void main() async {
 
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
-      (event) =>
-          expect(event, equals(PeerDisconnected(PeerKind.unauthenticated))),
+      (event) => expect(
+          event,
+          anyOf(equals(PeerDisconnected(PeerKind.unauthenticated)),
+              equals(SendingMessageToPeerFailed(PeerKind.unauthenticated)))),
       (event) => expect(event, equals(NoSharedTaskFound())),
     ]);
 
