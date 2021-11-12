@@ -20,6 +20,10 @@ import 'package:meta/meta.dart' show protected;
 ///    data which is send back to the responder (as part of the auth message).
 /// 4. The responder creates a task instance based on the data returned from
 ///    the initiator.
+///
+/// Be aware that `TaskBuilder` instances are reused if a failure doesn't cause
+/// the connection to be closed. Even if they were already used to create a
+/// `Task`.
 abstract class TaskBuilder {
   /// Name of the task.
   String get name;

@@ -2,3 +2,6 @@
 .vscode/
 pubspec.lock
 .flutter-*
+
+/flutter_saltyrtc_client/doc/
+/dart_saltyrtc_client/doc/

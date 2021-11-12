@@ -13,7 +13,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
 import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
 import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
-import 'package:meta/meta.dart' show immutable, protected;
+import 'package:meta/meta.dart' show protected;
 
 extension BytesToAuthToken on Uint8List {
   AuthToken toAuthToken(Crypto crypto) =>
@@ -32,7 +32,7 @@ abstract class Client {
   /// Runs this Client returning a stream of events indicating the progress.
   Stream<Event> run() {
     if (_hasStarted) {
-      throw SaltyRtcClientError('SaltyRtc Client is already running');
+      throw StateError('SaltyRtc Client is already running');
     }
     // We must only access the phase from the run loop.
     _hasStarted = true;
@@ -83,12 +83,12 @@ class InitiatorClient extends Client {
     Uint8List? sharedAuthToken,
   }) {
     if (responderTrustedKey == null && sharedAuthToken == null) {
-      throw SaltyRtcClientError(
+      throw ArgumentError(
         'One between responder trusted key or authentication token is needed',
       );
     }
     if (responderTrustedKey != null && sharedAuthToken != null) {
-      throw SaltyRtcClientError(
+      throw ArgumentError(
         'Only one between responder trusted key or authentication token is needed.'
         'Authentication token must be used only once.',
       );
@@ -147,18 +147,4 @@ class ResponderClient extends Client {
 
     return ResponderClient._(ws, phase, events);
   }
-}
-
-@immutable
-class SaltyRtcClientError extends Error {
-  final String message;
-  final StackTrace? _customStackTrace;
-
-  @override
-  StackTrace? get stackTrace => _customStackTrace ?? super.stackTrace;
-
-  SaltyRtcClientError(this.message, [this._customStackTrace]);
-
-  @override
-  String toString() => 'SaltyRtcClientError($message, $_customStackTrace)';
 }
