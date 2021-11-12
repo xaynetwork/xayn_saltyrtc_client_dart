@@ -4,6 +4,6 @@ Any documentation in this folder might be:
 2. *out of sync*
 3. *incorrect*
 
-Through they where usefull for creating this
-package and might still be usefull for maintaining
+Though they were useful for creating this
+package and might still be useful for maintaining
 and extending it.

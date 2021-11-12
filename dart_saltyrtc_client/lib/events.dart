@@ -39,12 +39,12 @@ class ServerHandshakeDone extends Event {}
 /// Event emitted when the client to client handshake is completed.
 ///
 /// This is useful during the peering of two clients as
-/// it will contains the public key of the responder (which the
-/// initiator would need to remember to allow a repairing without
+/// it will contain the public key of the responder (which the
+/// initiator would need to remember to allow a re-peering without
 /// an auth token).
 ///
 /// For consistency this is emitted by both the initiator and responder.
-/// It also is emitted independent of weather or not the establishing
+/// It is also emitted independent of whether or not the establishment of
 /// a connection entailed peering the client or if they already had been
 /// peered. It always contains the public key of the responder no
 /// matter what kind of client emitted it.
