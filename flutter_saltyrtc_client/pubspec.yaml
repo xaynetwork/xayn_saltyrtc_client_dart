@@ -1,8 +1,9 @@
-name: flutter_saltyrtc_client
-description: The dart_saltyrtc_client integration in flutter, with support for iOS, Android and Web.
+name: xayn_flutter_saltyrtc_client
+description: The xayn_saltyrtc_client integration in flutter, with support for Android, iOS and Web.
 version: 0.0.1
 publish_to: none
-homepage:
+homepage: https://github.com/xaynetwork/xayn_saltyrtc_client_dart
+repository: https://github.com/xaynetwork/xayn_saltyrtc_client_dart
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -13,7 +14,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  dart_saltyrtc_client:
+  xayn_saltyrtc_client:
     path: ../saltyrtc_client
   flutter_sodium: ^0.2.0
   libsodium: ^0.2.0

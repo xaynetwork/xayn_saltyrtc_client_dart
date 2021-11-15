@@ -1,5 +1,5 @@
 name: xayn_saltyrtc_client
-description: A saltyrtc client.
+description: An implementation of a client for the saltyRTC protocol.
 version: 1.0.0
 homepage: https://github.com/xaynetwork/xayn_saltyrtc_client_dart
 repository: https://github.com/xaynetwork/xayn_saltyrtc_client_dart
