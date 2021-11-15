@@ -114,7 +114,7 @@
 ///
 library flutter_saltyrtc_client.task;
 
-export 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
+export 'package:xayn_saltyrtc_client/dart_saltyrtc_client.dart'
     show
         Task,
         TaskBuilder,

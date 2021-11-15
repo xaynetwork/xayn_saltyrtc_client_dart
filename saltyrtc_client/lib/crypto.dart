@@ -1,3 +1,3 @@
 library crypto;
 
-export 'package:dart_saltyrtc_client/src/crypto/crypto.dart';
+export 'package:xayn_saltyrtc_client/src/crypto/crypto.dart';

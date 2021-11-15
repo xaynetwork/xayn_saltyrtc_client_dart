@@ -1,11 +1,11 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
-    show ServerHello;
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/messages/c2c/token.dart' show Token;
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/server_hello.dart'
+    show ServerHello;
 
 import '../crypto_mock.dart' show crypto;
 import '../utils.dart' show setUpTesting;

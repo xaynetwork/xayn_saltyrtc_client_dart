@@ -1,4 +1,5 @@
-import 'package:dart_saltyrtc_client/events.dart'
+import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/events.dart'
     show
         IncompatibleServerKey,
         InitiatorCouldNotDecrypt,
@@ -7,9 +8,8 @@ import 'package:dart_saltyrtc_client/events.dart'
         TempFailureVariant,
         UnexpectedStatus,
         UnexpectedStatusVariant;
-import 'package:dart_saltyrtc_client/src/protocol/events_from_close_code.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/events_from_close_code.dart'
     show eventFromWSCloseCode;
-import 'package:test/test.dart';
 
 void main() {
   test('eventFromCloseCode', () {

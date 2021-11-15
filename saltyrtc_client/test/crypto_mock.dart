@@ -2,9 +2,12 @@ import 'dart:math' show Random, min;
 import 'dart:typed_data' show BytesBuilder, Uint8List;
 
 import 'package:collection/collection.dart' show ListEquality;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+import 'package:equatable/equatable.dart' show Equatable;
+import 'package:fixnum/fixnum.dart' show Int64;
+import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
     show SharedKeyStore, Crypto, AuthToken, KeyStore, DecryptionFailedException;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
     show
         AuthToken,
         Crypto,
@@ -12,10 +15,7 @@ import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
         KXSecretStreamBuilder,
         KeyStore,
         SharedKeyStore;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:equatable/equatable.dart' show Equatable;
-import 'package:fixnum/fixnum.dart' show Int64;
-import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
 final listEq = ListEquality<int>();
 

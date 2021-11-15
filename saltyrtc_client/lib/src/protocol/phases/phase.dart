@@ -1,35 +1,35 @@
 import 'dart:async' show EventSink;
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
-import 'package:dart_saltyrtc_client/events.dart'
-    show Event, HandoverToTask, InternalError, ProtocolErrorWithServer;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show InitialClientAuthMethod, Crypto, AuthToken, KeyStore;
-import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode, CloseCodeToFromInt;
-import 'package:dart_saltyrtc_client/src/messages/id.dart'
-    show Id, ClientId, ResponderId;
-import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
-import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
-    show OverflowException;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
-    show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/drop_responder.dart'
-    show DropResponder;
-import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
-    show SendError;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolErrorException, ValidationException;
-import 'package:dart_saltyrtc_client/src/protocol/events_from_close_code.dart';
-import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
-    show AuthenticatedServer, Client, Peer, Server;
-import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
-import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
 import 'package:meta/meta.dart' show immutable, protected;
+import 'package:xayn_saltyrtc_client/events.dart'
+    show Event, HandoverToTask, InternalError, ProtocolErrorWithServer;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
+    show InitialClientAuthMethod, Crypto, AuthToken, KeyStore;
+import 'package:xayn_saltyrtc_client/src/logger.dart' show logger;
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode, CloseCodeToFromInt;
+import 'package:xayn_saltyrtc_client/src/messages/id.dart'
+    show Id, ClientId, ResponderId;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart' show Message;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
+    show OverflowException;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/drop_responder.dart'
+    show DropResponder;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/send_error.dart'
+    show SendError;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
+    show ProtocolErrorException, ValidationException;
+import 'package:xayn_saltyrtc_client/src/protocol/events_from_close_code.dart';
+import 'package:xayn_saltyrtc_client/src/protocol/network.dart' show WebSocket;
+import 'package:xayn_saltyrtc_client/src/protocol/peer.dart'
+    show AuthenticatedServer, Client, Peer, Server;
+import 'package:xayn_saltyrtc_client/src/protocol/role.dart' show Role;
+import 'package:xayn_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
+import 'package:xayn_saltyrtc_client/src/utils.dart' show EmitEventExt;
 
 /// The protocol goes through 3 different phases
 /// 1. Server handshake

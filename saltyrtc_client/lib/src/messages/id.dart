@@ -1,14 +1,14 @@
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:equatable/equatable.dart' show EquatableMixin;
+import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
     show
         validateId,
         validateResponderId,
         validateClientId,
         checkClientId,
         checkResponderId;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
-import 'package:equatable/equatable.dart' show EquatableMixin;
-import 'package:meta/meta.dart' show immutable;
 
 /// Represent an address/id in the saltyrtc protocol.
 /// It can only contain values in [0, 255]

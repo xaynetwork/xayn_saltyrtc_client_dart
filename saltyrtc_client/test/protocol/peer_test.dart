@@ -1,9 +1,11 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
+import 'package:fixnum/fixnum.dart' show Int64;
+import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
     show CombinedSequence;
-import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
+import 'package:xayn_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/peer.dart'
     show
         AuthenticatedInitiator,
         AuthenticatedResponder,
@@ -11,8 +13,6 @@ import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
         CookiePair,
         Initiator,
         Responder;
-import 'package:fixnum/fixnum.dart' show Int64;
-import 'package:test/test.dart';
 
 import '../crypto_mock.dart' show crypto;
 import '../utils.dart' show setUpTesting, throwsValidationError;

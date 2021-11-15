@@ -1,46 +1,46 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/events.dart' as events;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+import 'package:xayn_saltyrtc_client/events.dart' as events;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod;
-import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
-import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
+import 'package:xayn_saltyrtc_client/src/logger.dart' show logger;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
     show AuthInitiator;
-import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
+import 'package:xayn_saltyrtc_client/src/messages/c2c/auth_responder.dart'
     show AuthResponder;
-import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
-import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
-import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+import 'package:xayn_saltyrtc_client/src/messages/c2c/close.dart' show Close;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/key.dart' show Key;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/token.dart' show Token;
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart'
     show MessageType;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt;
-import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/peer.dart'
     show Peer, Responder;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake.dart'
     show ClientHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakeCommon,
         InitiatorConfig,
         InitiatorIdentity,
         InitiatorSendDropResponder,
         Phase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/task.dart'
     show InitiatorTaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
+import 'package:xayn_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
 class ResponderWithState {
   final Responder responder;

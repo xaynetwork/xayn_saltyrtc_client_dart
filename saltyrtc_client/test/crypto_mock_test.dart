@@ -1,6 +1,6 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
 import 'crypto_mock.dart' show crypto;
 import 'utils.dart' show setUpTesting;

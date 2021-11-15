@@ -1,6 +1,6 @@
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationException;
 import 'package:quiver/collection.dart' show HashBiMap;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
+    show ValidationException;
 
 enum CloseCode {
   /// Normal closing of websocket.

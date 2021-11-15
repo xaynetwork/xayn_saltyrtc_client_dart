@@ -1,39 +1,40 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/events.dart' as events;
-import 'package:dart_saltyrtc_client/events.dart' show Event;
-import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
-import 'package:dart_saltyrtc_client/src/messages/c2c/application.dart'
+import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/events.dart' as events;
+import 'package:xayn_saltyrtc_client/events.dart' show Event;
+import 'package:xayn_saltyrtc_client/src/logger.dart' show logger;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/application.dart'
     show Application;
-import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
-import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
+import 'package:xayn_saltyrtc_client/src/messages/c2c/close.dart' show Close;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
-import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id, ResponderId;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart' show Message;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt;
-import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
-import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId, validateInitiatorId;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/peer.dart'
     show AuthenticatedInitiator, AuthenticatedResponder, Client, Peer;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakePhase,
         AfterServerHandshakeCommon,
@@ -44,10 +45,9 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         ResponderConfig,
         ResponderIdentity,
         WithPeer;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/task.dart'
     show SaltyRtcTaskLink, Task, CancelReason;
-import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
-import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/src/utils.dart' show EmitEventExt;
 
 class _Link extends SaltyRtcTaskLink {
   TaskPhase? _phase;

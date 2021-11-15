@@ -1,10 +1,10 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
+import 'package:xayn_saltyrtc_client/src/messages/message.dart'
     show MessageFields, TaskData, TasksData;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
     show ValidationException;
 
 /// Check that `value` represent a `type`.

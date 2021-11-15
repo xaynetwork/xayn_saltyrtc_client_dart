@@ -1,32 +1,32 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/events.dart' as events;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show AuthToken;
-import 'package:dart_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
-    show AuthInitiator;
-import 'package:dart_saltyrtc_client/src/messages/c2c/auth_responder.dart'
-    show AuthResponder;
-import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
-import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
-import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode, CloseCodeToFromInt;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/message.dart' show TasksData;
-import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
-    show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
-    show NewInitiator;
-import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
-    show SendError;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
-    show ResponderClientHandshakePhase, State;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show Phase, ResponderConfig;
-import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
-    show ResponderTaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/events.dart' as events;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart' show AuthToken;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/auth_initiator.dart'
+    show AuthInitiator;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/auth_responder.dart'
+    show AuthResponder;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/close.dart' show Close;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/key.dart' show Key;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/token.dart' show Token;
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode, CloseCodeToFromInt;
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart' show TasksData;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/disconnected.dart'
+    show Disconnected;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/new_initiator.dart'
+    show NewInitiator;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/send_error.dart'
+    show SendError;
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
+    show ResponderClientHandshakePhase, State;
+import 'package:xayn_saltyrtc_client/src/protocol/phases/phase.dart'
+    show Phase, ResponderConfig;
+import 'package:xayn_saltyrtc_client/src/protocol/phases/task.dart'
+    show ResponderTaskPhase;
+import 'package:xayn_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
 import '../../crypto_mock.dart' show crypto;
 import '../../network_mock.dart' show EventQueue;

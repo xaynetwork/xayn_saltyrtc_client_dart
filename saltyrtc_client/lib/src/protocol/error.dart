@@ -1,6 +1,6 @@
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
 import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
 
 /// It's an Exception representing a ProtocolError.
 ///

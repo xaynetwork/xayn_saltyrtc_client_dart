@@ -1,7 +1,8 @@
 import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/events.dart'
+import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/events.dart'
     show
         AdditionalResponderEvent,
         Event,
@@ -9,42 +10,41 @@ import 'package:dart_saltyrtc_client/events.dart'
         InternalError,
         PeerDisconnected,
         PeerKind;
-import 'package:dart_saltyrtc_client/events.dart' as events;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
+import 'package:xayn_saltyrtc_client/events.dart' as events;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
     show InitialClientAuthMethod;
-import 'package:dart_saltyrtc_client/src/messages/c2c/close.dart' show Close;
-import 'package:dart_saltyrtc_client/src/messages/c2c/task_message.dart'
+import 'package:xayn_saltyrtc_client/src/messages/c2c/close.dart' show Close;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/s2c/disconnected.dart'
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/s2c/disconnected.dart'
     show Disconnected;
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_initiator.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/new_initiator.dart'
     show NewInitiator;
-import 'package:dart_saltyrtc_client/src/messages/s2c/new_responder.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/new_responder.dart'
     show NewResponder;
-import 'package:dart_saltyrtc_client/src/messages/s2c/send_error.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/send_error.dart'
     show SendError;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/peer.dart'
     show Initiator, Peer, Responder;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase, State;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakePhase,
         Config,
         InitiatorConfig,
         Phase,
         ResponderConfig;
-import 'package:dart_saltyrtc_client/src/protocol/phases/task.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/task.dart'
     show InitiatorTaskPhase, ResponderTaskPhase, TaskPhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/task.dart'
     show CancelReason, SaltyRtcTaskLink, Task;
-import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
-import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/utils.dart' show Pair;
 
 import '../crypto_mock.dart' show crypto;
 import '../network_mock.dart' show MockSyncWebSocketSink;

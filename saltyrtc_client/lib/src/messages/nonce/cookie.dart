@@ -1,9 +1,9 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationException;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
+    show ValidationException;
 
 @immutable
 class Cookie with EquatableMixin {

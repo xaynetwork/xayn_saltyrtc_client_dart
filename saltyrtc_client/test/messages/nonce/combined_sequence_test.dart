@@ -1,9 +1,9 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
-    show CombinedSequence, OverflowException;
 import 'package:fixnum/fixnum.dart' show Int64;
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
+    show CombinedSequence, OverflowException;
 
 extension ToInt64 on CombinedSequence {
   Int64 toInt64() {

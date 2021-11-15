@@ -1,11 +1,11 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateType, validateByteArrayType;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart'
+    show Message, MessageType, MessageFields;
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
+    show validateType, validateByteArrayType;
 
 const _type = MessageType.application;
 

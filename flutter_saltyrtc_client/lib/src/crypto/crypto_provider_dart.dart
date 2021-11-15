@@ -1,7 +1,9 @@
 import 'dart:ffi' show Pointer, Uint8;
 import 'dart:typed_data' show BytesBuilder, Uint8List;
 
-import 'package:dart_saltyrtc_client/crypto.dart'
+import 'package:libsodium/libsodium.dart' as _sodium;
+import 'package:xayn_flutter_saltyrtc_client/crypto.dart';
+import 'package:xayn_saltyrtc_client/crypto.dart'
     show
         AuthToken,
         Crypto,
@@ -12,8 +14,6 @@ import 'package:dart_saltyrtc_client/crypto.dart'
         SecretStreamClosedException,
         SecretStreamTag,
         SharedKeyStore;
-import 'package:flutter_saltyrtc_client/crypto.dart';
-import 'package:libsodium/libsodium.dart' as _sodium;
 
 Future<Crypto> loadCrypto() async {
   return _DartSodiumCrypto();

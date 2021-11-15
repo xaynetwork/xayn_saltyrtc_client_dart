@@ -1,9 +1,9 @@
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show Message, MessageType, MessageFields;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateType;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart'
+    show Message, MessageType, MessageFields;
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
+    show validateType;
 
 const _type = MessageType.newInitiator;
 

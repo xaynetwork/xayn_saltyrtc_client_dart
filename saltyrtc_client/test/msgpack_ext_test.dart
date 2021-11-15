@@ -1,8 +1,8 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/msgpack_ext.dart' show PackAnyExt;
 import 'package:messagepack/messagepack.dart' show Packer, Unpacker;
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/msgpack_ext.dart' show PackAnyExt;
 
 Object? roundTrip(Object? value) {
   final packer = Packer();

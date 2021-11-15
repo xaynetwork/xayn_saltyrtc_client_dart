@@ -1,19 +1,19 @@
 import 'dart:async' show StreamController;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/events.dart' show Event;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, KeyStore, AuthToken, InitialClientAuthMethod;
-import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
-    show CloseCode;
-import 'package:dart_saltyrtc_client/src/protocol/network.dart' show WebSocket;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
-    show InitialCommon, InitiatorConfig, Phase, ResponderConfig;
-import 'package:dart_saltyrtc_client/src/protocol/phases/server_handshake.dart'
-    show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/events.dart' show Event;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
+    show Crypto, KeyStore, AuthToken, InitialClientAuthMethod;
+import 'package:xayn_saltyrtc_client/src/logger.dart' show logger;
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
+    show CloseCode;
+import 'package:xayn_saltyrtc_client/src/protocol/network.dart' show WebSocket;
+import 'package:xayn_saltyrtc_client/src/protocol/phases/phase.dart'
+    show InitialCommon, InitiatorConfig, Phase, ResponderConfig;
+import 'package:xayn_saltyrtc_client/src/protocol/phases/server_handshake.dart'
+    show InitiatorServerHandshakePhase, ResponderServerHandshakePhase;
+import 'package:xayn_saltyrtc_client/src/protocol/task.dart' show TaskBuilder;
 
 extension BytesToAuthToken on Uint8List {
   AuthToken toAuthToken(Crypto crypto) =>

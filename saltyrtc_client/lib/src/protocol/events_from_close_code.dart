@@ -1,4 +1,5 @@
-import 'package:dart_saltyrtc_client/events.dart'
+import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/events.dart'
     show
         Event,
         IncompatibleServerKey,
@@ -8,8 +9,7 @@ import 'package:dart_saltyrtc_client/events.dart'
         TempFailureVariant,
         UnexpectedStatus,
         UnexpectedStatusVariant;
-import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
-import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/src/logger.dart' show logger;
 
 /// Creates an event from an status code.
 ///

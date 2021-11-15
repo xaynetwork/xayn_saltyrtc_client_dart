@@ -1,26 +1,26 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/events.dart'
+import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/events.dart'
     show
         Event,
         HandoverToTask,
         InitiatorCouldNotDecrypt,
         UnexpectedStatus,
         UnexpectedStatusVariant;
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart' show AuthToken;
-import 'package:dart_saltyrtc_client/src/messages/close_code.dart'
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart' show AuthToken;
+import 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
     show CloseCode, CloseCodeToFromInt;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart' show Message;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/peer.dart' show Peer;
+import 'package:xayn_saltyrtc_client/src/protocol/phases/phase.dart'
     show Config, InitialCommon, Phase;
-import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
-import 'package:dart_saltyrtc_client/src/utils.dart' show EmitEventExt;
-import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/protocol/role.dart' show Role;
+import 'package:xayn_saltyrtc_client/src/utils.dart' show EmitEventExt;
 
 import 'crypto_mock.dart' show crypto;
 import 'network_mock.dart' show EventQueue, MockSyncWebSocket, PackageQueue;

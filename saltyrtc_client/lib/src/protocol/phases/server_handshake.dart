@@ -1,36 +1,37 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
 import 'package:collection/collection.dart' show ListEquality;
-import 'package:dart_saltyrtc_client/events.dart' as events;
-import 'package:dart_saltyrtc_client/src/logger.dart' show logger;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
+import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/events.dart' as events;
+import 'package:xayn_saltyrtc_client/src/logger.dart' show logger;
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart'
     show MessageType, Message, MessageFields;
-import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
+import 'package:xayn_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/messages/reader.dart'
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/messages/reader.dart'
     show MessageDecryptionExt, readMessage;
-import 'package:dart_saltyrtc_client/src/messages/s2c/client_auth.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/client_auth.dart'
     show ClientAuth;
-import 'package:dart_saltyrtc_client/src/messages/s2c/client_hello.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/client_hello.dart'
     show ClientHello;
-import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_initiator.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/server_auth_initiator.dart'
     show ServerAuthInitiator;
-import 'package:dart_saltyrtc_client/src/messages/s2c/server_auth_responder.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/server_auth_responder.dart'
     show ServerAuthResponder;
-import 'package:dart_saltyrtc_client/src/messages/s2c/server_hello.dart'
+import 'package:xayn_saltyrtc_client/src/messages/s2c/server_hello.dart'
     show ServerHello;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
     show validateResponderId;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
     show ProtocolErrorException, ValidationException;
-import 'package:dart_saltyrtc_client/src/protocol/peer.dart' show Peer;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/peer.dart' show Peer;
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake_initiator.dart'
     show InitiatorClientHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/client_handshake_responder.dart'
     show ResponderClientHandshakePhase;
-import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
+import 'package:xayn_saltyrtc_client/src/protocol/phases/phase.dart'
     show
         AfterServerHandshakeCommon,
         InitialCommon,
@@ -39,8 +40,7 @@ import 'package:dart_saltyrtc_client/src/protocol/phases/phase.dart'
         Phase,
         ResponderConfig,
         ResponderIdentity;
-import 'package:dart_saltyrtc_client/src/protocol/role.dart' show Role;
-import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/src/protocol/role.dart' show Role;
 
 const saltyrtcSubprotocol = 'v1.saltyrtc.org';
 

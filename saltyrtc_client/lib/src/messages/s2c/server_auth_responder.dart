@@ -1,18 +1,18 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
+import 'package:messagepack/messagepack.dart' show Packer;
+import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart'
     show Message, MessageType, MessageFields, signedKeysLength;
-import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
+import 'package:xayn_saltyrtc_client/src/messages/nonce/cookie.dart'
     show Cookie;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
     show
         validateType,
         validateByteArrayType,
         validateByteArray,
         validateBoolType,
         validateTypeWithNull;
-import 'package:messagepack/messagepack.dart' show Packer;
-import 'package:meta/meta.dart' show immutable;
 
 const _type = MessageType.serverAuth;
 

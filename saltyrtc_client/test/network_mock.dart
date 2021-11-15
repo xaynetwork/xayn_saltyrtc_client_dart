@@ -3,13 +3,13 @@ import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:async/async.dart' show StreamQueue;
-import 'package:dart_saltyrtc_client/events.dart' show Event;
-import 'package:dart_saltyrtc_client/src/protocol/network.dart'
-    show WebSocketSink, WebSocket;
-import 'package:dart_saltyrtc_client/src/protocol/network.dart'
-    show WebSocketStream;
-import 'package:dart_saltyrtc_client/src/utils.dart' show Pair;
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/events.dart' show Event;
+import 'package:xayn_saltyrtc_client/src/protocol/network.dart'
+    show WebSocketSink, WebSocket;
+import 'package:xayn_saltyrtc_client/src/protocol/network.dart'
+    show WebSocketStream;
+import 'package:xayn_saltyrtc_client/src/utils.dart' show Pair;
 
 class MockSyncWebSocketSink implements WebSocketSink {
   final queue = PackageQueue();

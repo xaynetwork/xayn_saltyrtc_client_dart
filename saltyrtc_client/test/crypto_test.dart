@@ -1,6 +1,6 @@
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show InitialClientAuthMethod, SecretStream, SecretStreamTag;
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
+    show InitialClientAuthMethod, SecretStream, SecretStreamTag;
 
 import 'crypto_mock.dart' show crypto;
 import 'utils.dart' show setUpTesting;

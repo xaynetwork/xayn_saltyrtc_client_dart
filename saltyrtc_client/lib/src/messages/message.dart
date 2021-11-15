@@ -1,11 +1,11 @@
 import 'dart:typed_data' show BytesBuilder, Uint8List;
 
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show Crypto, CryptoBox;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:messagepack/messagepack.dart' show Packer;
 import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
+    show Crypto, CryptoBox;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
 /// Different types of messages in the SaltyRTC Singnal protocol.
 /// This is not exhaustive since a task can define its own types.

@@ -1,14 +1,14 @@
 import 'dart:typed_data' show Uint8List, BytesBuilder;
 
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
-    show CombinedSequence;
-import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
-    show Cookie;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationException;
 import 'package:equatable/equatable.dart' show EquatableMixin;
 import 'package:meta/meta.dart' show immutable;
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
+    show CombinedSequence;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/cookie.dart'
+    show Cookie;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
+    show ValidationException;
 
 /// Nonce structure:
 /// |CCCCCCCCCCCCCCCC|S|D|OO|QQQQ|

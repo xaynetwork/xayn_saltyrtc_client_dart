@@ -1,8 +1,7 @@
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ValidationException;
-
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
+    show ValidationException;
 
 void main() {
   test('id valid peer', () {

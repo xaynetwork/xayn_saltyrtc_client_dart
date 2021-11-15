@@ -1,6 +1,6 @@
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' show initLogger;
 import 'package:logger/logger.dart' show MemoryOutput;
 import 'package:test/test.dart' show setUp, tearDown, printOnFailure;
+import 'package:xayn_saltyrtc_client/dart_saltyrtc_client.dart' show initLogger;
 
 /// Setup the logger to print logs only when a test fail.
 void setUpLogging() {

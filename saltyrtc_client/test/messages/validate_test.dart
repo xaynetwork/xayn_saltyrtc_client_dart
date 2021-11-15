@@ -1,9 +1,8 @@
-import 'package:dart_saltyrtc_client/src/messages/message.dart'
-    show TaskData, TasksData;
-import 'package:dart_saltyrtc_client/src/messages/validation.dart'
-    show validateTaskDataType, validateTasksDataType;
-
 import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/src/messages/message.dart'
+    show TaskData, TasksData;
+import 'package:xayn_saltyrtc_client/src/messages/validation.dart'
+    show validateTaskDataType, validateTasksDataType;
 
 void main() {
   const task = 'task_name';

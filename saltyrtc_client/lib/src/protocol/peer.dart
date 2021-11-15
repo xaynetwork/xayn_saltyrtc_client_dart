@@ -1,21 +1,21 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/crypto/crypto.dart'
-    show AuthToken, Crypto, SharedKeyStore, CryptoBox;
-import 'package:dart_saltyrtc_client/src/messages/c2c/key.dart' show Key;
-import 'package:dart_saltyrtc_client/src/messages/c2c/token.dart' show Token;
-import 'package:dart_saltyrtc_client/src/messages/id.dart' show Id;
-import 'package:dart_saltyrtc_client/src/messages/id.dart'
-    show Id, ResponderId, ServerId, InitiatorId;
-import 'package:dart_saltyrtc_client/src/messages/message.dart' show Message;
-import 'package:dart_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
-    show CombinedSequence;
-import 'package:dart_saltyrtc_client/src/messages/nonce/cookie.dart'
-    show Cookie;
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolErrorException, ValidationException;
 import 'package:meta/meta.dart' show protected;
+import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
+    show AuthToken, Crypto, SharedKeyStore, CryptoBox;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/key.dart' show Key;
+import 'package:xayn_saltyrtc_client/src/messages/c2c/token.dart' show Token;
+import 'package:xayn_saltyrtc_client/src/messages/id.dart' show Id;
+import 'package:xayn_saltyrtc_client/src/messages/id.dart'
+    show Id, ResponderId, ServerId, InitiatorId;
+import 'package:xayn_saltyrtc_client/src/messages/message.dart' show Message;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/combined_sequence.dart'
+    show CombinedSequence;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/cookie.dart'
+    show Cookie;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
+    show ProtocolErrorException, ValidationException;
 
 /// A peer can be the server, the initiator or a responder
 abstract class Peer {

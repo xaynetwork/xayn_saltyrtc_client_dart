@@ -1,9 +1,9 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
-import 'package:dart_saltyrtc_client/src/protocol/error.dart'
-    show ProtocolErrorException;
 import 'package:meta/meta.dart' show immutable, protected;
+import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
+import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
+    show ProtocolErrorException;
 
 /// Exception we map provider specific decryption failure exceptions to.
 ///

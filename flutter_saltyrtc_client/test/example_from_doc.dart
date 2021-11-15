@@ -1,8 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/events.dart'
-    show ClosingErrorEvent, Event, ResponderAuthenticated, ServerHandshakeDone;
-import 'package:flutter_saltyrtc_client/task.dart'
+import 'package:test/test.dart';
+import 'package:xayn_flutter_saltyrtc_client/task.dart'
     show
         CancelReason,
         CloseCode,
@@ -11,7 +10,8 @@ import 'package:flutter_saltyrtc_client/task.dart'
         TaskBuilder,
         TaskData,
         TaskMessage;
-import 'package:test/test.dart';
+import 'package:xayn_saltyrtc_client/events.dart'
+    show ClosingErrorEvent, Event, ResponderAuthenticated, ServerHandshakeDone;
 
 import 'logging.dart' show setUpLogging;
 import 'task_test.dart' show BlobReceived;
