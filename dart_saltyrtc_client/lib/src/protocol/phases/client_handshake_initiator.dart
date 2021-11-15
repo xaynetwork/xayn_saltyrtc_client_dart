@@ -287,7 +287,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     logger.i('Selected task ${taskBuilder.name}');
 
     /// AuthResponder parsing already validates integrity.
-    final taskData = msg.data[taskBuilder.name]!;
+    final taskData = msg.data[taskBuilder.name];
     final taskAndData = taskBuilder.buildInitiatorTask(taskData);
     logger.d('Initiated task ${taskBuilder.name}');
 
