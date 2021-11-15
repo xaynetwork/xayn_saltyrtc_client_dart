@@ -1,8 +1,7 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' show Crypto;
-import 'package:flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
-    show getCrypto;
+import 'package:flutter_saltyrtc_client/crypto.dart'
+    show getCrypto, Crypto, SecretStreamTag;
 import 'package:test/test.dart';
 
 import 'protocol.dart' show EncryptedMessage, KeyExchangeMessage;
@@ -86,5 +85,131 @@ void main() async {
       nonce: msgToServerPong.nonce,
     );
     expect(pongMessage, pong);
+  });
+
+  group('test secret stream', () {
+    test('normal message sending', () async {
+      final msg1 = Uint8List.fromList([1, 2, 4, 8, 16, 32]);
+      final msg2 = Uint8List.fromList([1, 3, 9, 27]);
+      final msg3 = Uint8List.fromList([33, 44, 55, 12]);
+      final msg4 = Uint8List.fromList([]);
+      final msg5 = Uint8List.fromList([4, 8, 12]);
+
+      final crypto = await getCrypto();
+
+      final ssbOfA =
+          crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: true);
+      final ssbOfB =
+          crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: false);
+      final ssOfA = ssbOfA.build(ssbOfB.publicKey);
+      final ssOfB = ssbOfB.build(ssbOfA.publicKey);
+
+      var tmp = ssOfB.decryptPackage(ssOfA.encryptPackage(msg1));
+      expect(tmp.message, equals(msg1));
+      tmp = ssOfB.decryptPackage(ssOfA.encryptPackage(msg2));
+      expect(tmp.message, equals(msg2));
+      tmp = ssOfA.decryptPackage(ssOfB.encryptPackage(msg3));
+      expect(tmp.message, equals(msg3));
+      tmp = ssOfA.decryptPackage(ssOfB.encryptPackage(msg4));
+      expect(tmp.message, equals(msg4));
+      tmp = ssOfA.decryptPackage(ssOfB.encryptPackage(msg5));
+      expect(tmp.message, equals(msg5));
+    });
+
+    test('just one half used', () async {
+      final msg1 = Uint8List.fromList([1, 2, 4, 8, 16, 32]);
+      final msg2 = Uint8List.fromList([1, 3, 9, 27]);
+      final msg3 = Uint8List.fromList([33, 44, 55, 12]);
+      final msg4 = Uint8List.fromList([]);
+
+      final crypto = await getCrypto();
+
+      final ssbOfA =
+          crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: true);
+      final ssbOfB =
+          crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: false);
+      final ssOfA = ssbOfA.build(ssbOfB.publicKey);
+      final ssOfB = ssbOfB.build(ssbOfA.publicKey);
+
+      var tmp = ssOfB.decryptPackage(ssOfA.encryptPackage(msg1));
+      expect(tmp.message, equals(msg1));
+      tmp = ssOfB.decryptPackage(ssOfA.encryptPackage(msg2));
+      expect(tmp.message, equals(msg2));
+      tmp = ssOfB.decryptPackage(ssOfA.encryptPackage(msg3));
+      expect(tmp.message, equals(msg3));
+      tmp = ssOfB.decryptPackage(ssOfA.encryptPackage(msg4));
+      expect(tmp.message, equals(msg4));
+    });
+
+    test('sending tags', () async {
+      final msg1 = Uint8List.fromList([1, 2, 4, 8, 16, 32]);
+      final msg2 = Uint8List.fromList([1, 3, 9, 27]);
+      final msg3 = Uint8List.fromList([33, 44, 55, 12]);
+      final msg4 = Uint8List.fromList([]);
+
+      final crypto = await getCrypto();
+
+      final ssbOfA =
+          crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: true);
+      final ssbOfB =
+          crypto.createKXSecretStreamBuilder(onePeerTrueOneFalse: false);
+      final ssOfA = ssbOfA.build(ssbOfB.publicKey);
+      final ssOfB = ssbOfB.build(ssbOfA.publicKey);
+
+      var tmp = ssOfA.decryptPackage(
+          ssOfB.encryptPackage(msg1, tag: SecretStreamTag.push));
+      expect(tmp.message, equals(msg1));
+      expect(tmp.tag, equals(SecretStreamTag.push));
+
+      expect(ssOfA.isDecryptionClosed, isFalse);
+      expect(ssOfA.isEncryptionClosed, isFalse);
+      expect(ssOfB.isDecryptionClosed, isFalse);
+      expect(ssOfB.isEncryptionClosed, isFalse);
+
+      tmp = ssOfA.decryptPackage(
+          ssOfB.encryptPackage(msg2, tag: SecretStreamTag.rekey));
+      expect(tmp.message, equals(msg2));
+      expect(tmp.tag, equals(SecretStreamTag.rekey));
+
+      expect(ssOfA.isDecryptionClosed, isFalse);
+      expect(ssOfA.isEncryptionClosed, isFalse);
+      expect(ssOfB.isDecryptionClosed, isFalse);
+      expect(ssOfB.isEncryptionClosed, isFalse);
+
+      tmp = ssOfA.decryptPackage(
+          ssOfB.encryptPackage(msg2, tag: SecretStreamTag.message));
+      expect(tmp.message, equals(msg2));
+      expect(tmp.tag, equals(SecretStreamTag.message));
+
+      expect(ssOfA.isDecryptionClosed, isFalse);
+      expect(ssOfA.isEncryptionClosed, isFalse);
+      expect(ssOfB.isDecryptionClosed, isFalse);
+      expect(ssOfB.isEncryptionClosed, isFalse);
+
+      tmp = ssOfA.decryptPackage(
+          ssOfB.encryptPackage(msg3, tag: SecretStreamTag.push));
+      expect(tmp.message, equals(msg3));
+      expect(tmp.tag, equals(SecretStreamTag.push));
+
+      expect(ssOfA.isDecryptionClosed, isFalse);
+      expect(ssOfA.isEncryptionClosed, isFalse);
+      expect(ssOfB.isDecryptionClosed, isFalse);
+      expect(ssOfB.isEncryptionClosed, isFalse);
+
+      tmp = ssOfA.decryptPackage(
+          ssOfB.encryptPackage(msg3, tag: SecretStreamTag.finalMessage));
+      expect(tmp.message, equals(msg3));
+      expect(tmp.tag, equals(SecretStreamTag.finalMessage));
+
+      expect(ssOfA.isDecryptionClosed, isTrue);
+      expect(ssOfA.isEncryptionClosed, isFalse);
+      expect(ssOfB.isDecryptionClosed, isFalse);
+      expect(ssOfB.isEncryptionClosed, isTrue);
+
+      tmp = ssOfB.decryptPackage(
+          ssOfA.encryptPackage(msg4, tag: SecretStreamTag.finalMessage));
+      expect(tmp.message, equals(msg4));
+      expect(tmp.tag, equals(SecretStreamTag.finalMessage));
+    });
   });
 }

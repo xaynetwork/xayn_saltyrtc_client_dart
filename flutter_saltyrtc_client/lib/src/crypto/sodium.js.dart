@@ -1153,7 +1153,7 @@ class LibSodiumJS {
 
   external Uint8List crypto_secretstream_xchacha20poly1305_keygen();
 
-  external dynamic crypto_secretstream_xchacha20poly1305_pull(
+  external SecretStreamPull crypto_secretstream_xchacha20poly1305_pull(
     num state_address,
     Uint8List cipher,
     Uint8List? ad,

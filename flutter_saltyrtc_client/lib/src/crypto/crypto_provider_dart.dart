@@ -1,7 +1,18 @@
-import 'dart:typed_data' show Uint8List;
+import 'dart:ffi' show Pointer, Uint8;
+import 'dart:typed_data' show BytesBuilder, Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show SharedKeyStore, KeyStore, AuthToken, Crypto, DecryptionFailedException;
+import 'package:dart_saltyrtc_client/crypto.dart'
+    show
+        AuthToken,
+        Crypto,
+        DecryptionFailedException,
+        KXSecretStreamBuilder,
+        KeyStore,
+        SecretStream,
+        SecretStreamClosedException,
+        SecretStreamTag,
+        SharedKeyStore;
+import 'package:flutter_saltyrtc_client/crypto.dart';
 import 'package:libsodium/libsodium.dart' as _sodium;
 
 Future<Crypto> loadCrypto() async {
@@ -123,5 +134,141 @@ class _DartSodiumCrypto extends Crypto {
   @override
   AuthToken createAuthTokenFromToken({required Uint8List token}) {
     return _DartSodiumAuthToken(token);
+  }
+
+  @override
+  KXSecretStreamBuilder createKXSecretStreamBuilder({
+    required bool onePeerTrueOneFalse,
+  }) =>
+      _KXSecretStreamBuilder(
+        _sodium.Sodium.cryptoKxKeypair(),
+        onePeerTrueOneFalse,
+      );
+}
+
+class _KXSecretStreamBuilder extends KXSecretStreamBuilder {
+  final _sodium.KeyPair keyPair;
+  final bool onePeerTrueOneFalse;
+
+  @override
+  Uint8List get publicKey => keyPair.pk;
+
+  _KXSecretStreamBuilder(this.keyPair, this.onePeerTrueOneFalse);
+
+  @override
+  _SecretStream build(Uint8List peerPublicKey) {
+    final mkKeys = onePeerTrueOneFalse
+        ? _sodium.Sodium.cryptoKxServerSessionKeys
+        : _sodium.Sodium.cryptoKxClientSessionKeys;
+    final sessionKeys = mkKeys(keyPair.pk, keyPair.sk, peerPublicKey);
+    final initPushResult =
+        _sodium.Sodium.cryptoSecretstreamXchacha20poly1305InitPush(
+            sessionKeys.tx);
+    final stream = _SecretStream._(
+      encryptionState: initPushResult.state,
+      encryptionHeader: initPushResult.header,
+      decryptionKey: sessionKeys.rx,
+    );
+    return stream;
+  }
+}
+
+class _SecretStream extends SecretStream {
+  /// encryptionState | encryptionHeader |	state
+  /// ----------------|------------------|------------
+  /// == null         | == null          | closed
+  /// == null         | != null          | unreachable
+  /// != null         | == null          | running
+  /// != null         | != null          | attach header to next msg
+  ///
+  Pointer<Uint8>? encryptionState;
+  Uint8List? encryptionHeader;
+
+  /// decryptionState | decryptionKey |	state
+  /// ----------------|---------------|------------
+  /// == null         | == null       | closed
+  /// == null         | != null       | setup
+  /// != null         | == null       | running
+  /// != null         | != null       | unreachable
+  ///
+  Pointer<Uint8>? decryptionState;
+  Uint8List? decryptionKey;
+
+  _SecretStream._({
+    required Pointer<Uint8> this.encryptionState,
+    required Uint8List this.encryptionHeader,
+    required Uint8List this.decryptionKey,
+  });
+
+  @override
+  bool get isDecryptionClosed =>
+      decryptionState == null && decryptionKey == null;
+
+  @override
+  bool get isEncryptionClosed => encryptionState == null;
+
+  @override
+  SecretStreamDecryptionResult decryptPackage(
+    Uint8List encrypted, {
+    Uint8List? additionalData,
+  }) {
+    if (isDecryptionClosed) {
+      throw SecretStreamClosedException(incoming: true);
+    }
+    return _wrapDecryptionFailure(() {
+      final key = decryptionKey;
+      if (key != null) {
+        decryptionKey = null;
+        final header =
+            Uint8List.sublistView(encrypted, 0, Crypto.secretStreamHeaderBytes);
+        encrypted =
+            Uint8List.sublistView(encrypted, Crypto.secretStreamHeaderBytes);
+
+        decryptionState =
+            _sodium.Sodium.cryptoSecretstreamXchacha20poly1305InitPull(
+                header, key);
+      }
+
+      final result = _sodium.Sodium.cryptoSecretstreamXchacha20poly1305Pull(
+        decryptionState!,
+        encrypted,
+        additionalData,
+      );
+      final tag = SecretStream.intToTag(result.tag);
+      if (tag == SecretStreamTag.finalMessage) {
+        decryptionState = null;
+      }
+      return SecretStreamDecryptionResult(result.m, tag);
+    });
+  }
+
+  @override
+  Uint8List encryptPackage(
+    Uint8List message, {
+    Uint8List? additionalData,
+    SecretStreamTag tag = SecretStreamTag.message,
+  }) {
+    if (isEncryptionClosed) {
+      throw SecretStreamClosedException(incoming: false);
+    }
+    final result = _sodium.Sodium.cryptoSecretstreamXchacha20poly1305Push(
+      encryptionState!,
+      message,
+      additionalData,
+      SecretStream.tagToInt(tag),
+    );
+    if (tag == SecretStreamTag.finalMessage) {
+      encryptionState = null;
+    }
+    final header = encryptionHeader;
+    if (header == null) {
+      return result;
+    } else {
+      encryptionHeader = null;
+      final bytes = BytesBuilder(copy: false)
+        ..add(header)
+        ..add(result);
+      return bytes.takeBytes();
+    }
   }
 }
