@@ -1,0 +1,22 @@
+name: xayn_saltyrtc_client
+description: A saltyrtc client.
+version: 1.0.0
+homepage: https://github.com/xaynetwork/xayn_saltyrtc_client_dart
+repository: https://github.com/xaynetwork/xayn_saltyrtc_client_dart
+
+environment:
+  sdk: '>=2.14.0 <3.0.0'
+
+dependencies:
+  collection: ^1.15.0
+  equatable: ^2.0.3
+  fixnum: ^1.0.0
+  messagepack: ^0.2.1
+  meta: ^1.7.0
+  quiver: ^3.0.1
+  logger: ^1.1.0
+
+dev_dependencies:
+  async: ^2.8.2
+  lints: ^1.0.1
+  test: ^1.19.3
