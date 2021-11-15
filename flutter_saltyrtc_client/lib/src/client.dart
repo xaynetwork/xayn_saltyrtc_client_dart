@@ -7,11 +7,11 @@ import 'package:xayn_flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
     show getCrypto;
 import 'package:xayn_flutter_saltyrtc_client/src/network.dart' show WebSocket;
 import 'package:xayn_saltyrtc_client/crypto.dart' show KeyStore;
-import 'package:xayn_saltyrtc_client/dart_saltyrtc_client.dart' as saltyrtc
-    show InitiatorClient, ResponderClient;
-import 'package:xayn_saltyrtc_client/dart_saltyrtc_client.dart'
-    show websocketProtocols, TaskBuilder, logger;
 import 'package:xayn_saltyrtc_client/events.dart' show Event;
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart' as saltyrtc
+    show InitiatorClient, ResponderClient;
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
+    show websocketProtocols, TaskBuilder, logger;
 
 abstract class SaltyRtcClient {
   /// The identity of this client

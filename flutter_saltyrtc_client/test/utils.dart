@@ -8,7 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart'
 import 'package:xayn_flutter_saltyrtc_client/events.dart' show Event;
 import 'package:xayn_flutter_saltyrtc_client/src/client.dart'
     show Identity, InitiatorClient, ResponderClient, SaltyRtcClient;
-import 'package:xayn_saltyrtc_client/dart_saltyrtc_client.dart'
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
     show TaskBuilder;
 
 Future<bool> isServerActive(Uri uri) async {

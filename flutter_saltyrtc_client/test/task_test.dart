@@ -9,8 +9,6 @@ import 'package:xayn_flutter_saltyrtc_client/events.dart'
         HandoverToTask,
         ResponderAuthenticated,
         ServerHandshakeDone;
-import 'package:xayn_flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
-    show logger;
 import 'package:xayn_flutter_saltyrtc_client/task.dart'
     show
         CancelReason,
@@ -20,6 +18,8 @@ import 'package:xayn_flutter_saltyrtc_client/task.dart'
         TaskBuilder,
         TaskData,
         TaskMessage;
+import 'package:xayn_flutter_saltyrtc_client/xayn_flutter_saltyrtc_client.dart'
+    show logger;
 
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;
