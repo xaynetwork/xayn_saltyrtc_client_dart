@@ -19,6 +19,7 @@ linter:
     - library_names
     - library_prefixes
     - non_constant_identifier_names
+    - package_api_docs
     - prefer_single_quotes
     - sort_child_properties_last
     - unawaited_futures
