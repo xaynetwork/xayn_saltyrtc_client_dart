@@ -8,7 +8,7 @@ runs:
       run: flutter --version
     - shell: bash
       name: Install dart dependencies
-      working-directory: dart_saltyrtc_client
+      working-directory: saltyrtc_client
       run: flutter pub get
 
     - shell: bash
