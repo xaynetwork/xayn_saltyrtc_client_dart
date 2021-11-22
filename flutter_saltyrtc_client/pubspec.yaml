@@ -22,7 +22,7 @@ dependencies:
   web_socket_channel: ^2.1.0
   xayn_saltyrtc_client:
     git:
-      url: git@github.com:xaynetwork/flutter_saltyrtc_client.git
+      url: git@github.com:xaynetwork/xayn_saltyrtc_client_dart.git
       path: saltyrtc_client
 
 dev_dependencies:
