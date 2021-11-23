@@ -6,9 +6,9 @@ import 'dart:html' show ScriptElement, document, window;
 import 'dart:js_util' show getProperty, setProperty;
 
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter_saltyrtc_client/src/crypto/sodium.js.dart'
-    show LibSodiumJS;
 import 'package:js/js.dart' show JS, allowInterop, anonymous;
+import 'package:xayn_flutter_saltyrtc_client/src/crypto/sodium.js.dart'
+    show LibSodiumJS;
 
 @JS()
 @anonymous

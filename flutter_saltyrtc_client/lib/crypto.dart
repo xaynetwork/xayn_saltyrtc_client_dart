@@ -42,6 +42,6 @@
 /// ```
 library crypto;
 
-export 'package:dart_saltyrtc_client/crypto.dart';
-export 'package:flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
+export 'package:xayn_flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
     show getCrypto;
+export 'package:xayn_saltyrtc_client/crypto.dart';

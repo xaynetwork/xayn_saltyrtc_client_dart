@@ -1,12 +1,12 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:flutter_saltyrtc_client/events.dart'
-    show IncompatibleServerKey, ServerHandshakeDone;
-import 'package:flutter_saltyrtc_client/task.dart' show Pair;
 import 'package:hex/hex.dart' show HEX;
 import 'package:test/test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
+import 'package:xayn_flutter_saltyrtc_client/events.dart'
+    show IncompatibleServerKey, ServerHandshakeDone;
+import 'package:xayn_flutter_saltyrtc_client/task.dart' show Pair;
 
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;

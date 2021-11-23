@@ -7,4 +7,4 @@
 library flutter_saltyrtc_client.events;
 
 //Re-export all events.
-export 'package:dart_saltyrtc_client/events.dart';
+export 'package:xayn_saltyrtc_client/events.dart';

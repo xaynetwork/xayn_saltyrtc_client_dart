@@ -1,8 +1,8 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:flutter_saltyrtc_client/crypto.dart'
-    show getCrypto, Crypto, SecretStreamTag;
 import 'package:test/test.dart';
+import 'package:xayn_flutter_saltyrtc_client/crypto.dart'
+    show getCrypto, Crypto, SecretStreamTag;
 
 import 'protocol.dart' show EncryptedMessage, KeyExchangeMessage;
 

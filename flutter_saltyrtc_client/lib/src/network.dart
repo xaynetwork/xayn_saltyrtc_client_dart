@@ -1,9 +1,9 @@
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart' as saltyrtc
-    show WebSocketSink, WebSocket, WebSocketStream;
 import 'package:web_socket_channel/web_socket_channel.dart' as websocket
     show WebSocketSink, WebSocketChannel;
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart' as saltyrtc
+    show WebSocketSink, WebSocket, WebSocketStream;
 
 /// Wrap websocket.WebSocketChannel to implement saltyrtc.WebSocket.
 class WebSocket implements saltyrtc.WebSocket {

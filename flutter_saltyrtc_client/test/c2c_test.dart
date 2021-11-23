@@ -1,13 +1,13 @@
-import 'package:flutter_saltyrtc_client/events.dart'
+import 'package:test/test.dart';
+import 'package:xayn_flutter_saltyrtc_client/events.dart'
     show
         NoSharedTaskFound,
         PeerDisconnected,
         PeerKind,
         SendingMessageToPeerFailed,
         ServerHandshakeDone;
-import 'package:flutter_saltyrtc_client/task.dart'
+import 'package:xayn_flutter_saltyrtc_client/task.dart'
     show Pair, Task, TaskBuilder, TaskData;
-import 'package:test/test.dart';
 
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;

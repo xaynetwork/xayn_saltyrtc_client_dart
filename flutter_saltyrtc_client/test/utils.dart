@@ -1,15 +1,15 @@
 import 'dart:collection' show Queue;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:dart_saltyrtc_client/dart_saltyrtc_client.dart'
-    show TaskBuilder;
-import 'package:flutter_saltyrtc_client/events.dart' show Event;
-import 'package:flutter_saltyrtc_client/src/client.dart'
-    show Identity, InitiatorClient, ResponderClient, SaltyRtcClient;
 import 'package:hex/hex.dart' show HEX;
 import 'package:test/test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart'
     show WebSocketChannel;
+import 'package:xayn_flutter_saltyrtc_client/events.dart' show Event;
+import 'package:xayn_flutter_saltyrtc_client/src/client.dart'
+    show Identity, InitiatorClient, ResponderClient, SaltyRtcClient;
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
+    show TaskBuilder;
 
 Future<bool> isServerActive(Uri uri) async {
   try {

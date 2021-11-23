@@ -1,16 +1,15 @@
 import 'dart:async' show Completer, Future, Stream, StreamController;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:flutter_saltyrtc_client/events.dart'
+import 'package:test/test.dart';
+import 'package:xayn_flutter_saltyrtc_client/events.dart'
     show
         ClosingErrorEvent,
         Event,
         HandoverToTask,
         ResponderAuthenticated,
         ServerHandshakeDone;
-import 'package:flutter_saltyrtc_client/flutter_saltyrtc_client.dart'
-    show logger;
-import 'package:flutter_saltyrtc_client/task.dart'
+import 'package:xayn_flutter_saltyrtc_client/task.dart'
     show
         CancelReason,
         CloseCode,
@@ -19,7 +18,8 @@ import 'package:flutter_saltyrtc_client/task.dart'
         TaskBuilder,
         TaskData,
         TaskMessage;
-import 'package:test/test.dart';
+import 'package:xayn_flutter_saltyrtc_client/xayn_flutter_saltyrtc_client.dart'
+    show logger;
 
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;

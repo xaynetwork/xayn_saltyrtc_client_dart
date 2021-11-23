@@ -1,4 +1,4 @@
-import 'package:dart_saltyrtc_client/crypto.dart' show Crypto;
+import 'package:xayn_saltyrtc_client/crypto.dart' show Crypto;
 
 /// Loads a crypto instance.
 ///
