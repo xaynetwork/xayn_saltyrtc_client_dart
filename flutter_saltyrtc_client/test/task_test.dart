@@ -83,7 +83,7 @@ void main() async {
     ]);
 
     // more graceful failure/shutdown on timeout
-    Future.delayed(Duration(seconds: 10), () {
+    Future.delayed(const Duration(seconds: 10), () {
       responderSetup.client.cancel();
       initiatorSetup.client.cancel();
     });
@@ -137,13 +137,13 @@ void main() async {
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);
 
-    Future.delayed(Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 100), () {
       responderSetup.client.cancel();
       initiatorSetup.client.cancel();
     });
 
     await Future.wait([initiatorTests, responderTests])
-        .timeout(Duration(seconds: 12));
+        .timeout(const Duration(seconds: 12));
   });
 }
 
@@ -255,12 +255,12 @@ class SendBlobTask extends Task {
 
   Future<void> sendBlob() async {
     if (hang) {
-      await Future<void>.delayed(Duration(seconds: 20));
+      await Future<void>.delayed(const Duration(seconds: 20));
     }
     _channel.sink.add(_blobToBeSend);
     saltyRtcClientLibLogger.d('[$id]blobSend');
     //pretend it takes a while
-    await Future<void>.delayed(Duration(milliseconds: 10));
+    await Future<void>.delayed(const Duration(milliseconds: 10));
     final blob = await _channel.stream.first;
     _state = State.done;
     link.emitEvent(BlobReceived(blob));

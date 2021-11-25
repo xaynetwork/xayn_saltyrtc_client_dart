@@ -41,7 +41,7 @@ void main() async {
     ]);
 
     await Future.wait([initiatorTests, responderTests])
-        .timeout(Duration(seconds: 12));
+        .timeout(const Duration(seconds: 12));
   });
 
   test('responder connects first', () async {
@@ -60,7 +60,7 @@ void main() async {
       (event) => expect(event, equals(NoSharedTaskFound())),
     ]);
 
-    await Future<void>.delayed(Duration(microseconds: 100));
+    await Future<void>.delayed(const Duration(microseconds: 100));
 
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
@@ -68,7 +68,7 @@ void main() async {
     ]);
 
     await Future.wait([initiatorTests, responderTests])
-        .timeout(Duration(seconds: 12));
+        .timeout(const Duration(seconds: 12));
   });
 
   test('initiator connects first', () async {
@@ -87,7 +87,7 @@ void main() async {
       (event) => expect(event, equals(NoSharedTaskFound())),
     ]);
 
-    await Future<void>.delayed(Duration(microseconds: 100));
+    await Future<void>.delayed(const Duration(microseconds: 100));
 
     final responderTests = responderSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
@@ -95,7 +95,7 @@ void main() async {
     ]);
 
     await Future.wait([initiatorTests, responderTests])
-        .timeout(Duration(seconds: 12));
+        .timeout(const Duration(seconds: 12));
   });
 
   test('responder disconnects and then reconnects', () async {
@@ -137,7 +137,7 @@ void main() async {
     ]);
 
     await Future.wait([initiatorTests, responderTests])
-        .timeout(Duration(seconds: 12));
+        .timeout(const Duration(seconds: 12));
   });
 }
 

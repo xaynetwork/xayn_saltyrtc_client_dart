@@ -82,7 +82,8 @@ class Setup {
 
   Future<void> runAndTestEvents(List<void Function(Event)> testList) async {
     final errors = Queue<Event>();
-    final events = client.run().timeout(Duration(seconds: 10)).handleError(
+    final events =
+        client.run().timeout(const Duration(seconds: 10)).handleError(
       (Object? o) {
         errors.add(o as Event);
       },

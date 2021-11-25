@@ -198,7 +198,7 @@ abstract class ServerHandshakePhase extends Phase {
     final expected = BytesBuilder(copy: false)
       ..add(sks.remotePublicKey)
       ..add(config.permanentKey.publicKey);
-    if (!ListEquality<int>().equals(decrypted, expected.takeBytes())) {
+    if (!const ListEquality<int>().equals(decrypted, expected.takeBytes())) {
       throw ValidationException(
         'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid',
       );
