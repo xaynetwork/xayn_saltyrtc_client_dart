@@ -26,10 +26,11 @@ abstract class JsonMessage extends Equatable {
   final dynamic data;
   final int version;
 
-  JsonMessage(
-      {required this.type,
-      required this.data,
-      this.version = signalingVersion});
+  JsonMessage({
+    required this.type,
+    required this.data,
+    this.version = signalingVersion,
+  });
 
   @override
   List<Object?> get props => [type, data];
@@ -46,14 +47,16 @@ abstract class JsonMessage extends Equatable {
   factory JsonMessage.plainData(String data) => PlainDataMessage(data);
 
   factory JsonMessage.encrypted(Map<String, String> data) => EncryptedMessage(
-      cipher: base64.decode(data[_EncryptedFields.message]!),
-      nonce: base64.decode(data[_EncryptedFields.nonce]!));
+        cipher: base64.decode(data[_EncryptedFields.message]!),
+        nonce: base64.decode(data[_EncryptedFields.nonce]!),
+      );
 
   factory JsonMessage.keyExchange(Map<String, String> data) =>
       KeyExchangeMessage(
-          cipher: base64.decode(data[_EncryptedFields.message]!),
-          nonce: base64.decode(data[_EncryptedFields.nonce]!),
-          pk: base64.decode(data[_EncryptedFields.pk]!));
+        cipher: base64.decode(data[_EncryptedFields.message]!),
+        nonce: base64.decode(data[_EncryptedFields.nonce]!),
+        pk: base64.decode(data[_EncryptedFields.pk]!),
+      );
 
   factory JsonMessage.decode(dynamic message) {
     if (message is! String) {
@@ -62,8 +65,9 @@ abstract class JsonMessage extends Equatable {
     final dynamic decode = json.decode(message);
     if (decode is! Map || !decode.containsKey(_Fields.type)) {
       throw FormatException(
-          'Message is mal formatted, is not json or does not contain a ${_Fields.type} field.',
-          message);
+        'Message is mal formatted, is not json or does not contain a ${_Fields.type} field.',
+        message,
+      );
     }
     final type = decode[_Fields.type] as String;
     final dynamic data = decode[_Fields.data];
@@ -98,22 +102,30 @@ class EncryptedMessage extends JsonMessage {
   final Uint8List cipher, nonce;
 
   EncryptedMessage({required this.cipher, required this.nonce})
-      : super(type: MessageType.encrypted, data: {
-          _EncryptedFields.message: cipher.toBase64,
-          _EncryptedFields.nonce: nonce.toBase64,
-        });
+      : super(
+          type: MessageType.encrypted,
+          data: {
+            _EncryptedFields.message: cipher.toBase64,
+            _EncryptedFields.nonce: nonce.toBase64,
+          },
+        );
 }
 
 class KeyExchangeMessage extends JsonMessage {
   final Uint8List cipher, nonce, pk;
 
-  KeyExchangeMessage(
-      {required this.cipher, required this.nonce, required this.pk})
-      : super(type: MessageType.keyExchange, data: {
-          _EncryptedFields.message: cipher.toBase64,
-          _EncryptedFields.nonce: nonce.toBase64,
-          _EncryptedFields.pk: pk.toBase64
-        });
+  KeyExchangeMessage({
+    required this.cipher,
+    required this.nonce,
+    required this.pk,
+  }) : super(
+          type: MessageType.keyExchange,
+          data: {
+            _EncryptedFields.message: cipher.toBase64,
+            _EncryptedFields.nonce: nonce.toBase64,
+            _EncryptedFields.pk: pk.toBase64
+          },
+        );
 
   @override
   String toString() => toJson;

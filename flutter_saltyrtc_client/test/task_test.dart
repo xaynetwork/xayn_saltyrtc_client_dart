@@ -49,25 +49,37 @@ void main() async {
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
-          event,
-          equals(ResponderAuthenticated(
-              responderSetup.client.identity.getPublicKey()))),
+            event,
+            equals(
+              ResponderAuthenticated(
+                responderSetup.client.identity.getPublicKey(),
+              ),
+            ),
+          ),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(
-          event, equals(BlobReceived(Uint8List.fromList([23, 42, 132])))),
+            event,
+            equals(BlobReceived(Uint8List.fromList([23, 42, 132]))),
+          ),
     ]);
 
     final responderTests = responderSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
-          event,
-          equals(ResponderAuthenticated(
-              responderSetup.client.identity.getPublicKey()))),
+            event,
+            equals(
+              ResponderAuthenticated(
+                responderSetup.client.identity.getPublicKey(),
+              ),
+            ),
+          ),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(
-          event,
-          equals(
-              BlobReceived(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1])))),
+            event,
+            equals(
+              BlobReceived(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1])),
+            ),
+          ),
     ]);
 
     // more graceful failure/shutdown on timeout
@@ -82,8 +94,10 @@ void main() async {
   test('cancel after handover works', () async {
     final initiatorSetup = await Setup.initiatorWithAuthToken(
       tasks: [
-        SendBlobTaskBuilder(Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]),
-            hang: true)
+        SendBlobTaskBuilder(
+          Uint8List.fromList([1, 2, 3, 4, 123, 43, 2, 1]),
+          hang: true,
+        )
       ],
     );
 
@@ -98,9 +112,13 @@ void main() async {
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
-          event,
-          equals(ResponderAuthenticated(
-              responderSetup.client.identity.getPublicKey()))),
+            event,
+            equals(
+              ResponderAuthenticated(
+                responderSetup.client.identity.getPublicKey(),
+              ),
+            ),
+          ),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);
@@ -108,9 +126,13 @@ void main() async {
     final responderTests = responderSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
-          event,
-          equals(ResponderAuthenticated(
-              responderSetup.client.identity.getPublicKey()))),
+            event,
+            equals(
+              ResponderAuthenticated(
+                responderSetup.client.identity.getPublicKey(),
+              ),
+            ),
+          ),
       (event) => expect(event, equals(HandoverToTask())),
       (event) => expect(event, equals(UnexpectedClosedBeforeCompletion())),
     ]);

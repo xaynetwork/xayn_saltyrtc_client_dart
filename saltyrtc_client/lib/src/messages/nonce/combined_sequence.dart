@@ -21,7 +21,8 @@ class CombinedSequence with EquatableMixin {
     if (_combinedSequenceNumber < 0 ||
         _combinedSequenceNumber > combinedSequenceNumberMax) {
       throw ArgumentError(
-          'combined sequence number must be between 0 and 2**48-1');
+        'combined sequence number must be between 0 and 2**48-1',
+      );
     }
   }
 
@@ -36,7 +37,8 @@ class CombinedSequence with EquatableMixin {
       ArgumentError('buffer must contain 48 bit');
     }
     return CombinedSequence(
-        Int64.fromBytesBigEndian(Uint8List(8)..setAll(2, bytes)));
+      Int64.fromBytesBigEndian(Uint8List(8)..setAll(2, bytes)),
+    );
   }
 
   /// Creates a (deep) copy of this type.
@@ -55,11 +57,13 @@ class CombinedSequence with EquatableMixin {
   }
 
   Uint8List toBytes() {
-    return Uint8List.fromList(_combinedSequenceNumber
-        .toBytes()
-        .reversed
-        .skip(2)
-        .toList(growable: false));
+    return Uint8List.fromList(
+      _combinedSequenceNumber
+          .toBytes()
+          .reversed
+          .skip(2)
+          .toList(growable: false),
+    );
   }
 }
 

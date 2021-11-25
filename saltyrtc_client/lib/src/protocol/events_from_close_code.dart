@@ -29,23 +29,31 @@ Event? eventFromWSCloseCode(int? closeCode, {bool codeFromClient = false}) {
     case 1007:
     case 3001:
       return UnexpectedStatus.unchecked(
-          UnexpectedStatusVariant.protocolError, closeCode);
+        UnexpectedStatusVariant.protocolError,
+        closeCode,
+      );
     case 1006:
       return LikelyTemporaryFailure(TempFailureVariant.abnormalClosure);
     case 1009:
       return UnexpectedStatus.unchecked(
-          UnexpectedStatusVariant.messageTooBig, closeCode);
+        UnexpectedStatusVariant.messageTooBig,
+        closeCode,
+      );
     case 1011:
     case 3002:
       return UnexpectedStatus.unchecked(
-          UnexpectedStatusVariant.internalError, closeCode);
+        UnexpectedStatusVariant.internalError,
+        closeCode,
+      );
     case 1012:
       return LikelyTemporaryFailure(TempFailureVariant.serviceRestart);
     case 1013:
       return LikelyTemporaryFailure(TempFailureVariant.tryAgainLater);
     case 1015:
       return UnexpectedStatus.unchecked(
-          UnexpectedStatusVariant.tlsHandshake, closeCode);
+        UnexpectedStatusVariant.tlsHandshake,
+        closeCode,
+      );
     case 3000:
       return LikelyTemporaryFailure(TempFailureVariant.pathFull);
     case 3004:
@@ -65,10 +73,14 @@ Event? eventFromWSCloseCode(int? closeCode, {bool codeFromClient = false}) {
         return null;
       } else {
         return UnexpectedStatus.unchecked(
-            UnexpectedStatusVariant.other, closeCode);
+          UnexpectedStatusVariant.other,
+          closeCode,
+        );
       }
     default:
       return UnexpectedStatus.unchecked(
-          UnexpectedStatusVariant.other, closeCode);
+        UnexpectedStatusVariant.other,
+        closeCode,
+      );
   }
 }

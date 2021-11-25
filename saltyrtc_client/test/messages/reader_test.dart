@@ -75,8 +75,9 @@ void main() {
     });
 
     test('Read server auth initiator', () {
-      checkRead(() =>
-          ServerAuthInitiator(yourCookie, signedKeys, [Id.responderId(2)]));
+      checkRead(
+        () => ServerAuthInitiator(yourCookie, signedKeys, [Id.responderId(2)]),
+      );
     });
 
     test('Read server auth responder', () {
@@ -101,7 +102,8 @@ void main() {
 
     test('Read drop responder', () {
       checkRead(
-          () => DropResponder(Id.responderId(2), CloseCode.protocolError));
+        () => DropResponder(Id.responderId(2), CloseCode.protocolError),
+      );
     });
 
     test('Read send error', () {
@@ -125,9 +127,12 @@ void main() {
     });
 
     test('Missing entry in task data is error, not null', () {
-      expect(() {
-        AuthResponder(yourCookie, ['task'], {});
-      }, throwsValidationError());
+      expect(
+        () {
+          AuthResponder(yourCookie, ['task'], {});
+        },
+        throwsValidationError(),
+      );
       //but null is ok
       AuthResponder(yourCookie, ['task'], {'task': null});
     });
@@ -146,7 +151,9 @@ void main() {
     final keyTo = crypto.createKeyStore();
     final receiver = Responder(Id.responderId(12), crypto);
     final sharedKey = crypto.createSharedKeyStore(
-        ownKeyStore: keyTo, remotePublicKey: keyFrom.publicKey);
+      ownKeyStore: keyTo,
+      remotePublicKey: keyFrom.publicKey,
+    );
     receiver.setSessionSharedKey(sharedKey);
     final message = Close(CloseCode.noSharedTask);
     final nonce = Nonce.fromRandom(
@@ -166,22 +173,28 @@ void main() {
       });
 
       test('throws a protocol error if decryption fails', () {
-        expect(() {
-          sharedKey.readEncryptedMessage(
-            msgBytes: Uint8List(Nonce.totalLength + 10),
-            nonce: nonce,
-          );
-        }, throwsProtocolError());
+        expect(
+          () {
+            sharedKey.readEncryptedMessage(
+              msgBytes: Uint8List(Nonce.totalLength + 10),
+              nonce: nonce,
+            );
+          },
+          throwsProtocolError(),
+        );
       });
 
       test('allows setting custom c2c close code', () {
-        expect(() {
-          sharedKey.readEncryptedMessage(
-            msgBytes: Uint8List(Nonce.totalLength + 10),
-            nonce: nonce,
-            decryptionErrorCloseCode: CloseCode.handover,
-          );
-        }, throwsProtocolError(closeCode: CloseCode.handover));
+        expect(
+          () {
+            sharedKey.readEncryptedMessage(
+              msgBytes: Uint8List(Nonce.totalLength + 10),
+              nonce: nonce,
+              decryptionErrorCloseCode: CloseCode.handover,
+            );
+          },
+          throwsProtocolError(closeCode: CloseCode.handover),
+        );
       });
     });
     group('readEncryptedMessageOfType', () {
@@ -198,13 +211,16 @@ void main() {
       });
 
       test('throws a ProtocolError if the type mismatches', () {
-        expect(() {
-          sharedKey.readEncryptedMessageOfType<Disconnected>(
-            msgBytes: encryptedMessage,
-            nonce: nonce,
-            msgType: MessageType.disconnected,
-          );
-        }, throwsProtocolError());
+        expect(
+          () {
+            sharedKey.readEncryptedMessageOfType<Disconnected>(
+              msgBytes: encryptedMessage,
+              nonce: nonce,
+              msgType: MessageType.disconnected,
+            );
+          },
+          throwsProtocolError(),
+        );
       });
     });
   });

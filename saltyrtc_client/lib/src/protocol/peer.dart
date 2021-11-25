@@ -33,12 +33,12 @@ abstract class Peer {
       : csPair = CombinedSequencePair.fromRandom(crypto),
         cookiePair = CookiePair.fromRandom(crypto);
 
-  Peer._fromParts(
-      {required SharedKeyStore? sessionSharedKey,
-      required SharedKeyStore? permanentSharedKey,
-      required this.cookiePair,
-      required this.csPair})
-      : _sessionSharedKey = sessionSharedKey,
+  Peer._fromParts({
+    required SharedKeyStore? sessionSharedKey,
+    required SharedKeyStore? permanentSharedKey,
+    required this.cookiePair,
+    required this.csPair,
+  })  : _sessionSharedKey = sessionSharedKey,
         _permanentSharedKey = permanentSharedKey;
 
   Uint8List encrypt(Message msg, Nonce nonce, [AuthToken? token]);
@@ -51,7 +51,8 @@ abstract class Peer {
     // we need to check that permanent and session are different
     if (sks.remotePublicKey == permanentSharedKey?.remotePublicKey) {
       throw ProtocolErrorException(
-          'Server session key is the same as the permanent key');
+        'Server session key is the same as the permanent key',
+      );
     }
     _sessionSharedKey = sks;
   }
@@ -216,7 +217,8 @@ class Initiator extends Client {
     if (msg is Token) {
       if (token == null) {
         throw ProtocolErrorException(
-            'Cannot encrypt token message for peer: auth token is null');
+          'Cannot encrypt token message for peer: auth token is null',
+        );
       }
       return _encrypt(msg, nonce, token);
     }

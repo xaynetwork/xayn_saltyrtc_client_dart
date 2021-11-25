@@ -59,8 +59,9 @@ class _JSSharedKeyStore extends SharedKeyStore {
     required Uint8List nonce,
   }) {
     Crypto.checkNonce(nonce);
-    return _wrapDecryptionFailure(() =>
-        _sodium.crypto_box_open_easy_afternm(ciphertext, nonce, _sharedKey));
+    return _wrapDecryptionFailure(
+      () => _sodium.crypto_box_open_easy_afternm(ciphertext, nonce, _sharedKey),
+    );
   }
 
   @override
@@ -93,7 +94,8 @@ class _JSAuthToken implements AuthToken {
   }) {
     Crypto.checkNonce(nonce);
     return _wrapDecryptionFailure(
-        () => _sodium.crypto_secretbox_open_easy(ciphertext, nonce, bytes));
+      () => _sodium.crypto_secretbox_open_easy(ciphertext, nonce, bytes),
+    );
   }
 
   @override
@@ -120,7 +122,9 @@ class _JSCrypto extends Crypto {
   KeyStore createKeyStore() {
     final keyPair = _sodium.crypto_box_keypair();
     return _JSKeyStore(
-        privateKey: keyPair.privateKey, publicKey: keyPair.publicKey);
+      privateKey: keyPair.privateKey,
+      publicKey: keyPair.publicKey,
+    );
   }
 
   @override

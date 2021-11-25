@@ -27,7 +27,8 @@ class Setup {
   static final serverUri = Uri.parse('ws://localhost:8765');
   static final serverPublicKey = Uint8List.fromList(
     HEX.decode(
-        '09a59a5fa6b45cb07638a3a6e347ce563a948b756fd22f9527465f7c79c2a864'),
+      '09a59a5fa6b45cb07638a3a6e347ce563a948b756fd22f9527465f7c79c2a864',
+    ),
   );
 
   final SaltyRtcClient client;

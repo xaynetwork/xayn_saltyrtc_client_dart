@@ -23,9 +23,12 @@ void main() {
   });
 
   test('validateTasksDataType inner map value null', () {
-    final map = validateTasksDataType({
-      task: {field: null}
-    }, '');
+    final map = validateTasksDataType(
+      {
+        task: {field: null}
+      },
+      '',
+    );
     expect(map, isA<TasksData>());
     expect(map[task], {field: null});
     expect(map[task]![field], null);

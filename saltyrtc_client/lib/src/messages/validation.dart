@@ -30,7 +30,8 @@ String validateTypeType(Object? value) {
 void validateByteArray(Uint8List value, int expectedLength, String name) {
   if (value.length != expectedLength) {
     throw ValidationException(
-        '$name must be $expectedLength bytes long, not ${value.length}');
+      '$name must be $expectedLength bytes long, not ${value.length}',
+    );
   }
 }
 
@@ -113,7 +114,10 @@ int validateIntegerType(Object? value, String name) {
 
 /// Validate `value` with `validateType` if `value != null`.
 T? validateTypeWithNull<T>(
-    Object? value, String name, T Function(Object?, String) validateType) {
+  Object? value,
+  String name,
+  T Function(Object?, String) validateType,
+) {
   if (value != null) {
     return validateType(value, name);
   }
@@ -134,7 +138,10 @@ bool validateBoolType(Object? value, String name) {
 /// a drop-responder message are checked.
 ///
 CloseCode validateCloseCodeType(
-    Object? value, bool dropResponder, String name) {
+  Object? value,
+  bool dropResponder,
+  String name,
+) {
   if (value is! int) {
     throw ValidationException('$name must be an integer');
   }
@@ -151,7 +158,8 @@ CloseCode validateCloseCodeType(
 
     if (!closeCodesDropResponder.contains(code)) {
       throw ValidationException(
-          '$name must be a valid ${dropResponder ? 'drop responder' : ''} close code');
+        '$name must be a valid ${dropResponder ? 'drop responder' : ''} close code',
+      );
     }
   }
 

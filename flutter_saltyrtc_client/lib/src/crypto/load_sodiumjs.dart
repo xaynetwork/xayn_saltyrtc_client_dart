@@ -22,11 +22,12 @@ Future<LibSodiumJS> _load() async {
   final completer = Completer<dynamic>();
 
   setProperty(
-      window,
-      'sodium',
-      SodiumBrowserInit(
-        onload: allowInterop(completer.complete),
-      ));
+    window,
+    'sodium',
+    SodiumBrowserInit(
+      onload: allowInterop(completer.complete),
+    ),
+  );
 
   // Load the sodium.js into the page by appending a `<script>` element
   final script = ScriptElement();

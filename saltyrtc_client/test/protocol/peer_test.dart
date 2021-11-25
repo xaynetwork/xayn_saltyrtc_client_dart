@@ -138,17 +138,23 @@ void main() {
 
     test("if their cookie is empty check they don't use our cookie", () {
       final pair = mkPair();
-      expect(() {
-        pair.updateAndCheck(pair.ours, responderId1);
-      }, throwsValidationError());
+      expect(
+        () {
+          pair.updateAndCheck(pair.ours, responderId1);
+        },
+        throwsValidationError(),
+      );
     });
 
     test("if their cookie is known check if it's the same", () {
       final pair = mkPair();
       pair.updateAndCheck(cookie, responderId1);
-      expect(() {
-        pair.updateAndCheck(pair.ours, responderId1);
-      }, throwsValidationError());
+      expect(
+        () {
+          pair.updateAndCheck(pair.ours, responderId1);
+        },
+        throwsValidationError(),
+      );
     });
   });
 
@@ -170,8 +176,10 @@ void main() {
       final pair = mkPair();
       final csn = CombinedSequence(Int64(0x100000000));
       expect(csn.isOverflowZero, isFalse);
-      expect(() => pair.updateAndCheck(csn, responderId1),
-          throwsValidationError());
+      expect(
+        () => pair.updateAndCheck(csn, responderId1),
+        throwsValidationError(),
+      );
     });
 
     test('if their CSN is known check if it was incremented by 1', () {
@@ -184,8 +192,10 @@ void main() {
       expect(pair.theirs, equals(csn));
       csn.next();
       csn.next();
-      expect(() => pair.updateAndCheck(csn, responderId1),
-          throwsValidationError());
+      expect(
+        () => pair.updateAndCheck(csn, responderId1),
+        throwsValidationError(),
+      );
     });
   });
 }

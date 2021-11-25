@@ -46,17 +46,21 @@ class Nonce with EquatableMixin {
     final cookie = bytes.sublist(0, Cookie.cookieLength);
     final source = Id.peerId(bytes[Cookie.cookieLength]);
     final destination = Id.peerId(bytes[Cookie.cookieLength + 1]);
-    final combinedSequence = CombinedSequence.fromBytes(bytes.sublist(
+    final combinedSequence = CombinedSequence.fromBytes(
+      bytes.sublist(
         Cookie.cookieLength + 2,
-        Cookie.cookieLength + 2 + CombinedSequence.numBytes));
+        Cookie.cookieLength + 2 + CombinedSequence.numBytes,
+      ),
+    );
 
     return Nonce(Cookie(cookie), source, destination, combinedSequence);
   }
 
-  factory Nonce.fromRandom(
-      {required Id source,
-      required Id destination,
-      required Uint8List Function(int) randomBytes}) {
+  factory Nonce.fromRandom({
+    required Id source,
+    required Id destination,
+    required Uint8List Function(int) randomBytes,
+  }) {
     final cookie = Cookie.fromRandom(randomBytes);
     final combinedSequence = CombinedSequence.fromRandom(randomBytes);
     return Nonce(cookie, source, destination, combinedSequence);

@@ -47,8 +47,9 @@ void main() {
 
     // after server-hello we expect a client-hello
     final clientHello = checkClientHello(
-        bytes: outMsgs.next(),
-        clientPermanentPublicKey: setupData.clientPermanentKeys.publicKey);
+      bytes: outMsgs.next(),
+      clientPermanentPublicKey: setupData.clientPermanentKeys.publicKey,
+    );
 
     // set the client key as if the server received a client-hello message
     server.clientPermanentPublicKey = clientHello.message.key;
@@ -64,7 +65,11 @@ void main() {
 
     final clientAddress = Id.responderId(5);
     final serverAuthResult = server.sendServerAuthResponderToPhase(
-        phase, clientHello.nonce.cookie, false, clientAddress);
+      phase,
+      clientHello.nonce.cookie,
+      false,
+      clientAddress,
+    );
     expect(serverAuthResult.phase, isA<ResponderClientHandshakePhase>());
 
     phase = serverAuthResult.phase;
@@ -78,7 +83,10 @@ void main() {
     final state = initiatorHandShakeTillClientAuth(setupData);
 
     final serverAuthResult = setupData.server.sendServerAuthInitiatorToPhase(
-        state.phase, state.msgSentToClient.nonce.cookie, []);
+      state.phase,
+      state.msgSentToClient.nonce.cookie,
+      [],
+    );
     expect(serverAuthResult.phase, isA<InitiatorClientHandshakePhase>());
 
     final phase = serverAuthResult.phase;
@@ -153,7 +161,8 @@ NonceAndMessage<ClientAuth> checkClientAuth({
 }
 
 IntermediateState<ClientAuth> initiatorHandShakeTillClientAuth(
-    SetupData setupData) {
+  SetupData setupData,
+) {
   final server = setupData.server;
   final outMsgs = setupData.outMsgs;
   var phase = setupData.phase;
@@ -218,7 +227,8 @@ class SetupData {
         pingInterval: pingInterval,
         tasks: tasks,
         authMethod: InitialClientAuthMethod.fromEither(
-            authToken: crypto.createAuthToken()),
+          authToken: crypto.createAuthToken(),
+        ),
       );
     } else {
       config = ResponderConfig(

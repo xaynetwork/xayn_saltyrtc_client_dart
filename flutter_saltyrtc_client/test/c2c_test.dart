@@ -112,9 +112,12 @@ void main() async {
     final initiatorTests = initiatorSetup.runAndTestEvents([
       (event) => expect(event, equals(ServerHandshakeDone())),
       (event) => expect(
-          event,
-          anyOf(equals(PeerDisconnected(PeerKind.unauthenticated)),
-              equals(SendingMessageToPeerFailed(PeerKind.unauthenticated)))),
+            event,
+            anyOf(
+              equals(PeerDisconnected(PeerKind.unauthenticated)),
+              equals(SendingMessageToPeerFailed(PeerKind.unauthenticated)),
+            ),
+          ),
       (event) => expect(event, equals(NoSharedTaskFound())),
     ]);
 

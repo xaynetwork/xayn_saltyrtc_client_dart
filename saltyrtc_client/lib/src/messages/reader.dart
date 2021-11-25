@@ -94,7 +94,8 @@ extension MessageDecryptionExt on CryptoBox {
     );
     if (msg is! T) {
       throw ProtocolErrorException(
-          'Unexpected message of type ${msg.type}, expected $msgType');
+        'Unexpected message of type ${msg.type}, expected $msgType',
+      );
     }
     return msg as T;
   }

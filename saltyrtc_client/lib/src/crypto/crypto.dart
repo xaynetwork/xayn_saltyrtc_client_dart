@@ -69,11 +69,15 @@ abstract class Crypto {
 
   KeyStore createKeyStore();
 
-  KeyStore createKeyStoreFromKeys(
-      {required Uint8List privateKey, required Uint8List publicKey});
+  KeyStore createKeyStoreFromKeys({
+    required Uint8List privateKey,
+    required Uint8List publicKey,
+  });
 
-  SharedKeyStore createSharedKeyStore(
-      {required KeyStore ownKeyStore, required Uint8List remotePublicKey});
+  SharedKeyStore createSharedKeyStore({
+    required KeyStore ownKeyStore,
+    required Uint8List remotePublicKey,
+  });
 
   AuthToken createAuthToken();
 
@@ -106,7 +110,10 @@ abstract class Crypto {
 
   static void checkSecretStreamHeader(Uint8List header) {
     _checkLength(
-        header, Crypto.secretStreamHeaderBytes, 'secret stream header');
+      header,
+      Crypto.secretStreamHeaderBytes,
+      'secret stream header',
+    );
   }
 }
 
@@ -129,7 +136,8 @@ class InitialClientAuthMethod {
   InitialClientAuthMethod._({this.authToken, this.trustedResponderSharedKey}) {
     if ((trustedResponderSharedKey == null) == (authToken == null)) {
       throw ArgumentError(
-          'Expects either an authToken OR a trustedResponderSharedKey');
+        'Expects either an authToken OR a trustedResponderSharedKey',
+      );
     }
   }
 
@@ -148,10 +156,14 @@ class InitialClientAuthMethod {
     if (trustedResponderPermanentPublicKey != null) {
       if (crypto == null || initiatorPermanentKeys == null) {
         throw ArgumentError(
-            'crypto & initiatorPermanentPublicKey required for trusted responder');
+          'crypto & initiatorPermanentPublicKey required for trusted responder',
+        );
       }
       trustedResponderSharedKey = createResponderSharedPermanentKey(
-          crypto, initiatorPermanentKeys, trustedResponderPermanentPublicKey);
+        crypto,
+        initiatorPermanentKeys,
+        trustedResponderPermanentPublicKey,
+      );
     }
 
     return InitialClientAuthMethod._(
@@ -161,13 +173,15 @@ class InitialClientAuthMethod {
   }
 
   static SharedKeyStore createResponderSharedPermanentKey(
-      Crypto crypto,
-      KeyStore initiatorPermanentKeys,
-      Uint8List trustedResponderPublicPermanentKey) {
+    Crypto crypto,
+    KeyStore initiatorPermanentKeys,
+    Uint8List trustedResponderPublicPermanentKey,
+  ) {
     Crypto.checkPublicKey(trustedResponderPublicPermanentKey);
     return crypto.createSharedKeyStore(
-        ownKeyStore: initiatorPermanentKeys,
-        remotePublicKey: trustedResponderPublicPermanentKey);
+      ownKeyStore: initiatorPermanentKeys,
+      remotePublicKey: trustedResponderPublicPermanentKey,
+    );
   }
 }
 

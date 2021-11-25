@@ -23,7 +23,8 @@ class Disconnected extends Message {
     // A responder should validate the id to be 1.
     // Here we validate the rage 1 <= id <= 255.
     final id = Id.clientId(
-        validateIntegerType(map[MessageFields.id], MessageFields.id));
+      validateIntegerType(map[MessageFields.id], MessageFields.id),
+    );
 
     return Disconnected(id);
   }

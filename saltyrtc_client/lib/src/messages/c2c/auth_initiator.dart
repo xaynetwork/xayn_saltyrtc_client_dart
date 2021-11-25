@@ -32,8 +32,12 @@ class AuthInitiator extends Message {
 
   factory AuthInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final yourCookie = Cookie(validateByteArrayType(
-        map[MessageFields.yourCookie], MessageFields.yourCookie));
+    final yourCookie = Cookie(
+      validateByteArrayType(
+        map[MessageFields.yourCookie],
+        MessageFields.yourCookie,
+      ),
+    );
     final task =
         validateStringType(map[MessageFields.task], MessageFields.task);
     final data =

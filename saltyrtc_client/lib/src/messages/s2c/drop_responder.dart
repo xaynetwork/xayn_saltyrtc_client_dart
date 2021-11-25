@@ -24,7 +24,8 @@ class DropResponder extends Message {
     validateType(map[MessageFields.type], _type);
 
     final id = Id.responderId(
-        validateIntegerType(map[MessageFields.id], MessageFields.id));
+      validateIntegerType(map[MessageFields.id], MessageFields.id),
+    );
     final reasonValue = map[MessageFields.reason];
     final reason = reasonValue == null
         ? null

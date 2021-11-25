@@ -49,7 +49,8 @@ Matcher throwsProtocolError({CloseCode closeCode = CloseCode.protocolError}) {
   }
 
   return throwsA(
-      allOf(isA<ProtocolErrorException>(), predicate(errorHasExpectedState)));
+    allOf(isA<ProtocolErrorException>(), predicate(errorHasExpectedState)),
+  );
 }
 
 class MockKnowledgeAboutTestedPeer {
@@ -92,8 +93,13 @@ class PeerData {
     Uint8List Function(Uint8List) mapEncryptedMessage = noChange,
   }) {
     expect(sendTo.common.address, equals(testedPeer.address));
-    final rawMessage = mapEncryptedMessage(_createRawMessage(message,
-        encryptWith: encryptWith, mapNonce: mapNonce));
+    final rawMessage = mapEncryptedMessage(
+      _createRawMessage(
+        message,
+        encryptWith: encryptWith,
+        mapNonce: mapNonce,
+      ),
+    );
 
     final nextPhase = sendTo.handleMessage(rawMessage);
     expect(nextPhase.isClosingWsStream, isFalse);
@@ -110,8 +116,13 @@ class PeerData {
     Uint8List Function(Uint8List) mapEncryptedMessage = noChange,
   }) {
     expect(sendTo.common.address, equals(testedPeer.address));
-    final rawMessage = mapEncryptedMessage(_createRawMessage(message,
-        encryptWith: encryptWith, mapNonce: mapNonce));
+    final rawMessage = mapEncryptedMessage(
+      _createRawMessage(
+        message,
+        encryptWith: encryptWith,
+        mapNonce: mapNonce,
+      ),
+    );
 
     final nextPhase = sendTo.handleMessage(rawMessage);
     expect(nextPhase.isClosingWsStream, isTrue);
@@ -130,7 +141,8 @@ class PeerData {
     final csn = testedPeer.csPair.ours;
     csn.next();
     final nonce = mapNonce(
-        Nonce(testedPeer.cookiePair.ours, address, testedPeer.address, csn));
+      Nonce(testedPeer.cookiePair.ours, address, testedPeer.address, csn),
+    );
     return message.buildPackage(nonce, encryptWith: encryptWith);
   }
 
@@ -153,14 +165,18 @@ Pair<PeerData, AfterServerHandshakeCommon> createAfterServerHandshakeState(
   final ws = MockSyncWebSocket();
   final events = EventQueue();
   final common = InitialCommon(crypto, ws, events);
-  common.server.setPermanentSharedKey(crypto.createSharedKeyStore(
-    ownKeyStore: server.testedPeer.permanentKey!,
-    remotePublicKey: server.permanentKey.publicKey,
-  ));
-  common.server.setSessionSharedKey(crypto.createSharedKeyStore(
-    ownKeyStore: server.testedPeer.permanentKey!,
-    remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
-  ));
+  common.server.setPermanentSharedKey(
+    crypto.createSharedKeyStore(
+      ownKeyStore: server.testedPeer.permanentKey!,
+      remotePublicKey: server.permanentKey.publicKey,
+    ),
+  );
+  common.server.setSessionSharedKey(
+    crypto.createSharedKeyStore(
+      ownKeyStore: server.testedPeer.permanentKey!,
+      remotePublicKey: server.testedPeer.ourSessionKey!.publicKey,
+    ),
+  );
   common.server.cookiePair
       .updateAndCheck(server.testedPeer.cookiePair.ours, Id.serverAddress);
   common.server.csPair
@@ -184,7 +200,8 @@ T messageAs<T extends Message>(Message? msg) {
 T phaseAs<T extends Phase>(Phase phase) {
   if (phase is! T) {
     throw AssertionError(
-        'Phase of type ${phase.runtimeType}, expected type $T');
+      'Phase of type ${phase.runtimeType}, expected type $T',
+    );
   }
   return phase;
 }
@@ -203,8 +220,10 @@ class Io {
     return event as T;
   }
 
-  T expectMessageOfType<T extends Message>(
-      {required PeerData sendTo, CryptoBox? decryptWith}) {
+  T expectMessageOfType<T extends Message>({
+    required PeerData sendTo,
+    CryptoBox? decryptWith,
+  }) {
     final package = sendPackages.next();
     final nonce = Nonce.fromBytes(package);
     expect(nonce.source, equals(sendTo.testedPeer.address));
