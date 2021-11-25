@@ -199,7 +199,7 @@ void main() {
           message: AuthInitiator(
             initiator.testedPeer.cookiePair.ours,
             'example.v23',
-            {'example.v23': null},
+            const {'example.v23': null},
           ),
           sendTo: initialPhase,
           encryptWith: crypto.createSharedKeyStore(

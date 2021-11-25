@@ -245,7 +245,7 @@ class SendBlobTask extends Task {
     saltyRtcClientLibLogger.d('[$id]start');
     _channel.onReady.then((_) {
       saltyRtcClientLibLogger.d('[$id]sending ready');
-      link.sendMessage(TaskMessage('ready', {'ready': 'yes'}));
+      link.sendMessage(TaskMessage('ready', const {'ready': 'yes'}));
     });
   }
 

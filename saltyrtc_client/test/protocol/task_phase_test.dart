@@ -428,7 +428,7 @@ abstract class Setup {
     return (phase, io) {
       task.panicOnHandleMessage = true;
       final closeCode = peer.sendAndClose(
-        message: TaskMessage('taskMsg1', {}),
+        message: TaskMessage('taskMsg1', const {}),
         sendTo: phase,
         encryptWith: crypto.createSharedKeyStore(
           ownKeyStore: peer.testedPeer.ourSessionKey!,
@@ -447,7 +447,7 @@ abstract class Setup {
         ),
       );
       expect(closeMsg.reason, equals(CloseCode.internalError));
-      expect(task.messages.removeLast(), TaskMessage('taskMsg1', {}));
+      expect(task.messages.removeLast(), TaskMessage('taskMsg1', const {}));
       return phase;
     };
   }
@@ -542,7 +542,7 @@ class InitiatorSetup extends Setup {
       ),
       expectedServerPublicKey: server.permanentKey.publicKey,
       permanentKeys: crypto.createKeyStore(),
-      tasks: [],
+      tasks: const [],
     );
 
     final responder =
@@ -664,7 +664,7 @@ class ResponderSetup extends Setup {
       authToken: authToken,
       expectedServerPublicKey: server.permanentKey.publicKey,
       permanentKeys: crypto.createKeyStore(),
-      tasks: [],
+      tasks: const [],
       initiatorPermanentPublicKey: initiator.permanentKey.publicKey,
     );
 

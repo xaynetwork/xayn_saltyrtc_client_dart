@@ -85,11 +85,11 @@ void main() {
     });
 
     test('Read client auth', () {
-      checkRead(() => ClientAuth(yourCookie, key, ['custom.proto'], 60));
+      checkRead(() => ClientAuth(yourCookie, key, const ['custom.proto'], 60));
     });
 
     test('Read client auth', () {
-      checkRead(() => ClientAuth(yourCookie, key, ['custom.proto'], 60));
+      checkRead(() => ClientAuth(yourCookie, key, const ['custom.proto'], 60));
     });
 
     test('Read new initiator', () {
@@ -123,18 +123,18 @@ void main() {
     });
 
     test('Read auth responder', () {
-      checkRead(() => AuthResponder(yourCookie, ['task'], taskData));
+      checkRead(() => AuthResponder(yourCookie, const ['task'], taskData));
     });
 
     test('Missing entry in task data is error, not null', () {
       expect(
         () {
-          AuthResponder(yourCookie, ['task'], {});
+          AuthResponder(yourCookie, const ['task'], const {});
         },
         throwsValidationError(),
       );
       //but null is ok
-      AuthResponder(yourCookie, ['task'], {'task': null});
+      AuthResponder(yourCookie, const ['task'], const {'task': null});
     });
 
     test('Read close', () {
