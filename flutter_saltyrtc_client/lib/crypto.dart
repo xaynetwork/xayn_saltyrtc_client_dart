@@ -42,6 +42,9 @@
 /// ```
 library crypto;
 
+import 'package:xayn_saltyrtc_client/crypto.dart'
+    show SecretStream, KeyStore, SharedKeyStore;
+
 export 'package:xayn_flutter_saltyrtc_client/src/crypto/crypto_provider.dart'
     show getCrypto;
 export 'package:xayn_saltyrtc_client/crypto.dart';

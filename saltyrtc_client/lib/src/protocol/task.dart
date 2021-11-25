@@ -109,7 +109,7 @@ enum CancelReason {
   /// The client is closing, so the task needs to be canceled.
   ///
   /// In difference to the other reason this can still happen after
-  /// [Task.handleHandover] was called and must still be handled by
+  /// [Task.handleHandover()] was called and must still be handled by
   /// canceling the task.
   closing
 }
