@@ -10,7 +10,9 @@ import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
 /// Check that `value` represent a `type`.
 void validateType(Object? value, String type) {
   if (value is! String) {
-    throw ValidationException('Type must be a string');
+    throw const ValidationException(
+      'Type must be a string',
+    );
   }
   if (value != type) {
     throw ValidationException('Type must be $type');
@@ -20,7 +22,9 @@ void validateType(Object? value, String type) {
 /// Check that `value` represent a string.
 String validateTypeType(Object? value) {
   if (value is! String) {
-    throw ValidationException('Type must be a string');
+    throw const ValidationException(
+      'Type must be a string',
+    );
   }
 
   return value;
@@ -171,16 +175,24 @@ CloseCode validateCloseCodeType(
 /// all the keys of `data` must be in `tasks`.
 void validateTasksData(List<String> tasks, TasksData data) {
   if (tasks.isEmpty) {
-    throw ValidationException('Task names must not be empty');
+    throw const ValidationException(
+      'Task names must not be empty',
+    );
   }
   if (data.isEmpty) {
-    throw ValidationException('Task data must not be empty');
+    throw const ValidationException(
+      'Task data must not be empty',
+    );
   }
   if (data.length != tasks.length) {
-    throw ValidationException('Task data must contain an entry for every task');
+    throw const ValidationException(
+      'Task data must contain an entry for every task',
+    );
   }
   if (!tasks.every(data.containsKey)) {
-    throw ValidationException('Task data must contain an entry for every task');
+    throw const ValidationException(
+      'Task data must contain an entry for every task',
+    );
   }
 }
 

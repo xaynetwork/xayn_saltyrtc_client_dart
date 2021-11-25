@@ -50,7 +50,7 @@ abstract class Peer {
   void setSessionSharedKey(SharedKeyStore sks) {
     // we need to check that permanent and session are different
     if (sks.remotePublicKey == permanentSharedKey?.remotePublicKey) {
-      throw ProtocolErrorException(
+      throw const ProtocolErrorException(
         'Server session key is the same as the permanent key',
       );
     }
@@ -216,7 +216,7 @@ class Initiator extends Client {
     // if it's a Token message we need to use authToken
     if (msg is Token) {
       if (token == null) {
-        throw ProtocolErrorException(
+        throw const ProtocolErrorException(
           'Cannot encrypt token message for peer: auth token is null',
         );
       }

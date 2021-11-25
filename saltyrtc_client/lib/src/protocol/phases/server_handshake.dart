@@ -185,7 +185,7 @@ abstract class ServerHandshakePhase extends Phase {
     required Nonce nonce,
   }) {
     if (signedKey == null) {
-      throw ValidationException(
+      throw const ValidationException(
         'Server did not send ${MessageFields.signedKeys} in ${MessageType.serverAuth} message',
       );
     }
@@ -199,7 +199,7 @@ abstract class ServerHandshakePhase extends Phase {
       ..add(sks.remotePublicKey)
       ..add(config.permanentKey.publicKey);
     if (!const ListEquality<int>().equals(decrypted, expected.takeBytes())) {
-      throw ValidationException(
+      throw const ValidationException(
         'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid',
       );
     }
@@ -207,7 +207,7 @@ abstract class ServerHandshakePhase extends Phase {
 
   void validateRepeatedCookie(Cookie cookie) {
     if (cookie != common.server.cookiePair.ours) {
-      throw ProtocolErrorException(
+      throw const ProtocolErrorException(
         'Bad repeated cookie in ${MessageType.serverAuth} message',
       );
     }
@@ -234,7 +234,9 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     logger.d('Initiator server handshake handling server-auth');
 
     if (msg is! ServerAuthInitiator) {
-      throw ProtocolErrorException('Message is not ${MessageType.serverAuth}');
+      throw const ProtocolErrorException(
+        'Message is not ${MessageType.serverAuth}',
+      );
     }
 
     if (!nonce.destination.isInitiator()) {
@@ -283,7 +285,9 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   @override
   Phase handleServerAuth(Message msg, Nonce nonce) {
     if (msg is! ServerAuthResponder) {
-      throw ProtocolErrorException('Message is not ${MessageType.serverAuth}');
+      throw const ProtocolErrorException(
+        'Message is not ${MessageType.serverAuth}',
+      );
     }
 
     if (!nonce.destination.isResponder()) {

@@ -26,7 +26,7 @@ abstract class JsonMessage extends Equatable {
   final dynamic data;
   final int version;
 
-  JsonMessage({
+  const JsonMessage({
     required this.type,
     required this.data,
     this.version = signalingVersion,
@@ -84,7 +84,7 @@ abstract class JsonMessage extends Equatable {
 }
 
 class PlainDataMessage extends JsonMessage {
-  PlainDataMessage(String data)
+  const PlainDataMessage(String data)
       : super(type: MessageType.plainData, data: data);
 }
 

@@ -40,7 +40,9 @@ class Nonce with EquatableMixin {
 
   factory Nonce.fromBytes(Uint8List bytes) {
     if (bytes.length < totalLength) {
-      throw ValidationException('buffer limit must be at least $totalLength');
+      throw const ValidationException(
+        'buffer limit must be at least $totalLength',
+      );
     }
 
     final cookie = bytes.sublist(0, Cookie.cookieLength);

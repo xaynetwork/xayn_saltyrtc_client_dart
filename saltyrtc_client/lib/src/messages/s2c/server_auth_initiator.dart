@@ -37,7 +37,7 @@ class ServerAuthInitiator extends Message {
       );
     }
     if (responders.length != responders.toSet().length) {
-      throw ValidationException(
+      throw const ValidationException(
         '${MessageFields.responders} must not contain duplicates',
       );
     }

@@ -288,7 +288,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     );
 
     if (msg.yourCookie != responder.cookiePair.ours) {
-      throw ProtocolErrorException(
+      throw const ProtocolErrorException(
         'Bad your_cookie in ${MessageType.auth} message',
       );
     }

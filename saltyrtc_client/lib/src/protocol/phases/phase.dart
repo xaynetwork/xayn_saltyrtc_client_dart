@@ -289,7 +289,7 @@ abstract class Phase {
     try {
       cs.next();
     } on OverflowException {
-      throw ProtocolErrorException('CSN overflow');
+      throw const ProtocolErrorException('CSN overflow');
     }
 
     final nonce =
@@ -511,7 +511,7 @@ abstract class AfterServerHandshakePhase extends Phase {
 
   Phase handleSendError(SendError msg) {
     if (msg.source != common.address) {
-      throw ProtocolErrorException(
+      throw const ProtocolErrorException(
         'received send-error for message not send by us',
       );
     }

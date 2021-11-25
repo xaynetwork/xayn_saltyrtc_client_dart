@@ -11,7 +11,8 @@ import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
 /// in some edge cases we catch decryption failure and handle it differently.
 @immutable
 class DecryptionFailedException extends ProtocolErrorException {
-  DecryptionFailedException(Object cause) : super('decryption failed: $cause');
+  const DecryptionFailedException(Object cause)
+      : super('decryption failed: $cause');
 }
 
 /// Something that can encrypt and decrypt data.

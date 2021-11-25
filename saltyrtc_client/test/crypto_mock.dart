@@ -102,7 +102,7 @@ class EncryptionInfo {
   final Uint8List nonce;
   final _KeyId keyId;
 
-  EncryptionInfo({
+  const EncryptionInfo({
     required this.keyId,
     required this.decryptedData,
     required this.nonce,
@@ -260,7 +260,7 @@ class MockCrypto extends Crypto {
     final foundMagicNumber =
         Uint8List.sublistView(ciphertext, 0, magicNumber.length);
     if (!listEq.equals(foundMagicNumber, magicNumber)) {
-      throw DecryptionFailedException(
+      throw const DecryptionFailedException(
         "Can't decrypt something which wasn't encrypted with the mock.",
       );
     }
@@ -275,7 +275,7 @@ class MockCrypto extends Crypto {
 
     final info = encryptedMessages[messageId]!;
     if (info.keyId != keyId) {
-      throw DecryptionFailedException(
+      throw const DecryptionFailedException(
         'Message was encrypted with different key.',
       );
     }

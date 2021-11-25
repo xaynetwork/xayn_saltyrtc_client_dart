@@ -122,7 +122,9 @@ Message readMessage(Uint8List bytes, {List<String> taskTypes = const []}) {
       } else if (map.containsKey(MessageFields.responders)) {
         return ServerAuthInitiator.fromMap(map);
       }
-      throw ValidationException('Invalid ${MessageType.serverAuth} message');
+      throw const ValidationException(
+        'Invalid ${MessageType.serverAuth} message',
+      );
     case MessageType.clientAuth:
       return ClientAuth.fromMap(map);
     case MessageType.newInitiator:
@@ -143,7 +145,9 @@ Message readMessage(Uint8List bytes, {List<String> taskTypes = const []}) {
       } else if (map.containsKey(MessageFields.tasks)) {
         return AuthResponder.fromMap(map);
       }
-      throw ValidationException('Invalid ${MessageType.auth} message');
+      throw const ValidationException(
+        'Invalid ${MessageType.auth} message',
+      );
     case MessageType.close:
       return Close.fromMap(map);
     case MessageType.application:
