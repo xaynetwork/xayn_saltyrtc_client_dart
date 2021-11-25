@@ -1,6 +1,7 @@
-import 'package:logger/logger.dart' show MemoryOutput;
+import 'package:logger/logger.dart' show MemoryOutput, Logger, PrettyPrinter;
 import 'package:test/test.dart' show setUp, tearDown, printOnFailure;
-import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart' show initLogger;
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
+    show saltyRtcClientLibInitLogger;
 
 /// Setup the logger to print logs only when a test fail.
 void setUpLogging() {
@@ -8,7 +9,12 @@ void setUpLogging() {
 
   setUp(() {
     memoryOutput = MemoryOutput();
-    initLogger(output: memoryOutput);
+    saltyRtcClientLibInitLogger(
+      Logger(
+        printer: PrettyPrinter(),
+        output: memoryOutput,
+      ),
+    );
   });
 
   tearDown(() async {
