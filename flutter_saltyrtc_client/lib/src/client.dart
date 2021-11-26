@@ -258,7 +258,7 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
 Uri _getUri(Uri baseUri, Uint8List initiatorPublicKey) {
   return baseUri.replace(
     // we keep the original path because the server can be deployed behind a specific endpoint
-    path: baseUri.path + '/${HEX.encode(initiatorPublicKey)}',
+    path: '${baseUri.path}/${HEX.encode(initiatorPublicKey)}',
     query: null,
     fragment: null,
   );
