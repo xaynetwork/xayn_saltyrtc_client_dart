@@ -15,7 +15,7 @@ import 'package:xayn_saltyrtc_client/events.dart'
     show ClosingErrorEvent, Event, ResponderAuthenticated, ServerHandshakeDone;
 
 /// This example define a task that sends binary blobs from one device to the other.
-void main() async {
+Future<void> main() async {
   const int pingInterval = 60;
   final serverUri = Uri.parse('ws://localhost:8765');
   final serverPublicKey = Uint8List.fromList(

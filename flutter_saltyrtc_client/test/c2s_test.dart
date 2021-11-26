@@ -22,7 +22,7 @@ Future<bool> isServerActive(Uri uri) async {
   return Future.value(true);
 }
 
-void main() async {
+Future<void> main() async {
   setUpLogging();
 
   if (await Setup.skipIntegrationTests()) {

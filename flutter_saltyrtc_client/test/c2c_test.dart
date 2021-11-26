@@ -12,7 +12,7 @@ import 'package:xayn_flutter_saltyrtc_client/task.dart'
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;
 
-void main() async {
+Future<void> main() async {
   setUpLogging();
 
   if (await Setup.skipIntegrationTests()) {

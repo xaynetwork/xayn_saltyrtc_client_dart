@@ -13,7 +13,7 @@ extension CreateRandomNonce on Crypto {
 }
 
 // This test can fail on platforms that don't have libsodium installed, install libsodium before running it.
-void main() async {
+Future<void> main() async {
   final ping = Uint8List(4);
   final pong = Uint8List(8);
 
