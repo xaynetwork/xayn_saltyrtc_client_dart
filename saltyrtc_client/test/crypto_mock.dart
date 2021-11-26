@@ -97,12 +97,12 @@ class _MockAuthToken extends AuthToken {
 }
 
 @immutable
-class EncryptionInfo {
+class _EncryptionInfo {
   final Uint8List decryptedData;
   final Uint8List nonce;
   final _KeyId keyId;
 
-  const EncryptionInfo({
+  const _EncryptionInfo({
     required this.keyId,
     required this.decryptedData,
     required this.nonce,
@@ -132,16 +132,16 @@ class MockCrypto extends Crypto {
   final _random = Random();
 
   /// _KeyId used for encryption -> _MessageId of encrypted message -> decrypted message
-  Map<_MessageId, EncryptionInfo> encryptedMessages = {};
+  Map<_MessageId, _EncryptionInfo> _encryptedMessages = {};
 
   /// Public/Private key => Key
-  Map<_KeyBytes, _MockKeyStore> keyStoreLookUp = {};
+  Map<_KeyBytes, _MockKeyStore> _keyStoreLookUp = {};
 
   /// AuthToken lookup
-  Map<_KeyBytes, _MockAuthToken> authTokenLookUp = {};
+  Map<_KeyBytes, _MockAuthToken> _authTokenLookUp = {};
 
   /// TowKeyIds(keyIdOfA, keyIdOfB) => SharedKeyStore
-  Map<_TwoKeyIds, SharedKeyStore> sharedKeyStoreLookUp = {};
+  Map<_TwoKeyIds, SharedKeyStore> _sharedKeyStoreLookUp = {};
 
   _KeyId _nextKeyIdState = 0;
   _MessageId _nextMessageIdState = Int64(0);
@@ -152,10 +152,10 @@ class MockCrypto extends Crypto {
   MockCrypto();
 
   void _reset() {
-    encryptedMessages = {};
-    keyStoreLookUp = {};
-    authTokenLookUp = {};
-    sharedKeyStoreLookUp = {};
+    _encryptedMessages = {};
+    _keyStoreLookUp = {};
+    _authTokenLookUp = {};
+    _sharedKeyStoreLookUp = {};
   }
 
   @override
@@ -165,7 +165,7 @@ class MockCrypto extends Crypto {
 
   @override
   AuthToken createAuthTokenFromToken({required Uint8List token}) {
-    return authTokenLookUp.putIfAbsent(
+    return _authTokenLookUp.putIfAbsent(
       _KeyBytes(token),
       () => _MockAuthToken(token, this),
     );
@@ -187,17 +187,17 @@ class MockCrypto extends Crypto {
     final keyOfPrivateKey = _KeyBytes(privateKey);
     final keyOfPublicKey = _KeyBytes(publicKey);
 
-    var keyStore = keyStoreLookUp[keyOfPrivateKey];
+    var keyStore = _keyStoreLookUp[keyOfPrivateKey];
     if (keyStore == null) {
       keyStore = _MockKeyStore(
         crypto: this,
         publicKey: publicKey,
         privateKey: privateKey,
       );
-      assert(!keyStoreLookUp.containsKey(keyOfPublicKey));
-      assert(!keyStoreLookUp.containsKey(keyOfPublicKey));
-      keyStoreLookUp[keyOfPrivateKey] = keyStore;
-      keyStoreLookUp[keyOfPublicKey] = keyStore;
+      assert(!_keyStoreLookUp.containsKey(keyOfPublicKey));
+      assert(!_keyStoreLookUp.containsKey(keyOfPublicKey));
+      _keyStoreLookUp[keyOfPrivateKey] = keyStore;
+      _keyStoreLookUp[keyOfPublicKey] = keyStore;
     }
     return keyStore;
   }
@@ -208,9 +208,9 @@ class MockCrypto extends Crypto {
     required Uint8List remotePublicKey,
   }) {
     final firstKeyId =
-        keyStoreLookUp[_KeyBytes(ownKeyStore.privateKey)]!._keyId;
-    final secondKeyId = keyStoreLookUp[_KeyBytes(remotePublicKey)]!._keyId;
-    return sharedKeyStoreLookUp.putIfAbsent(
+        _keyStoreLookUp[_KeyBytes(ownKeyStore.privateKey)]!._keyId;
+    final secondKeyId = _keyStoreLookUp[_KeyBytes(remotePublicKey)]!._keyId;
+    return _sharedKeyStoreLookUp.putIfAbsent(
       _TwoKeyIds(firstKeyId, secondKeyId),
       () => _MockSharedKeyStore(
         crypto: this,
@@ -226,7 +226,7 @@ class MockCrypto extends Crypto {
   }
 
   KeyStore? getKeyStoreForKey(Uint8List key) {
-    return keyStoreLookUp[_KeyBytes(key)];
+    return _keyStoreLookUp[_KeyBytes(key)];
   }
 
   Uint8List _encryptWith({
@@ -235,7 +235,7 @@ class MockCrypto extends Crypto {
     required Uint8List nonce,
   }) {
     final messageId = _nextMessageId();
-    encryptedMessages[messageId] = EncryptionInfo(
+    _encryptedMessages[messageId] = _EncryptionInfo(
       decryptedData: message,
       nonce: nonce,
       keyId: keyId,
@@ -273,7 +273,7 @@ class MockCrypto extends Crypto {
       ),
     );
 
-    final info = encryptedMessages[messageId]!;
+    final info = _encryptedMessages[messageId]!;
     if (info.keyId != keyId) {
       throw const DecryptionFailedException(
         'Message was encrypted with different key.',
