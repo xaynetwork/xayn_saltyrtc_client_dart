@@ -1,8 +1,7 @@
-import 'package:xayn_saltyrtc_client/crypto.dart' show Crypto;
-
-import 'crypto_provider_stub.dart'
+import 'package:xayn_flutter_saltyrtc_client/src/crypto/crypto_provider_stub.dart'
     if (dart.library.io) 'crypto_provider_dart.dart'
     if (dart.library.js) 'crypto_provider_web.dart';
+import 'package:xayn_saltyrtc_client/crypto.dart' show Crypto;
 
 Future<Crypto>? _instance;
 Future<Crypto> getCrypto() {
