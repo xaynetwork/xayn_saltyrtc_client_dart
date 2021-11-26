@@ -15,6 +15,7 @@ dependencies:
   meta: ^1.7.0
   quiver: ^3.0.1
   logger: ^1.1.0
+  universal_platform: ^1.0.0+1
 
 dev_dependencies:
   async: ^2.8.2
