@@ -171,7 +171,7 @@ void main() {
 
     test('close events even if we start closing', () {
       final phase = TestPhase();
-      final closeCode = CloseCode.initiatorCouldNotDecrypt;
+      const closeCode = CloseCode.initiatorCouldNotDecrypt;
       phase.close(closeCode, '');
       expect(phase.webSocket.closeCode, equals(closeCode.toInt()));
       phase.notifyWsStreamClosed();

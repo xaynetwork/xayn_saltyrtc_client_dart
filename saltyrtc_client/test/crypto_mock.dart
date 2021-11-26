@@ -17,7 +17,7 @@ import 'package:xayn_saltyrtc_client/src/crypto/crypto.dart'
         SharedKeyStore;
 import 'package:xayn_saltyrtc_client/src/messages/nonce/nonce.dart' show Nonce;
 
-final listEq = const ListEquality<int>();
+const listEq = ListEquality<int>();
 
 typedef _KeyId = int;
 typedef _MessageId = Int64;
