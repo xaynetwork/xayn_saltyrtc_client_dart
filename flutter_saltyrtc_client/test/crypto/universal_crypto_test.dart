@@ -18,7 +18,7 @@ Future<void> main() async {
   final pong = Uint8List(8);
 
   test('Test the N key exchange variant with sodium.', () async {
-    var crypto = await getCrypto();
+    final crypto = await getCrypto();
     // Server generates keypair for it self
     final serverKeys = crypto.createKeyStore();
 
