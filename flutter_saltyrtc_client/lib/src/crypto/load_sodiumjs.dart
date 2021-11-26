@@ -13,9 +13,9 @@ import 'package:xayn_flutter_saltyrtc_client/src/crypto/sodium.js.dart'
 @JS()
 @anonymous
 class SodiumBrowserInit {
-  external void Function(dynamic sodium) get onload;
+  external void Function(Object sodium) get onload;
 
-  external factory SodiumBrowserInit({void Function(dynamic sodium) onload});
+  external factory SodiumBrowserInit({void Function(Object sodium) onload});
 }
 
 Future<LibSodiumJS> _load() async {

@@ -58,7 +58,7 @@ abstract class JsonMessage extends Equatable {
         pk: base64.decode(data[_EncryptedFields.pk]!),
       );
 
-  factory JsonMessage.decode(dynamic message) {
+  factory JsonMessage.decode(Object message) {
     if (message is! String) {
       throw FormatException('Unsupported type ${message.runtimeType}');
     }
