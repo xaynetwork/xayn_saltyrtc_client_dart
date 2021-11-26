@@ -114,11 +114,11 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
   static Future<InitiatorClient> _build(
     Uri baseUri,
     List<TaskBuilder> tasks, {
-    int? pingInterval,
     required Uint8List expectedServerKey,
     Uint8List? responderTrustedKey,
     Uint8List? sharedAuthToken,
     Identity? identity,
+    int? pingInterval,
   }) async {
     final crypto = await getCrypto();
     identity ??= Identity._(crypto.createKeyStore());

@@ -64,9 +64,9 @@ class Setup {
 
   static Future<Setup> responderWithAuthToken({
     required List<TaskBuilder> tasks,
-    Uint8List? expectedServerKey,
     required Uint8List authToken,
     required Uint8List initiatorTrustedKey,
+    Uint8List? expectedServerKey,
     Identity? identity,
   }) async {
     final client = await ResponderClient.withAuthToken(
