@@ -23,10 +23,17 @@ extension PackAnyExt on Packer {
       // otherwise it is an int. This is what is done by the library that the
       // javascript implementation of the saltyrtc client is using.
       // https://github.com/kawanet/msgpack-lite/blob/5b71d82cad4b96289a466a6403d2faaa3e254167/lib/write-type.js#L57
-      if (any != any.floor()) {
+
+      // if not finite it can only be encoded as a double
+      if (!any.isFinite) {
         packDouble(any.toDouble());
       } else {
-        packInt(any.toInt());
+        final asInt = any.toInt();
+        if (any != asInt) {
+          packDouble(any.toDouble());
+        } else {
+          packInt(asInt);
+        }
       }
     } else if (any is double) {
       packDouble(any);
