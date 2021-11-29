@@ -134,7 +134,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     validateResponderId(id.value);
     final removed = responders.remove(id);
     final event = events.PeerDisconnected(events.PeerKind.unauthenticated);
-    if (removed != null && removed.receivedAnyMessage == true ||
+    if (removed != null && removed.receivedAnyMessage ||
         !thereIsAOngoingHandshake()) {
       emitEvent(event);
     } else {
