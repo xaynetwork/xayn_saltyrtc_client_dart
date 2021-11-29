@@ -11,10 +11,10 @@ dependencies:
   collection: ^1.15.0
   equatable: ^2.0.3
   fixnum: ^1.0.0
+  logger: ^1.1.0
   messagepack: ^0.2.1
   meta: ^1.7.0
   quiver: ^3.0.1
-  logger: ^1.1.0
   universal_platform: ^1.0.0+1
 
 dev_dependencies:

@@ -12,21 +12,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_sodium: ^0.2.0
   flutter_web_plugins:
     sdk: flutter
-  xayn_saltyrtc_client:
-    path: ../saltyrtc_client
-  flutter_sodium: ^0.2.0
-  libsodium: ^0.2.0
-  web_socket_channel: ^2.1.0
   hex: ^0.2.0
   js: ^0.6.3
+  libsodium: ^0.2.0
   meta: ^1.7.0
+  web_socket_channel: ^2.1.0
+  xayn_saltyrtc_client:
+    path: ../saltyrtc_client
 
 dev_dependencies:
-  logger: ^1.1.0
+  equatable: ^2.0.3
   flutter_test:
     sdk: flutter
   flutter_lints: ^1.0.0
+  logger: ^1.1.0
   test: ^1.17.10
-  equatable: ^2.0.3
