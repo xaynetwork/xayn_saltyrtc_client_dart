@@ -14,6 +14,6 @@
 library flutter_saltyrtc_client;
 
 export 'package:xayn_flutter_saltyrtc_client/src/client.dart'
-    show InitiatorClient, ResponderClient, Identity;
+    show InitiatorClient, ResponderClient, Identity, SaltyRtcClient;
 export 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
     show saltyRtcClientLibInitLogger;
