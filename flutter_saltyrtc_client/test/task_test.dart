@@ -18,8 +18,8 @@ import 'package:xayn_flutter_saltyrtc_client/task.dart'
         TaskBuilder,
         TaskData,
         TaskMessage;
-import 'package:xayn_flutter_saltyrtc_client/xayn_flutter_saltyrtc_client.dart'
-    show logger;
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
+    show saltyRtcClientLibLogger;
 
 import 'logging.dart' show setUpLogging;
 import 'utils.dart' show Setup;
@@ -191,26 +191,26 @@ class SendBlobTask extends Task {
 
   @override
   void handleCancel(CancelReason reason) {
-    logger.d('[$id]handleCancel: $reason');
+    saltyRtcClientLibLogger.d('[$id]handleCancel: $reason');
     close();
   }
 
   @override
   void handleEvent(Event event) {
     if (event is HandoverToTask) {
-      logger.d('[$id] handover done');
+      saltyRtcClientLibLogger.d('[$id] handover done');
     }
   }
 
   @override
   void handleMessage(TaskMessage msg) {
-    logger.d('[$id]handleMessage: $msg');
+    saltyRtcClientLibLogger.d('[$id]handleMessage: $msg');
     if (_state == State.waitForReady) {
       switch (msg.type) {
         case 'ready':
           expect(msg.data['ready'], equals('yes'));
           sendBlob();
-          logger.d('[$id] requesting handover');
+          saltyRtcClientLibLogger.d('[$id] requesting handover');
           link.requestHandover();
           return;
       }
@@ -220,9 +220,9 @@ class SendBlobTask extends Task {
 
   @override
   void start() {
-    logger.d('[$id]start');
+    saltyRtcClientLibLogger.d('[$id]start');
     _channel.onReady.then((_) {
-      logger.d('[$id]sending ready');
+      saltyRtcClientLibLogger.d('[$id]sending ready');
       link.sendMessage(TaskMessage('ready', {'ready': 'yes'}));
     });
   }
@@ -236,18 +236,18 @@ class SendBlobTask extends Task {
       await Future<void>.delayed(Duration(seconds: 20));
     }
     _channel.sink.add(_blobToBeSend);
-    logger.d('[$id]blobSend');
+    saltyRtcClientLibLogger.d('[$id]blobSend');
     //pretend it takes a while
     await Future<void>.delayed(Duration(milliseconds: 10));
     final blob = await _channel.stream.first;
     _state = State.done;
     link.emitEvent(BlobReceived(blob));
-    logger.d('[$id]blobReceived');
+    saltyRtcClientLibLogger.d('[$id]blobReceived');
     close();
   }
 
   void close() {
-    logger.d('[$id] closing on state=$_state');
+    saltyRtcClientLibLogger.d('[$id] closing on state=$_state');
     final CloseCode closeCode;
     if (_state == State.done) {
       closeCode = CloseCode.closingNormal;

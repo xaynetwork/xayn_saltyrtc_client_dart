@@ -1,4 +1,4 @@
-import 'package:logger/logger.dart' show MemoryOutput;
+import 'package:logger/logger.dart' show MemoryOutput, Logger, PrettyPrinter;
 import 'package:test/test.dart' show setUp, tearDown, printOnFailure;
 import 'package:xayn_saltyrtc_client/src/logger.dart' show initLogger;
 
@@ -8,7 +8,12 @@ void setUpLogging() {
 
   setUp(() {
     memoryOutput = MemoryOutput();
-    initLogger(output: memoryOutput);
+    initLogger(
+      Logger(
+        printer: PrettyPrinter(),
+        output: memoryOutput,
+      ),
+    );
   });
 
   tearDown(() async {

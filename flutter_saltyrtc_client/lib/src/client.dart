@@ -11,7 +11,7 @@ import 'package:xayn_saltyrtc_client/events.dart' show Event;
 import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart' as saltyrtc
     show InitiatorClient, ResponderClient;
 import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
-    show websocketProtocols, TaskBuilder, logger;
+    show websocketProtocols, TaskBuilder, saltyRtcClientLibLogger;
 
 abstract class SaltyRtcClient {
   /// The identity of this client
@@ -124,7 +124,7 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
     identity ??= Identity._(crypto.createKeyStore());
     pingInterval ??= 0;
     final uri = _getUri(baseUri, identity._permanentKeyPair.publicKey);
-    logger.i('connecting as initiator to uri: $uri');
+    saltyRtcClientLibLogger.i('connecting as initiator to uri: $uri');
     final client = saltyrtc.InitiatorClient.build(
       // we get a KeyStore that can only be created from a Crypto
       // so it is already initialized
@@ -220,7 +220,7 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
     identity ??= Identity._(crypto.createKeyStore());
     pingInterval ??= 0;
     final uri = _getUri(baseUri, initiatorTrustedKey);
-    logger.i('connecting as responder to uri: $uri');
+    saltyRtcClientLibLogger.i('connecting as responder to uri: $uri');
     final client = saltyrtc.ResponderClient.build(
       crypto,
       WebSocket(WebSocketChannel.connect(

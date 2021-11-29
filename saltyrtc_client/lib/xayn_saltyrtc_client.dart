@@ -1,10 +1,12 @@
 library dart_saltyrtc_client;
 
+import 'package:logger/logger.dart' show Logger;
+import 'package:xayn_saltyrtc_client/src/logger.dart' show initLogger, logger;
 import 'package:xayn_saltyrtc_client/src/protocol/phases/server_handshake.dart'
     show saltyrtcSubprotocol;
+
 export 'package:xayn_saltyrtc_client/src/client.dart'
     show InitiatorClient, ResponderClient;
-export 'package:xayn_saltyrtc_client/src/logger.dart' show initLogger, logger;
 export 'package:xayn_saltyrtc_client/src/messages/c2c/task_message.dart'
     show TaskMessage;
 export 'package:xayn_saltyrtc_client/src/messages/close_code.dart'
@@ -17,3 +19,6 @@ export 'package:xayn_saltyrtc_client/src/protocol/task.dart'
 export 'package:xayn_saltyrtc_client/src/utils.dart' show Pair;
 
 const List<String> websocketProtocols = [saltyrtcSubprotocol];
+
+void saltyRtcClientLibInitLogger(Logger logger) => initLogger(logger);
+Logger get saltyRtcClientLibLogger => logger;
