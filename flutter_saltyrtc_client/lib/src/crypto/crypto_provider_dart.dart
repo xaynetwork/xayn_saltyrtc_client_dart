@@ -28,9 +28,10 @@ T _wrapDecryptionFailure<T>(T Function() code) {
 }
 
 class _DartSodiumKeyStore extends KeyStore {
-  _DartSodiumKeyStore(
-      {required Uint8List publicKey, required Uint8List privateKey})
-      : super(publicKey: publicKey, privateKey: privateKey);
+  _DartSodiumKeyStore({
+    required Uint8List publicKey,
+    required Uint8List privateKey,
+  }) : super(publicKey: publicKey, privateKey: privateKey);
 }
 
 class _DartSodiumSharedKeyStore extends SharedKeyStore {
@@ -50,7 +51,8 @@ class _DartSodiumSharedKeyStore extends SharedKeyStore {
   }) {
     Crypto.checkNonce(nonce);
     return _wrapDecryptionFailure(
-        () => _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey));
+      () => _sodium.CryptoBox.decryptAfternm(ciphertext, nonce, _sharedKey),
+    );
   }
 
   @override
@@ -78,7 +80,8 @@ class _DartSodiumAuthToken implements AuthToken {
   }) {
     Crypto.checkNonce(nonce);
     return _wrapDecryptionFailure(
-        () => _sodium.Sodium.cryptoSecretboxOpenEasy(ciphertext, nonce, bytes));
+      () => _sodium.Sodium.cryptoSecretboxOpenEasy(ciphertext, nonce, bytes),
+    );
   }
 
   @override
@@ -163,7 +166,8 @@ class _KXSecretStreamBuilder extends KXSecretStreamBuilder {
     final sessionKeys = mkKeys(keyPair.pk, keyPair.sk, peerPublicKey);
     final initPushResult =
         _sodium.Sodium.cryptoSecretstreamXchacha20poly1305InitPush(
-            sessionKeys.tx);
+      sessionKeys.tx,
+    );
     final stream = _SecretStream._(
       encryptionState: initPushResult.state,
       encryptionHeader: initPushResult.header,
@@ -226,7 +230,9 @@ class _SecretStream extends SecretStream {
 
         decryptionState =
             _sodium.Sodium.cryptoSecretstreamXchacha20poly1305InitPull(
-                header, key);
+          header,
+          key,
+        );
       }
 
       final result = _sodium.Sodium.cryptoSecretstreamXchacha20poly1305Pull(

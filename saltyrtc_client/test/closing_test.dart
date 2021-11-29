@@ -32,8 +32,11 @@ void main() {
   group('.close', () {
     test('close ws and emit event if triggered by close msg', () {
       final phase = TestPhase();
-      phase.close(CloseCode.initiatorCouldNotDecrypt, 'foo',
-          receivedCloseMsg: true);
+      phase.close(
+        CloseCode.initiatorCouldNotDecrypt,
+        'foo',
+        receivedCloseMsg: true,
+      );
       phase.io.expectEventOfType<InitiatorCouldNotDecrypt>();
       expect(phase.webSocket.closeCode, equals(CloseCode.goingAway.toInt()));
     });
@@ -95,7 +98,9 @@ void main() {
       phase.close(CloseCode.protocolError, 'foo');
       expect(phase.lastSendCloseCode, isNull);
       expect(
-          phase.webSocket.closeCode, equals(CloseCode.protocolError.toInt()));
+        phase.webSocket.closeCode,
+        equals(CloseCode.protocolError.toInt()),
+      );
     });
 
     test('calling close multiple times has no effect (besides cancelTask)', () {
@@ -104,17 +109,25 @@ void main() {
       expect(phase.cancelTaskCallCount, equals(1));
       phase.close(CloseCode.handover, 'foo', receivedCloseMsg: true);
       expect(phase.cancelTaskCallCount, equals(1));
-      phase.close(CloseCode.initiatorCouldNotDecrypt, 'foo',
-          receivedCloseMsg: true);
+      phase.close(
+        CloseCode.initiatorCouldNotDecrypt,
+        'foo',
+        receivedCloseMsg: true,
+      );
       expect(phase.cancelTaskCallCount, equals(2));
       phase.close(CloseCode.protocolError, 'foo', receivedCloseMsg: true);
       expect(phase.cancelTaskCallCount, equals(3));
 
       final event = phase.io.expectEventOfType<UnexpectedStatus>();
       expect(
-          event,
-          equals(UnexpectedStatus.unchecked(
-              UnexpectedStatusVariant.protocolError, 3001)));
+        event,
+        equals(
+          UnexpectedStatus.unchecked(
+            UnexpectedStatusVariant.protocolError,
+            3001,
+          ),
+        ),
+      );
       expect(phase.io.sendEvents, isEmpty);
     });
   });
@@ -158,7 +171,7 @@ void main() {
 
     test('close events even if we start closing', () {
       final phase = TestPhase();
-      final closeCode = CloseCode.initiatorCouldNotDecrypt;
+      const closeCode = CloseCode.initiatorCouldNotDecrypt;
       phase.close(closeCode, '');
       expect(phase.webSocket.closeCode, equals(closeCode.toInt()));
       phase.notifyWsStreamClosed();
@@ -189,8 +202,12 @@ class TestPhase extends Phase {
   TestPhase._(this.webSocket, this.io, this.common);
 
   @override
-  Uint8List buildPacket(Message msg, Peer receiver,
-          {bool encrypt = true, AuthToken? authToken}) =>
+  Uint8List buildPacket(
+    Message msg,
+    Peer receiver, {
+    bool encrypt = true,
+    AuthToken? authToken,
+  }) =>
       throw UnimplementedError();
 
   @override
@@ -221,8 +238,12 @@ class TestPhase extends Phase {
   void send(Uint8List bytes) => throw UnimplementedError();
 
   @override
-  void sendMessage(Message msg,
-          {required Peer to, bool encrypt = true, AuthToken? authToken}) =>
+  void sendMessage(
+    Message msg, {
+    required Peer to,
+    bool encrypt = true,
+    AuthToken? authToken,
+  }) =>
       throw UnimplementedError();
 
   @override

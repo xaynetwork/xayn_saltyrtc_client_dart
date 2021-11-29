@@ -41,8 +41,10 @@ void main() {
     });
 
     test('is bytes', () {
-      expect(roundTrip(Uint8List.fromList([1, 2, 3, 4])),
-          equals(Uint8List.fromList([1, 2, 3, 4])));
+      expect(
+        roundTrip(Uint8List.fromList([1, 2, 3, 4])),
+        equals(Uint8List.fromList([1, 2, 3, 4])),
+      );
     });
 
     test('is map', () {

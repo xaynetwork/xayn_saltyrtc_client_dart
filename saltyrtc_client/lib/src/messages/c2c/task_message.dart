@@ -18,7 +18,8 @@ class TaskMessage extends Message {
   TaskMessage(this.type, this.data) {
     if (data.containsKey(MessageFields.type)) {
       throw ArgumentError(
-          'task message data must not contain ${MessageFields.type} field');
+        'task message data must not contain ${MessageFields.type} field',
+      );
     }
   }
 

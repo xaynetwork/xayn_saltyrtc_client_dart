@@ -26,23 +26,37 @@ class ServerAuthResponder extends Message {
   List<Object?> get props => [yourCookie, signedKeys, initiatorConnected];
 
   ServerAuthResponder(
-      this.yourCookie, this.signedKeys, this.initiatorConnected) {
+    this.yourCookie,
+    this.signedKeys,
+    this.initiatorConnected,
+  ) {
     if (signedKeys != null) {
       validateByteArray(
-          signedKeys!, signedKeysLength, MessageFields.signedKeys);
+        signedKeys!,
+        signedKeysLength,
+        MessageFields.signedKeys,
+      );
     }
   }
 
   factory ServerAuthResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final yourCookie = Cookie(validateByteArrayType(
-        map[MessageFields.yourCookie], MessageFields.yourCookie));
+    final yourCookie = Cookie(
+      validateByteArrayType(
+        map[MessageFields.yourCookie],
+        MessageFields.yourCookie,
+      ),
+    );
     final initatorConnected = validateBoolType(
-        map[MessageFields.initiatorConnected],
-        MessageFields.initiatorConnected);
+      map[MessageFields.initiatorConnected],
+      MessageFields.initiatorConnected,
+    );
 
-    final signedKeys = validateTypeWithNull(map[MessageFields.signedKeys],
-        MessageFields.signedKeys, validateByteArrayType);
+    final signedKeys = validateTypeWithNull(
+      map[MessageFields.signedKeys],
+      MessageFields.signedKeys,
+      validateByteArrayType,
+    );
 
     return ServerAuthResponder(yourCookie, signedKeys, initatorConnected);
   }

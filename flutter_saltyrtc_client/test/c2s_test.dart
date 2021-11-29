@@ -22,7 +22,7 @@ Future<bool> isServerActive(Uri uri) async {
   return Future.value(true);
 }
 
-void main() async {
+Future<void> main() async {
   setUpLogging();
 
   if (await Setup.skipIntegrationTests()) {
@@ -31,13 +31,13 @@ void main() async {
 
   group('Client server handshake', () {
     final initiatorSetup = Setup.initiatorWithAuthToken(tasks: []);
-    final responderSetup =
-        initiatorSetup.then((initiatorSetup) => Setup.responderWithAuthToken(
-              tasks: [],
-              authToken: initiatorSetup.authToken!,
-              initiatorTrustedKey:
-                  initiatorSetup.client.identity.getPublicKey(),
-            ));
+    final responderSetup = initiatorSetup.then(
+      (initiatorSetup) => Setup.responderWithAuthToken(
+        tasks: [],
+        authToken: initiatorSetup.authToken!,
+        initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
+      ),
+    );
     for (final data in [
       Pair('Initiator', initiatorSetup),
       Pair('Responder', responderSetup),
@@ -54,21 +54,22 @@ void main() async {
   group('Client server handhshake wrong server key,', () {
     final wrongServerKey = Uint8List.fromList(
       HEX.decode(
-          '0000000000000000000000000000000000000000000000000000000000000001'),
+        '0000000000000000000000000000000000000000000000000000000000000001',
+      ),
     );
 
     final initiatorSetup = Setup.initiatorWithAuthToken(
       tasks: [],
       expectedServerKey: wrongServerKey,
     );
-    final responderSetup =
-        initiatorSetup.then((initiatorSetup) => Setup.responderWithAuthToken(
-              tasks: [],
-              authToken: initiatorSetup.authToken!,
-              expectedServerKey: wrongServerKey,
-              initiatorTrustedKey:
-                  initiatorSetup.client.identity.getPublicKey(),
-            ));
+    final responderSetup = initiatorSetup.then(
+      (initiatorSetup) => Setup.responderWithAuthToken(
+        tasks: [],
+        authToken: initiatorSetup.authToken!,
+        expectedServerKey: wrongServerKey,
+        initiatorTrustedKey: initiatorSetup.client.identity.getPublicKey(),
+      ),
+    );
     for (final data in [
       Pair('Initiator', initiatorSetup),
       Pair('Responder', responderSetup)
@@ -76,9 +77,12 @@ void main() async {
       test('with a ${data.first} client', () async {
         final events = (await data.second).client.run();
 
-        expect(() async {
-          await events.first;
-        }, throwsA(isA<IncompatibleServerKey>()));
+        expect(
+          () async {
+            await events.first;
+          },
+          throwsA(isA<IncompatibleServerKey>()),
+        );
       });
     }
   });

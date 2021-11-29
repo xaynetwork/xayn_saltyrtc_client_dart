@@ -10,7 +10,9 @@ import 'package:xayn_saltyrtc_client/src/protocol/error.dart'
 /// Check that `value` represent a `type`.
 void validateType(Object? value, String type) {
   if (value is! String) {
-    throw ValidationException('Type must be a string');
+    throw const ValidationException(
+      'Type must be a string',
+    );
   }
   if (value != type) {
     throw ValidationException('Type must be $type');
@@ -20,7 +22,9 @@ void validateType(Object? value, String type) {
 /// Check that `value` represent a string.
 String validateTypeType(Object? value) {
   if (value is! String) {
-    throw ValidationException('Type must be a string');
+    throw const ValidationException(
+      'Type must be a string',
+    );
   }
 
   return value;
@@ -30,7 +34,8 @@ String validateTypeType(Object? value) {
 void validateByteArray(Uint8List value, int expectedLength, String name) {
   if (value.length != expectedLength) {
     throw ValidationException(
-        '$name must be $expectedLength bytes long, not ${value.length}');
+      '$name must be $expectedLength bytes long, not ${value.length}',
+    );
   }
 }
 
@@ -113,7 +118,10 @@ int validateIntegerType(Object? value, String name) {
 
 /// Validate `value` with `validateType` if `value != null`.
 T? validateTypeWithNull<T>(
-    Object? value, String name, T Function(Object?, String) validateType) {
+  Object? value,
+  String name,
+  T Function(Object?, String) validateType,
+) {
   if (value != null) {
     return validateType(value, name);
   }
@@ -134,7 +142,10 @@ bool validateBoolType(Object? value, String name) {
 /// a drop-responder message are checked.
 ///
 CloseCode validateCloseCodeType(
-    Object? value, bool dropResponder, String name) {
+  Object? value,
+  bool dropResponder,
+  String name,
+) {
   if (value is! int) {
     throw ValidationException('$name must be an integer');
   }
@@ -151,7 +162,8 @@ CloseCode validateCloseCodeType(
 
     if (!closeCodesDropResponder.contains(code)) {
       throw ValidationException(
-          '$name must be a valid ${dropResponder ? 'drop responder' : ''} close code');
+        '$name must be a valid ${dropResponder ? 'drop responder' : ''} close code',
+      );
     }
   }
 
@@ -163,16 +175,24 @@ CloseCode validateCloseCodeType(
 /// all the keys of `data` must be in `tasks`.
 void validateTasksData(List<String> tasks, TasksData data) {
   if (tasks.isEmpty) {
-    throw ValidationException('Task names must not be empty');
+    throw const ValidationException(
+      'Task names must not be empty',
+    );
   }
   if (data.isEmpty) {
-    throw ValidationException('Task data must not be empty');
+    throw const ValidationException(
+      'Task data must not be empty',
+    );
   }
   if (data.length != tasks.length) {
-    throw ValidationException('Task data must contain an entry for every task');
+    throw const ValidationException(
+      'Task data must contain an entry for every task',
+    );
   }
   if (!tasks.every(data.containsKey)) {
-    throw ValidationException('Task data must contain an entry for every task');
+    throw const ValidationException(
+      'Task data must contain an entry for every task',
+    );
   }
 }
 

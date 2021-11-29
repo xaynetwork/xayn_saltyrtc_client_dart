@@ -25,10 +25,14 @@ void main() {
       );
       final nonceBytes = nonce.toBytes();
       final package = msg.buildPackage(nonce, encryptWith: null);
-      expect(Uint8List.sublistView(package, 0, Nonce.totalLength),
-          equals(nonceBytes));
       expect(
-          Uint8List.sublistView(package, Nonce.totalLength), equals(msgBytes));
+        Uint8List.sublistView(package, 0, Nonce.totalLength),
+        equals(nonceBytes),
+      );
+      expect(
+        Uint8List.sublistView(package, Nonce.totalLength),
+        equals(msgBytes),
+      );
     });
 
     test('encrypted', () {
@@ -42,11 +46,14 @@ void main() {
       );
       final nonceBytes = nonce.toBytes();
       final package = msg.buildPackage(nonce, encryptWith: token);
-      expect(Uint8List.sublistView(package, 0, Nonce.totalLength),
-          equals(nonceBytes));
+      expect(
+        Uint8List.sublistView(package, 0, Nonce.totalLength),
+        equals(nonceBytes),
+      );
       final decryptedBytes = token.decrypt(
-          ciphertext: Uint8List.sublistView(package, Nonce.totalLength),
-          nonce: nonceBytes);
+        ciphertext: Uint8List.sublistView(package, Nonce.totalLength),
+        nonce: nonceBytes,
+      );
       expect(msgBytes, equals(decryptedBytes));
     });
   });

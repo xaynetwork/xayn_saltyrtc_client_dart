@@ -67,10 +67,12 @@ abstract class ServerHandshakePhase extends Phase {
 
   ServerHandshakePhase(this.common) : super() {
     // We can directly create the shared permanent key
-    common.server.setPermanentSharedKey(common.crypto.createSharedKeyStore(
-      ownKeyStore: config.permanentKey,
-      remotePublicKey: config.expectedServerPublicKey,
-    ));
+    common.server.setPermanentSharedKey(
+      common.crypto.createSharedKeyStore(
+        ownKeyStore: config.permanentKey,
+        remotePublicKey: config.expectedServerPublicKey,
+      ),
+    );
   }
 
   @protected
@@ -138,13 +140,15 @@ abstract class ServerHandshakePhase extends Phase {
           sendClientAuth();
         } else {
           throw ProtocolErrorException(
-              'Expected ${MessageType.serverHello}, but got ${msg.type}');
+            'Expected ${MessageType.serverHello}, but got ${msg.type}',
+          );
         }
         logger.v('Current server handshake status $handshakeState');
         return this;
       case ServerHandshakeState.helloSent:
         throw ProtocolErrorException(
-            'Received ${msg.type} message before sending ${MessageType.clientAuth}');
+          'Received ${msg.type} message before sending ${MessageType.clientAuth}',
+        );
       case ServerHandshakeState.authSent:
         final clientPhase = handleServerAuth(msg, nonce);
         emitEvent(events.ServerHandshakeDone());
@@ -154,7 +158,9 @@ abstract class ServerHandshakePhase extends Phase {
 
   void handleServerHello(ServerHello msg, Nonce nonce) {
     final sks = common.crypto.createSharedKeyStore(
-        ownKeyStore: config.permanentKey, remotePublicKey: msg.key);
+      ownKeyStore: config.permanentKey,
+      remotePublicKey: msg.key,
+    );
     common.server.setSessionSharedKey(sks);
   }
 
@@ -179,8 +185,9 @@ abstract class ServerHandshakePhase extends Phase {
     required Nonce nonce,
   }) {
     if (signedKey == null) {
-      throw ValidationException(
-          'Server did not send ${MessageFields.signedKeys} in ${MessageType.serverAuth} message');
+      throw const ValidationException(
+        'Server did not send ${MessageFields.signedKeys} in ${MessageType.serverAuth} message',
+      );
     }
 
     final decrypted = common.server.permanentSharedKey!.decrypt(
@@ -191,16 +198,18 @@ abstract class ServerHandshakePhase extends Phase {
     final expected = BytesBuilder(copy: false)
       ..add(sks.remotePublicKey)
       ..add(config.permanentKey.publicKey);
-    if (!ListEquality<int>().equals(decrypted, expected.takeBytes())) {
-      throw ValidationException(
-          'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid');
+    if (!const ListEquality<int>().equals(decrypted, expected.takeBytes())) {
+      throw const ValidationException(
+        'Decrypted ${MessageFields.signedKeys} in ${MessageType.serverAuth} message is invalid',
+      );
     }
   }
 
   void validateRepeatedCookie(Cookie cookie) {
     if (cookie != common.server.cookiePair.ours) {
-      throw ProtocolErrorException(
-          'Bad repeated cookie in ${MessageType.serverAuth} message');
+      throw const ProtocolErrorException(
+        'Bad repeated cookie in ${MessageType.serverAuth} message',
+      );
     }
   }
 }
@@ -225,12 +234,15 @@ class InitiatorServerHandshakePhase extends ServerHandshakePhase
     logger.d('Initiator server handshake handling server-auth');
 
     if (msg is! ServerAuthInitiator) {
-      throw ProtocolErrorException('Message is not ${MessageType.serverAuth}');
+      throw const ProtocolErrorException(
+        'Message is not ${MessageType.serverAuth}',
+      );
     }
 
     if (!nonce.destination.isInitiator()) {
       throw ValidationException(
-          'Invalid none destination ${nonce.destination}');
+        'Invalid none destination ${nonce.destination}',
+      );
     }
 
     common.address = Id.initiatorAddress;
@@ -262,20 +274,26 @@ class ResponderServerHandshakePhase extends ServerHandshakePhase
   @override
   void sendClientHello() {
     logger.d('Switching to responder client handshake');
-    sendMessage(ClientHello(config.permanentKey.publicKey),
-        to: common.server, encrypt: false);
+    sendMessage(
+      ClientHello(config.permanentKey.publicKey),
+      to: common.server,
+      encrypt: false,
+    );
     handshakeState = ServerHandshakeState.helloSent;
   }
 
   @override
   Phase handleServerAuth(Message msg, Nonce nonce) {
     if (msg is! ServerAuthResponder) {
-      throw ProtocolErrorException('Message is not ${MessageType.serverAuth}');
+      throw const ProtocolErrorException(
+        'Message is not ${MessageType.serverAuth}',
+      );
     }
 
     if (!nonce.destination.isResponder()) {
       throw ValidationException(
-          'Invalid none destination ${nonce.destination}');
+        'Invalid none destination ${nonce.destination}',
+      );
     }
 
     // this is our address from the server

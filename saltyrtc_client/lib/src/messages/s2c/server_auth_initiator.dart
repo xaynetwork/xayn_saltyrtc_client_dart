@@ -31,25 +31,36 @@ class ServerAuthInitiator extends Message {
   ServerAuthInitiator(this.yourCookie, this.signedKeys, this.responders) {
     if (signedKeys != null) {
       validateByteArray(
-          signedKeys!, signedKeysLength, MessageFields.signedKeys);
+        signedKeys!,
+        signedKeysLength,
+        MessageFields.signedKeys,
+      );
     }
     if (responders.length != responders.toSet().length) {
-      throw ValidationException(
-          '${MessageFields.responders} must not contain duplicates');
+      throw const ValidationException(
+        '${MessageFields.responders} must not contain duplicates',
+      );
     }
   }
 
   factory ServerAuthInitiator.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final yourCookie = Cookie(validateByteArrayType(
-        map[MessageFields.yourCookie], MessageFields.yourCookie));
+    final yourCookie = Cookie(
+      validateByteArrayType(
+        map[MessageFields.yourCookie],
+        MessageFields.yourCookie,
+      ),
+    );
     final responders = validateListType<int>(
-            map[MessageFields.responders], MessageFields.responders)
-        .map(Id.responderId)
-        .toList(growable: false);
+      map[MessageFields.responders],
+      MessageFields.responders,
+    ).map(Id.responderId).toList(growable: false);
 
-    final signedKeys = validateTypeWithNull(map[MessageFields.signedKeys],
-        MessageFields.signedKeys, validateByteArrayType);
+    final signedKeys = validateTypeWithNull(
+      map[MessageFields.signedKeys],
+      MessageFields.signedKeys,
+      validateByteArrayType,
+    );
 
     return ServerAuthInitiator(yourCookie, signedKeys, responders);
   }

@@ -107,7 +107,9 @@ class MockServer {
     CryptoBox? encryptWith;
     if (encrypt) {
       encryptWith = crypto.createSharedKeyStore(
-          ownKeyStore: sessionKeys, remotePublicKey: clientPermanentPublicKey!);
+        ownKeyStore: sessionKeys,
+        remotePublicKey: clientPermanentPublicKey!,
+      );
     }
     return nam.message.buildPackage(nam.nonce, encryptWith: encryptWith);
   }
@@ -136,7 +138,11 @@ class MockServer {
     nonce.combinedSequence.next();
     // update with the new address of the client
     nonce = Nonce(
-        nonce.cookie, nonce.source, clientAddress, nonce.combinedSequence);
+      nonce.cookie,
+      nonce.source,
+      clientAddress,
+      nonce.combinedSequence,
+    );
     final signedKeys = _genSignedKeys();
     final msg = ServerAuthResponder(yourCookie, signedKeys, initiatorConnected);
     return NonceAndMessage(nonce, msg);
@@ -167,7 +173,9 @@ class MockServer {
     bytes.add(clientPermanentPublicKey!);
     final keys = bytes.takeBytes();
     final sks = crypto.createSharedKeyStore(
-        ownKeyStore: permanentKeys, remotePublicKey: clientPermanentPublicKey!);
+      ownKeyStore: permanentKeys,
+      remotePublicKey: clientPermanentPublicKey!,
+    );
     return sks.encrypt(message: keys, nonce: nonce.toBytes());
   }
 

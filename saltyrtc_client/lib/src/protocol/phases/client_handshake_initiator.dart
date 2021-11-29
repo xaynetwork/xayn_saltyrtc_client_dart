@@ -134,7 +134,7 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     validateResponderId(id.value);
     final removed = responders.remove(id);
     final event = events.PeerDisconnected(events.PeerKind.unauthenticated);
-    if (removed?.receivedAnyMessage == true || !thereIsAOngoingHandshake()) {
+    if ((removed?.receivedAnyMessage ?? false) || !thereIsAOngoingHandshake()) {
       emitEvent(event);
     } else {
       emitEvent(events.AdditionalResponderEvent(event));
@@ -147,7 +147,8 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     final removed = responders.remove(destination);
     if (removed != null) {
       emitEvent(
-          events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated));
+        events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated),
+      );
     } else {
       logger.d('send-error from already removed destination');
     }
@@ -215,7 +216,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   Phase _handleWaitForToken(
-      ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
+    ResponderWithState responderWithState,
+    Uint8List msgBytes,
+    Nonce nonce,
+  ) {
     assert(config.authMethod.trustedResponderSharedKey == null);
 
     final responder = responderWithState.responder;
@@ -228,8 +232,12 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     );
 
     responder.setPermanentSharedKey(
-        InitialClientAuthMethod.createResponderSharedPermanentKey(
-            common.crypto, config.permanentKey, msg.key));
+      InitialClientAuthMethod.createResponderSharedPermanentKey(
+        common.crypto,
+        config.permanentKey,
+        msg.key,
+      ),
+    );
 
     responderWithState.state = State.waitForKeyMsg;
 
@@ -237,7 +245,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   Phase _handleWaitForKey(
-      ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
+    ResponderWithState responderWithState,
+    Uint8List msgBytes,
+    Nonce nonce,
+  ) {
     final responder = responderWithState.responder;
 
     final sharedKey = responder.permanentSharedKey!;
@@ -251,7 +262,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     // generate session key, we only keep the shared key
     final sessionKey = common.crypto.createKeyStore();
     final sharedSessionKey = common.crypto.createSharedKeyStore(
-        ownKeyStore: sessionKey, remotePublicKey: msg.key);
+      ownKeyStore: sessionKey,
+      remotePublicKey: msg.key,
+    );
     responder.setSessionSharedKey(sharedSessionKey);
 
     sendMessage(Key(sessionKey.publicKey), to: responder);
@@ -261,7 +274,10 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
   }
 
   Phase _handleWaitForAuth(
-      ResponderWithState responderWithState, Uint8List msgBytes, Nonce nonce) {
+    ResponderWithState responderWithState,
+    Uint8List msgBytes,
+    Nonce nonce,
+  ) {
     final responder = responderWithState.responder;
 
     final sharedKey = responder.sessionSharedKey!;
@@ -272,8 +288,9 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     );
 
     if (msg.yourCookie != responder.cookiePair.ours) {
-      throw ProtocolErrorException(
-          'Bad your_cookie in ${MessageType.auth} message');
+      throw const ProtocolErrorException(
+        'Bad your_cookie in ${MessageType.auth} message',
+      );
     }
 
     final taskBuilder = _selectTaskBuilder(msg.tasks, responder);
@@ -292,9 +309,13 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
     logger.d('Initiated task ${taskBuilder.name}');
 
     sendMessage(
-        AuthInitiator(nonce.cookie, taskBuilder.name,
-            {taskBuilder.name: taskAndData.second}),
-        to: responder);
+      AuthInitiator(
+        nonce.cookie,
+        taskBuilder.name,
+        {taskBuilder.name: taskAndData.second},
+      ),
+      to: responder,
+    );
 
     // Make sure we don't drop the just paired responder.
     responders.remove(responder.id);
@@ -305,11 +326,18 @@ class InitiatorClientHandshakePhase extends ClientHandshakePhase
       dropResponder(badResponder.responder.id, CloseCode.droppedByInitiator);
     }
 
-    emitEvent(events.ResponderAuthenticated(
-        responder.permanentSharedKey!.remotePublicKey));
+    emitEvent(
+      events.ResponderAuthenticated(
+        responder.permanentSharedKey!.remotePublicKey,
+      ),
+    );
 
     return InitiatorTaskPhase(
-        common, config, responder.assertAuthenticated(), taskAndData.first);
+      common,
+      config,
+      responder.assertAuthenticated(),
+      taskAndData.first,
+    );
   }
 
   /// Selects a task if possible, initiates connection termination if not.

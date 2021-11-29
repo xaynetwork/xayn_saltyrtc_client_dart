@@ -20,10 +20,13 @@ void main() {
 
   test('From random', () {
     final cs = CombinedSequence.fromRandom(
-        (size) => Uint8List.fromList(List.filled(size, 255)));
+      (size) => Uint8List.fromList(List.filled(size, 255)),
+    );
 
-    expect(cs.toInt64(),
-        lessThanOrEqualTo(CombinedSequence.combinedSequenceNumberMax));
+    expect(
+      cs.toInt64(),
+      lessThanOrEqualTo(CombinedSequence.combinedSequenceNumberMax),
+    );
     expect(cs.isOverflowZero, true);
   });
 

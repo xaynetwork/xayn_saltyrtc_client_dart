@@ -16,7 +16,9 @@ class Cookie with EquatableMixin {
 
   Cookie(this._cookie) {
     if (_cookie.length != cookieLength) {
-      throw ValidationException('cookie must be $cookieLength bytes long');
+      throw const ValidationException(
+        'cookie must be $cookieLength bytes long',
+      );
     }
   }
 

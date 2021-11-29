@@ -28,7 +28,11 @@ class ClientAuth extends Message {
   List<Object?> get props => [yourCookie, yourKey, subprotocols, pingInterval];
 
   ClientAuth(
-      this.yourCookie, this.yourKey, this.subprotocols, this.pingInterval) {
+    this.yourCookie,
+    this.yourKey,
+    this.subprotocols,
+    this.pingInterval,
+  ) {
     const yourKeyLength = 32;
     validateInteger(pingInterval, 0, 1 << 31, MessageFields.pingInterval);
 
@@ -39,12 +43,20 @@ class ClientAuth extends Message {
 
   factory ClientAuth.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final yourCookie = Cookie(validateByteArrayType(
-        map[MessageFields.yourCookie], MessageFields.yourCookie));
+    final yourCookie = Cookie(
+      validateByteArrayType(
+        map[MessageFields.yourCookie],
+        MessageFields.yourCookie,
+      ),
+    );
     final subprotocols = validateListType<String>(
-        map[MessageFields.subprotocols], MessageFields.subprotocols);
+      map[MessageFields.subprotocols],
+      MessageFields.subprotocols,
+    );
     final pingInterval = validateIntegerType(
-        map[MessageFields.pingInterval], MessageFields.pingInterval);
+      map[MessageFields.pingInterval],
+      MessageFields.pingInterval,
+    );
 
     final yourKeyValue = map[MessageFields.yourKey];
     final yourKey = yourKeyValue == null

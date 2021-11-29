@@ -13,22 +13,28 @@ void main() {
     final permPubKey2 = crypto.createKeyStore();
 
     test('is only exactly one specific method', () {
-      expect(() {
-        InitialClientAuthMethod.fromEither(
-          authToken: crypto.createAuthToken(),
-          trustedResponderPermanentPublicKey: permPubKey1.publicKey,
-          initiatorPermanentKeys: permPubKey2,
-          crypto: crypto,
-        );
-      }, throwsArgumentError);
-      expect(() {
-        InitialClientAuthMethod.fromEither(
-          authToken: null,
-          trustedResponderPermanentPublicKey: null,
-          initiatorPermanentKeys: permPubKey2,
-          crypto: crypto,
-        );
-      }, throwsArgumentError);
+      expect(
+        () {
+          InitialClientAuthMethod.fromEither(
+            authToken: crypto.createAuthToken(),
+            trustedResponderPermanentPublicKey: permPubKey1.publicKey,
+            initiatorPermanentKeys: permPubKey2,
+            crypto: crypto,
+          );
+        },
+        throwsArgumentError,
+      );
+      expect(
+        () {
+          InitialClientAuthMethod.fromEither(
+            authToken: null,
+            trustedResponderPermanentPublicKey: null,
+            initiatorPermanentKeys: permPubKey2,
+            crypto: crypto,
+          );
+        },
+        throwsArgumentError,
+      );
     });
 
     test(
@@ -39,20 +45,26 @@ void main() {
           InitialClientAuthMethod.fromEither(authToken: authToken);
       expect(authMethod.authToken, same(authToken));
       expect(authMethod.trustedResponderSharedKey, isNull);
-      expect(() {
-        InitialClientAuthMethod.fromEither(
-          trustedResponderPermanentPublicKey: permPubKey1.publicKey,
-        );
-      }, throwsArgumentError);
+      expect(
+        () {
+          InitialClientAuthMethod.fromEither(
+            trustedResponderPermanentPublicKey: permPubKey1.publicKey,
+          );
+        },
+        throwsArgumentError,
+      );
     });
 
     test('creates the right key', () {
       final authMethod = InitialClientAuthMethod.fromEither(
-          trustedResponderPermanentPublicKey: permPubKey1.publicKey,
-          initiatorPermanentKeys: permPubKey2,
-          crypto: crypto);
+        trustedResponderPermanentPublicKey: permPubKey1.publicKey,
+        initiatorPermanentKeys: permPubKey2,
+        crypto: crypto,
+      );
       final expectedKey = crypto.createSharedKeyStore(
-          ownKeyStore: permPubKey2, remotePublicKey: permPubKey1.publicKey);
+        ownKeyStore: permPubKey2,
+        remotePublicKey: permPubKey1.publicKey,
+      );
       expect(authMethod.trustedResponderSharedKey, same(expectedKey));
       expect(authMethod.authToken, isNull);
     });
@@ -79,11 +91,17 @@ void main() {
     test2(SecretStreamTag.rekey);
     test2(SecretStreamTag.finalMessage);
 
-    expect(() {
-      test1(4);
-    }, throwsArgumentError);
-    expect(() {
-      test1(-1);
-    }, throwsArgumentError);
+    expect(
+      () {
+        test1(4);
+      },
+      throwsArgumentError,
+    );
+    expect(
+      () {
+        test1(-1);
+      },
+      throwsArgumentError,
+    );
   });
 }

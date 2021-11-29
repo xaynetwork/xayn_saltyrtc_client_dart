@@ -34,7 +34,11 @@ void main() {
     );
 
     Nonce(
-        Cookie(Uint8List(Cookie.cookieLength)), Id.peerId(1), Id.peerId(1), cs);
+      Cookie(Uint8List(Cookie.cookieLength)),
+      Id.peerId(1),
+      Id.peerId(1),
+      cs,
+    );
   });
 
   test('id valid source', () {
@@ -59,10 +63,14 @@ void main() {
     final cs = CombinedSequence(Int64.ZERO);
     final cookie = Cookie(Uint8List(Cookie.cookieLength));
 
-    expect(() => Nonce(cookie, Id.peerId(1), Id.peerId(-1), cs),
-        throwsA(isA<ValidationException>()));
-    expect(() => Nonce(cookie, Id.peerId(1), Id.peerId(256), cs),
-        throwsA(isA<ValidationException>()));
+    expect(
+      () => Nonce(cookie, Id.peerId(1), Id.peerId(-1), cs),
+      throwsA(isA<ValidationException>()),
+    );
+    expect(
+      () => Nonce(cookie, Id.peerId(1), Id.peerId(256), cs),
+      throwsA(isA<ValidationException>()),
+    );
 
     for (final destination in List.generate(255, (i) => Id.peerId(i))) {
       Nonce(cookie, Id.peerId(1), destination, cs);
@@ -77,22 +85,31 @@ void main() {
     final csOne = CombinedSequence(CombinedSequence.combinedSequenceNumberMax);
 
     expect(
-        Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes().length,
-        Nonce.totalLength);
+      Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes().length,
+      Nonce.totalLength,
+    );
 
-    expect(Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes(),
-        everyElement(equals(0)));
-    expect(Nonce(cookieOne, Id.peerId(255), Id.peerId(255), csOne).toBytes(),
-        everyElement(equals(255)));
+    expect(
+      Nonce(cookieZero, Id.peerId(0), Id.peerId(0), csZero).toBytes(),
+      everyElement(equals(0)),
+    );
+    expect(
+      Nonce(cookieOne, Id.peerId(255), Id.peerId(255), csOne).toBytes(),
+      everyElement(equals(255)),
+    );
 
     final alternate =
         Nonce(cookieOne, Id.peerId(0), Id.peerId(255), csZero).toBytes();
     // cookie
     expect(
-        alternate.sublist(0, Cookie.cookieLength), everyElement(equals(255)));
+      alternate.sublist(0, Cookie.cookieLength),
+      everyElement(equals(255)),
+    );
     // source
     expect(
-        alternate.sublist(Cookie.cookieLength, Cookie.cookieLength + 1), [0]);
+      alternate.sublist(Cookie.cookieLength, Cookie.cookieLength + 1),
+      [0],
+    );
     // destination
     expect(
       alternate.sublist(Cookie.cookieLength + 1, Cookie.cookieLength + 2),
@@ -122,7 +139,9 @@ void main() {
   });
 
   test('fromBytes too short', () {
-    expect(() => Nonce.fromBytes(Uint8List(Nonce.totalLength - 1)),
-        throwsA(isA<ValidationException>()));
+    expect(
+      () => Nonce.fromBytes(Uint8List(Nonce.totalLength - 1)),
+      throwsA(isA<ValidationException>()),
+    );
   });
 }

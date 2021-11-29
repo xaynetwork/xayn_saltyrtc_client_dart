@@ -83,12 +83,18 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     logger.d('starting new c2c handshake for responder ${common.address}');
     final initiator = Initiator(common.crypto);
     if (config.authToken != null) {
-      sendMessage(Token(config.permanentKey.publicKey),
-          to: initiator, authToken: config.authToken);
+      sendMessage(
+        Token(config.permanentKey.publicKey),
+        to: initiator,
+        authToken: config.authToken,
+      );
     }
-    initiator.setPermanentSharedKey(common.crypto.createSharedKeyStore(
+    initiator.setPermanentSharedKey(
+      common.crypto.createSharedKeyStore(
         ownKeyStore: config.permanentKey,
-        remotePublicKey: config.initiatorPermanentPublicKey));
+        remotePublicKey: config.initiatorPermanentPublicKey,
+      ),
+    );
     final sessionKey = common.crypto.createKeyStore();
     sendMessage(Key(sessionKey.publicKey), to: initiator);
 
@@ -128,7 +134,8 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
   Phase handleSendErrorByDestination(Id destination) {
     initiatorWithState = null;
     emitEvent(
-        events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated));
+      events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated),
+    );
     return this;
   }
 
@@ -162,10 +169,12 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
       msgType: MessageType.key,
     );
 
-    initiator.setSessionSharedKey(common.crypto.createSharedKeyStore(
-      ownKeyStore: initiatorWithState.sessionKey,
-      remotePublicKey: keyMsg.key,
-    ));
+    initiator.setSessionSharedKey(
+      common.crypto.createSharedKeyStore(
+        ownKeyStore: initiatorWithState.sessionKey,
+        remotePublicKey: keyMsg.key,
+      ),
+    );
 
     final taskData = {
       for (final task in config.tasks) task.name: task.getInitialResponderData()
@@ -202,12 +211,14 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     }
     if (msg is! AuthInitiator) {
       throw ProtocolErrorException(
-          'Unexpected message of type ${msg.type}, expected auth');
+        'Unexpected message of type ${msg.type}, expected auth',
+      );
     }
 
     if (msg.yourCookie != initiator.cookiePair.ours) {
-      throw ProtocolErrorException(
-          'Bad your_cookie in ${MessageType.auth} message');
+      throw const ProtocolErrorException(
+        'Bad your_cookie in ${MessageType.auth} message',
+      );
     }
 
     final taskName = msg.task;
@@ -223,6 +234,10 @@ class ResponderClientHandshakePhase extends ClientHandshakePhase
     emitEvent(events.ResponderAuthenticated(config.permanentKey.publicKey));
 
     return ResponderTaskPhase(
-        common, config, initiator.assertAuthenticated(), task);
+      common,
+      config,
+      initiator.assertAuthenticated(),
+      task,
+    );
   }
 }

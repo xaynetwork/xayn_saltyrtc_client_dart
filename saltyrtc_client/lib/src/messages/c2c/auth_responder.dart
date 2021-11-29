@@ -31,8 +31,12 @@ class AuthResponder extends Message {
 
   factory AuthResponder.fromMap(Map<String, Object?> map) {
     validateType(map[MessageFields.type], _type);
-    final yourCookie = Cookie(validateByteArrayType(
-        map[MessageFields.yourCookie], MessageFields.yourCookie));
+    final yourCookie = Cookie(
+      validateByteArrayType(
+        map[MessageFields.yourCookie],
+        MessageFields.yourCookie,
+      ),
+    );
     final tasks =
         validateListType<String>(map[MessageFields.tasks], MessageFields.tasks);
     final data =

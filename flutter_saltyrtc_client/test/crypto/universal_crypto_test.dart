@@ -13,12 +13,12 @@ extension CreateRandomNonce on Crypto {
 }
 
 // This test can fail on platforms that don't have libsodium installed, install libsodium before running it.
-void main() async {
+Future<void> main() async {
   final ping = Uint8List(4);
   final pong = Uint8List(8);
 
   test('Test the N key exchange variant with sodium.', () async {
-    var crypto = await getCrypto();
+    final crypto = await getCrypto();
     // Server generates keypair for it self
     final serverKeys = crypto.createKeyStore();
 
@@ -29,7 +29,9 @@ void main() async {
 
     // Client precomputes shared key for server communication, this helps with performance
     final sharedSecretClient = crypto.createSharedKeyStore(
-        ownKeyStore: clientKeys, remotePublicKey: remotePublicKey);
+      ownKeyStore: clientKeys,
+      remotePublicKey: remotePublicKey,
+    );
 
     // Client sends its public key encrypted to the server via signal server etc
     // The nonce is necessary to avoid that two same messages don't create the same encrypted bytes
@@ -38,14 +40,18 @@ void main() async {
     // Note we are sending the public key encrypted with the server pk to the client, so we can verify that the client really used the PK of the server
     final msgToServerKeyExchange = KeyExchangeMessage(
       cipher: sharedSecretClient.encrypt(
-          message: clientKeys.publicKey, nonce: nonce),
+        message: clientKeys.publicKey,
+        nonce: nonce,
+      ),
       nonce: nonce,
       pk: clientKeys.publicKey,
     );
 
     // Server will precompute a shared secret
     final sharedSecretServer = crypto.createSharedKeyStore(
-        ownKeyStore: serverKeys, remotePublicKey: msgToServerKeyExchange.pk);
+      ownKeyStore: serverKeys,
+      remotePublicKey: msgToServerKeyExchange.pk,
+    );
 
     // Server received the message and will now decrypt it
     final publicKeyClient = sharedSecretServer.decrypt(
@@ -57,11 +63,12 @@ void main() async {
     // Now the server and client are holding public keys and can now send each other messages
     nonce = crypto.createRandomNonce();
     final msgToClientPing = EncryptedMessage(
-        cipher: sharedSecretServer.encrypt(
-          message: ping,
-          nonce: nonce,
-        ),
-        nonce: nonce);
+      cipher: sharedSecretServer.encrypt(
+        message: ping,
+        nonce: nonce,
+      ),
+      nonce: nonce,
+    );
 
     // The client receives the ping, decrypts it and sends back a pong
     final pingMessage = sharedSecretClient.decrypt(
@@ -73,11 +80,12 @@ void main() async {
     // The client sends back a pong message
     nonce = crypto.createRandomNonce();
     final msgToServerPong = EncryptedMessage(
-        cipher: sharedSecretClient.encrypt(
-          message: pong,
-          nonce: nonce,
-        ),
-        nonce: nonce);
+      cipher: sharedSecretClient.encrypt(
+        message: pong,
+        nonce: nonce,
+      ),
+      nonce: nonce,
+    );
 
     // The server receives the pong
     final pongMessage = sharedSecretServer.decrypt(
@@ -157,7 +165,8 @@ void main() async {
       final ssOfB = ssbOfB.build(ssbOfA.publicKey);
 
       var tmp = ssOfA.decryptPackage(
-          ssOfB.encryptPackage(msg1, tag: SecretStreamTag.push));
+        ssOfB.encryptPackage(msg1, tag: SecretStreamTag.push),
+      );
       expect(tmp.message, equals(msg1));
       expect(tmp.tag, equals(SecretStreamTag.push));
 
@@ -167,7 +176,8 @@ void main() async {
       expect(ssOfB.isEncryptionClosed, isFalse);
 
       tmp = ssOfA.decryptPackage(
-          ssOfB.encryptPackage(msg2, tag: SecretStreamTag.rekey));
+        ssOfB.encryptPackage(msg2, tag: SecretStreamTag.rekey),
+      );
       expect(tmp.message, equals(msg2));
       expect(tmp.tag, equals(SecretStreamTag.rekey));
 
@@ -177,7 +187,8 @@ void main() async {
       expect(ssOfB.isEncryptionClosed, isFalse);
 
       tmp = ssOfA.decryptPackage(
-          ssOfB.encryptPackage(msg2, tag: SecretStreamTag.message));
+        ssOfB.encryptPackage(msg2, tag: SecretStreamTag.message),
+      );
       expect(tmp.message, equals(msg2));
       expect(tmp.tag, equals(SecretStreamTag.message));
 
@@ -187,7 +198,8 @@ void main() async {
       expect(ssOfB.isEncryptionClosed, isFalse);
 
       tmp = ssOfA.decryptPackage(
-          ssOfB.encryptPackage(msg3, tag: SecretStreamTag.push));
+        ssOfB.encryptPackage(msg3, tag: SecretStreamTag.push),
+      );
       expect(tmp.message, equals(msg3));
       expect(tmp.tag, equals(SecretStreamTag.push));
 
@@ -197,7 +209,8 @@ void main() async {
       expect(ssOfB.isEncryptionClosed, isFalse);
 
       tmp = ssOfA.decryptPackage(
-          ssOfB.encryptPackage(msg3, tag: SecretStreamTag.finalMessage));
+        ssOfB.encryptPackage(msg3, tag: SecretStreamTag.finalMessage),
+      );
       expect(tmp.message, equals(msg3));
       expect(tmp.tag, equals(SecretStreamTag.finalMessage));
 
@@ -207,7 +220,8 @@ void main() async {
       expect(ssOfB.isEncryptionClosed, isTrue);
 
       tmp = ssOfB.decryptPackage(
-          ssOfA.encryptPackage(msg4, tag: SecretStreamTag.finalMessage));
+        ssOfA.encryptPackage(msg4, tag: SecretStreamTag.finalMessage),
+      );
       expect(tmp.message, equals(msg4));
       expect(tmp.tag, equals(SecretStreamTag.finalMessage));
     });

@@ -229,8 +229,11 @@ abstract class Phase {
 
   @protected
   Phase onProtocolError(ProtocolErrorException e, Id? source) {
-    close(e.closeCode, 'ProtocolError($source=>${common.address}): $e',
-        receivedCloseMsg: false);
+    close(
+      e.closeCode,
+      'ProtocolError($source=>${common.address}): $e',
+      receivedCloseMsg: false,
+    );
     emitEvent(ProtocolErrorWithServer());
     return this;
   }
@@ -276,13 +279,17 @@ abstract class Phase {
   }
 
   /// Build binary packet to send.
-  Uint8List buildPacket(Message msg, Peer receiver,
-      {bool encrypt = true, AuthToken? authToken}) {
+  Uint8List buildPacket(
+    Message msg,
+    Peer receiver, {
+    bool encrypt = true,
+    AuthToken? authToken,
+  }) {
     final cs = receiver.csPair.ours;
     try {
       cs.next();
     } on OverflowException {
-      throw ProtocolErrorException('CSN overflow');
+      throw const ProtocolErrorException('CSN overflow');
     }
 
     final nonce =
@@ -394,7 +401,8 @@ abstract class Phase {
       case ClosingState.handoverDone:
         if (closeCode == CloseCode.handover) {
           logger.w(
-              'handover started after it was already completed, ignoring it');
+            'handover started after it was already completed, ignoring it',
+          );
         } else {
           common.events.close();
           common.closingState = ClosingState.closed;
@@ -449,8 +457,10 @@ abstract class Phase {
     }
   }
 
-  void _emitEventFromRecvCloseCode(int? closeCode,
-      {bool codeFromClient = false}) {
+  void _emitEventFromRecvCloseCode(
+    int? closeCode, {
+    bool codeFromClient = false,
+  }) {
     final event =
         eventFromWSCloseCode(closeCode, codeFromClient: codeFromClient);
     if (event != null) {
@@ -501,8 +511,9 @@ abstract class AfterServerHandshakePhase extends Phase {
 
   Phase handleSendError(SendError msg) {
     if (msg.source != common.address) {
-      throw ProtocolErrorException(
-          'received send-error for message not send by us');
+      throw const ProtocolErrorException(
+        'received send-error for message not send by us',
+      );
     }
     final destination = msg.destination;
     final viableDestination = role == Role.initiator
@@ -510,7 +521,8 @@ abstract class AfterServerHandshakePhase extends Phase {
         : msg.destination.isInitiator();
     if (!viableDestination) {
       throw ProtocolErrorException(
-          'received send-error for unexpected destination $destination');
+        'received send-error for unexpected destination $destination',
+      );
     }
     return handleSendErrorByDestination(destination);
   }

@@ -13,6 +13,9 @@
 /// and a [Task].
 library flutter_saltyrtc_client.task;
 
+import 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
+    show Task, TaskBuilder;
+
 export 'package:xayn_saltyrtc_client/xayn_saltyrtc_client.dart'
     show
         Task,

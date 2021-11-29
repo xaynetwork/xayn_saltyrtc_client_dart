@@ -27,7 +27,8 @@ class Setup {
   static final serverUri = Uri.parse('ws://localhost:8765');
   static final serverPublicKey = Uint8List.fromList(
     HEX.decode(
-        '09a59a5fa6b45cb07638a3a6e347ce563a948b756fd22f9527465f7c79c2a864'),
+      '09a59a5fa6b45cb07638a3a6e347ce563a948b756fd22f9527465f7c79c2a864',
+    ),
   );
 
   final SaltyRtcClient client;
@@ -63,9 +64,9 @@ class Setup {
 
   static Future<Setup> responderWithAuthToken({
     required List<TaskBuilder> tasks,
-    Uint8List? expectedServerKey,
     required Uint8List authToken,
     required Uint8List initiatorTrustedKey,
+    Uint8List? expectedServerKey,
     Identity? identity,
   }) async {
     final client = await ResponderClient.withAuthToken(
@@ -81,7 +82,8 @@ class Setup {
 
   Future<void> runAndTestEvents(List<void Function(Event)> testList) async {
     final errors = Queue<Event>();
-    final events = client.run().timeout(Duration(seconds: 10)).handleError(
+    final events =
+        client.run().timeout(const Duration(seconds: 10)).handleError(
       (Object? o) {
         errors.add(o as Event);
       },

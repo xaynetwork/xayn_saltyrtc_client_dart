@@ -15,12 +15,13 @@ import 'package:xayn_saltyrtc_client/events.dart'
     show ClosingErrorEvent, Event, ResponderAuthenticated, ServerHandshakeDone;
 
 /// This example define a task that sends binary blobs from one device to the other.
-void main() async {
+Future<void> main() async {
   const int pingInterval = 60;
   final serverUri = Uri.parse('ws://localhost:8765');
   final serverPublicKey = Uint8List.fromList(
     HEX.decode(
-        '09a59a5fa6b45cb07638a3a6e347ce563a948b756fd22f9527465f7c79c2a864'),
+      '09a59a5fa6b45cb07638a3a6e347ce563a948b756fd22f9527465f7c79c2a864',
+    ),
   );
 
   // blobs that we want to send from one device to the other
@@ -146,7 +147,9 @@ class SendBlobsTaskBuilder extends TaskBuilder {
   Pair<Task, TaskData?> buildInitiatorTask(TaskData? initialResponderData) {
     final expectNrMessages = initialResponderData!['nr_messages']! as int;
     return Pair(
-        SendBlobsTask(expectNrMessages, blobs), {'nr_messages': blobs.length});
+      SendBlobsTask(expectNrMessages, blobs),
+      {'nr_messages': blobs.length},
+    );
   }
 
   @override
@@ -212,7 +215,8 @@ class SendBlobsTask extends Task {
         break;
       default:
         throw ArgumentError(
-            'only messages of types in `supportedTypes` should be accepted');
+          'only messages of types in `supportedTypes` should be accepted',
+        );
     }
   }
 

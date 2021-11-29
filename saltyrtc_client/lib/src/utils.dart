@@ -2,7 +2,7 @@ import 'dart:async' show EventSink;
 
 import 'package:xayn_saltyrtc_client/events.dart' show Event, ClosingErrorEvent;
 
-import 'logger.dart' show logger;
+import 'package:xayn_saltyrtc_client/src/logger.dart' show logger;
 
 /// Pair of two values.
 class Pair<T1, T2> {

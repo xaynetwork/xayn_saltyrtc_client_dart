@@ -79,10 +79,15 @@ void main() {
 
       test('only registered task messages are forwarded', () {
         final setup = mkSetup();
-        setup.runTest([
-          setup.mkRecvBadTaskMessageTest(
-              type: 'arbitraryMessage', data: {'foo': 'bar'}),
-        ], skipCleanTest: true);
+        setup.runTest(
+          [
+            setup.mkRecvBadTaskMessageTest(
+              type: 'arbitraryMessage',
+              data: {'foo': 'bar'},
+            ),
+          ],
+          skipCleanTest: true,
+        );
       });
 
       test('events are forwarded', () {
@@ -122,8 +127,10 @@ void main() {
         /// we have no client so we need fake the wiring
         setup.startPhase.notifyWsStreamClosed();
         expect(setup.task.handleCancelCallCount, equals(1));
-        expect(setup.task.handleCancelReason,
-            equals(CancelReason.serverDisconnected));
+        expect(
+          setup.task.handleCancelReason,
+          equals(CancelReason.serverDisconnected),
+        );
       });
 
       group('handover calls handleHandover when triggered by', () {
@@ -220,8 +227,10 @@ abstract class Setup {
 
   Setup(this.task);
 
-  void runTest(List<Phase? Function(Phase, Io)> steps,
-      {bool skipCleanTest = false}) {
+  void runTest(
+    List<Phase? Function(Phase, Io)> steps, {
+    bool skipCleanTest = false,
+  }) {
     final allSteps = [mkStartHasBeenCalledTest()];
     allSteps.addAll(steps);
     if (!skipCleanTest) {
@@ -251,11 +260,13 @@ abstract class Setup {
   }) {
     return (initialPhase, io) {
       final phase = peer.sendAndTransitToPhase<TaskPhase>(
-          message: TaskMessage(type, data),
-          sendTo: initialPhase,
-          encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: peer.testedPeer.ourSessionKey!,
-              remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey));
+        message: TaskMessage(type, data),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
 
       final msg = task.messages.removeFirst();
       expect(msg.type, equals(type));
@@ -271,20 +282,24 @@ abstract class Setup {
   }) {
     return (initialPhase, io) {
       final closeCode = peer.sendAndClose(
-          message: TaskMessage(type, data),
-          sendTo: initialPhase,
-          encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: peer.testedPeer.ourSessionKey!,
-              remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey));
+        message: TaskMessage(type, data),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
 
       expect(task.messages, isEmpty);
       expect(closeCode, equals(CloseCode.goingAway.toInt()));
       expect(initialPhase.isClosingWsStream, isTrue);
       final closeMsg = io.expectMessageOfType<Close>(
-          sendTo: peer,
-          decryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: peer.testedPeer.ourSessionKey!,
-              remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey));
+        sendTo: peer,
+        decryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: peer.testedPeer.ourSessionKey!,
+          remotePublicKey: peer.testedPeer.theirSessionKey!.publicKey,
+        ),
+      );
       expect(closeMsg.reason, equals(CloseCode.protocolError));
       final event = io.expectEventOfType<events.ProtocolErrorWithPeer>();
       expect(event.peerKind, equals(PeerKind.authenticated));
@@ -295,8 +310,11 @@ abstract class Setup {
   TestStep mkRecvEventTest() {
     return (initialPhase, io) {
       // ignore: invalid_use_of_protected_member
-      initialPhase.emitEvent(events.AdditionalResponderEvent(
-          events.PeerDisconnected(PeerKind.unauthenticated)));
+      initialPhase.emitEvent(
+        events.AdditionalResponderEvent(
+          events.PeerDisconnected(PeerKind.unauthenticated),
+        ),
+      );
 
       final event = task.events.removeFirst();
       expect(event, isA<events.AdditionalResponderEvent>());
@@ -308,17 +326,21 @@ abstract class Setup {
   TestStep mkDisconnectTest() {
     return (initialPhase, io) {
       final phase = server.sendAndTransitToPhase<AfterServerHandshakePhase>(
-          message: Disconnected(peer.address.asClient()),
-          sendTo: initialPhase,
-          encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: server.testedPeer.ourSessionKey!,
-              remotePublicKey: server.testedPeer.permanentKey!.publicKey));
+        message: Disconnected(peer.address.asClient()),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
+        ),
+      );
       final event = io.expectEventOfType<events.PeerDisconnected>();
       expect(event.peerKind, PeerKind.authenticated);
       expect(task.handleCancelCallCount, equals(1));
       expect(task.handleCancelReason, equals(CancelReason.peerUnavailable));
-      expect(task.events.removeLast(),
-          equals(events.PeerDisconnected(PeerKind.authenticated)));
+      expect(
+        task.events.removeLast(),
+        equals(events.PeerDisconnected(PeerKind.authenticated)),
+      );
       return phase;
     };
   }
@@ -326,7 +348,8 @@ abstract class Setup {
   TestStep mkSendErrorTest() {
     return (initialPhase, io) {
       final phase = server.sendAndTransitToPhase<AfterServerHandshakePhase>(
-          message: SendError(Uint8List.fromList([
+        message: SendError(
+          Uint8List.fromList([
             initialPhase.common.address.value,
             peer.address.value,
             0,
@@ -335,17 +358,22 @@ abstract class Setup {
             0,
             0,
             0
-          ])),
-          sendTo: initialPhase,
-          encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: server.testedPeer.ourSessionKey!,
-              remotePublicKey: server.testedPeer.permanentKey!.publicKey));
+          ]),
+        ),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
+        ),
+      );
       final event = io.expectEventOfType<events.SendingMessageToPeerFailed>();
       expect(event.peerKind, PeerKind.authenticated);
       expect(task.handleCancelCallCount, equals(1));
       expect(task.handleCancelReason, equals(CancelReason.peerUnavailable));
-      expect(task.events.removeLast(),
-          equals(events.SendingMessageToPeerFailed(PeerKind.authenticated)));
+      expect(
+        task.events.removeLast(),
+        equals(events.SendingMessageToPeerFailed(PeerKind.authenticated)),
+      );
       return phase;
     };
   }
@@ -354,8 +382,10 @@ abstract class Setup {
     return (phase, io) {
       task.link.requestHandover();
       expect(phase.isClosingWsStream, isTrue);
-      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
-          equals(CloseCode.goingAway.toInt()));
+      expect(
+        (phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
+        equals(CloseCode.goingAway.toInt()),
+      );
       final closeMsg = io.expectMessageOfType<Close>(
         sendTo: peer,
         decryptWith: crypto.createSharedKeyStore(
@@ -398,7 +428,7 @@ abstract class Setup {
     return (phase, io) {
       task.panicOnHandleMessage = true;
       final closeCode = peer.sendAndClose(
-        message: TaskMessage('taskMsg1', {}),
+        message: TaskMessage('taskMsg1', const {}),
         sendTo: phase,
         encryptWith: crypto.createSharedKeyStore(
           ownKeyStore: peer.testedPeer.ourSessionKey!,
@@ -417,7 +447,7 @@ abstract class Setup {
         ),
       );
       expect(closeMsg.reason, equals(CloseCode.internalError));
-      expect(task.messages.removeLast(), TaskMessage('taskMsg1', {}));
+      expect(task.messages.removeLast(), TaskMessage('taskMsg1', const {}));
       return phase;
     };
   }
@@ -433,8 +463,10 @@ abstract class Setup {
       final event = io.expectEventOfType<InternalError>();
       expect(event.error.toString(), contains('handleEvent'));
       expect(task.messages, isEmpty);
-      expect((phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
-          equals(CloseCode.goingAway.toInt()));
+      expect(
+        (phase.common.webSocket.sink as MockSyncWebSocketSink).closeCode,
+        equals(CloseCode.goingAway.toInt()),
+      );
       final closeMsg = io.expectMessageOfType<Close>(
         sendTo: peer,
         decryptWith: crypto.createSharedKeyStore(
@@ -466,7 +498,9 @@ abstract class Setup {
       expect(closeCode, equals(CloseCode.goingAway.toInt()));
       expect(task.messages, isEmpty);
       expect(
-          task.events.removeLast(), PeerDisconnected(PeerKind.authenticated));
+        task.events.removeLast(),
+        PeerDisconnected(PeerKind.authenticated),
+      );
       expect(task.events, isEmpty);
       final closeMsg = io.expectMessageOfType<Close>(
         sendTo: peer,
@@ -503,11 +537,13 @@ class InitiatorSetup extends Setup {
     final server = pair.first;
     final initiatorCommon = pair.second;
     final config = InitiatorConfig(
-        authMethod: InitialClientAuthMethod.fromEither(
-            authToken: crypto.createAuthToken()),
-        expectedServerPublicKey: server.permanentKey.publicKey,
-        permanentKeys: crypto.createKeyStore(),
-        tasks: []);
+      authMethod: InitialClientAuthMethod.fromEither(
+        authToken: crypto.createAuthToken(),
+      ),
+      expectedServerPublicKey: server.permanentKey.publicKey,
+      permanentKeys: crypto.createKeyStore(),
+      tasks: const [],
+    );
 
     final responder =
         PeerData(address: responderId, testedPeerId: Id.initiatorAddress);
@@ -521,8 +557,12 @@ class InitiatorSetup extends Setup {
       ifOfTestedClient: Id.initiatorAddress,
     );
 
-    final phase = InitiatorTaskPhase(initiatorCommon, config,
-        initiatorResponderKnowledge.assertAuthenticated(), task);
+    final phase = InitiatorTaskPhase(
+      initiatorCommon,
+      config,
+      initiatorResponderKnowledge.assertAuthenticated(),
+      task,
+    );
 
     return InitiatorSetup._(task, phase, server, responder);
   }
@@ -530,7 +570,8 @@ class InitiatorSetup extends Setup {
   TestStep mkSendErrorUnrelatedTest() {
     return (initialPhase, io) {
       final phase = server.sendAndTransitToPhase(
-          message: SendError(Uint8List.fromList([
+        message: SendError(
+          Uint8List.fromList([
             initialPhase.common.address.value,
             Id.responderId(120).value,
             0,
@@ -539,22 +580,31 @@ class InitiatorSetup extends Setup {
             0,
             0,
             0
-          ])),
-          sendTo: initialPhase,
-          encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: server.testedPeer.ourSessionKey!,
-              remotePublicKey: server.testedPeer.permanentKey!.publicKey));
+          ]),
+        ),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
+        ),
+      );
       expect(phase, same(initialPhase));
       final event =
           io.expectEventOfType<events.AdditionalResponderEvent>().event;
       expect(event, isA<events.SendingMessageToPeerFailed>());
-      expect((event as events.SendingMessageToPeerFailed).peerKind,
-          PeerKind.unauthenticated);
+      expect(
+        (event as events.SendingMessageToPeerFailed).peerKind,
+        PeerKind.unauthenticated,
+      );
       expect(task.handleCancelCallCount, equals(0));
       expect(
-          task.events.removeLast(),
-          equals(events.AdditionalResponderEvent(
-              events.SendingMessageToPeerFailed(PeerKind.unauthenticated))));
+        task.events.removeLast(),
+        equals(
+          events.AdditionalResponderEvent(
+            events.SendingMessageToPeerFailed(PeerKind.unauthenticated),
+          ),
+        ),
+      );
       return phase;
     };
   }
@@ -563,17 +613,21 @@ class InitiatorSetup extends Setup {
   TestStep mkPeerOverwriteTest() {
     return (initialPhase, io) {
       final phase = server.sendAndTransitToPhase<InitiatorClientHandshakePhase>(
-          message: NewResponder(peer.address.asResponder()),
-          sendTo: initialPhase,
-          encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: server.testedPeer.ourSessionKey!,
-              remotePublicKey: server.testedPeer.permanentKey!.publicKey));
+        message: NewResponder(peer.address.asResponder()),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
+        ),
+      );
       final event = io.expectEventOfType<events.PeerDisconnected>();
       expect(event.peerKind, PeerKind.authenticated);
       expect(task.handleCancelCallCount, equals(1));
       expect(task.handleCancelReason, equals(CancelReason.peerOverwrite));
-      expect(task.events.removeLast(),
-          equals(events.PeerDisconnected(PeerKind.authenticated)));
+      expect(
+        task.events.removeLast(),
+        equals(events.PeerDisconnected(PeerKind.authenticated)),
+      );
       expect(phase.responders.keys, contains(peer.address));
       expect(phase.responders[peer.address]!.receivedAnyMessage, isFalse);
       return phase;
@@ -610,7 +664,7 @@ class ResponderSetup extends Setup {
       authToken: authToken,
       expectedServerPublicKey: server.permanentKey.publicKey,
       permanentKeys: crypto.createKeyStore(),
-      tasks: [],
+      tasks: const [],
       initiatorPermanentPublicKey: initiator.permanentKey.publicKey,
     );
 
@@ -624,8 +678,12 @@ class ResponderSetup extends Setup {
       ifOfTestedClient: responderId,
     );
 
-    final phase = ResponderTaskPhase(responderCommon, config,
-        respondersInitiatorKnowledge.assertAuthenticated(), task);
+    final phase = ResponderTaskPhase(
+      responderCommon,
+      config,
+      respondersInitiatorKnowledge.assertAuthenticated(),
+      task,
+    );
 
     return ResponderSetup._(task, phase, server, initiator);
   }
@@ -636,17 +694,21 @@ class ResponderSetup extends Setup {
         c2c_handshake_responder_tests.mkRecvTokenAndKeyTest(initiator);
     return (initialPhase, io) {
       final phase = server.sendAndTransitToPhase<ResponderClientHandshakePhase>(
-          message: NewInitiator(),
-          sendTo: initialPhase,
-          encryptWith: crypto.createSharedKeyStore(
-              ownKeyStore: server.testedPeer.ourSessionKey!,
-              remotePublicKey: server.testedPeer.permanentKey!.publicKey));
+        message: NewInitiator(),
+        sendTo: initialPhase,
+        encryptWith: crypto.createSharedKeyStore(
+          ownKeyStore: server.testedPeer.ourSessionKey!,
+          remotePublicKey: server.testedPeer.permanentKey!.publicKey,
+        ),
+      );
       final event = io.expectEventOfType<events.PeerDisconnected>();
       expect(event.peerKind, PeerKind.authenticated);
       expect(task.handleCancelCallCount, equals(1));
       expect(task.handleCancelReason, equals(CancelReason.peerOverwrite));
-      expect(task.events.removeLast(),
-          equals(events.PeerDisconnected(PeerKind.authenticated)));
+      expect(
+        task.events.removeLast(),
+        equals(events.PeerDisconnected(PeerKind.authenticated)),
+      );
       expect(phase.initiatorWithState, isNotNull);
       expect(phase.initiatorWithState!.state, equals(State.waitForKeyMsg));
       initiator.resetTestedClientKnowledge();
@@ -663,14 +725,20 @@ void syncPeeringState({
   required Id ifOfTestedClient,
 }) {
   // sync permanent and session keys
-  knowledgeAboutPeer.setPermanentSharedKey(crypto.createSharedKeyStore(
+  knowledgeAboutPeer.setPermanentSharedKey(
+    crypto.createSharedKeyStore(
       ownKeyStore: config.permanentKey,
-      remotePublicKey: peer.permanentKey.publicKey));
+      remotePublicKey: peer.permanentKey.publicKey,
+    ),
+  );
   peer.testedPeer.theirSessionKey = crypto.createKeyStore();
   peer.testedPeer.ourSessionKey = crypto.createKeyStore();
-  knowledgeAboutPeer.setSessionSharedKey(crypto.createSharedKeyStore(
+  knowledgeAboutPeer.setSessionSharedKey(
+    crypto.createSharedKeyStore(
       ownKeyStore: peer.testedPeer.theirSessionKey!,
-      remotePublicKey: peer.testedPeer.ourSessionKey!.privateKey));
+      remotePublicKey: peer.testedPeer.ourSessionKey!.privateKey,
+    ),
+  );
   // sync cookiePair
   knowledgeAboutPeer.cookiePair
       .updateAndCheck(peer.testedPeer.cookiePair.ours, idOfPeer);

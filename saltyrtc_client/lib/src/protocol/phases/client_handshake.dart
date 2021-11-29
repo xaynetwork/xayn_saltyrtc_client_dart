@@ -27,8 +27,9 @@ abstract class ClientHandshakePhase extends AfterServerHandshakePhase {
   @override
   Phase run(Peer source, Uint8List msgBytes, Nonce nonce) {
     if (nonce.destination != common.address) {
-      throw ProtocolErrorException(
-          'Message destination does not match our address');
+      throw const ProtocolErrorException(
+        'Message destination does not match our address',
+      );
     }
     logger.v('message from ${nonce.destination}');
 

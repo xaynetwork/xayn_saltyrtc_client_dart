@@ -114,11 +114,11 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
   static Future<InitiatorClient> _build(
     Uri baseUri,
     List<TaskBuilder> tasks, {
-    int? pingInterval,
     required Uint8List expectedServerKey,
     Uint8List? responderTrustedKey,
     Uint8List? sharedAuthToken,
     Identity? identity,
+    int? pingInterval,
   }) async {
     final crypto = await getCrypto();
     identity ??= Identity._(crypto.createKeyStore());
@@ -129,10 +129,12 @@ class InitiatorClient implements SaltyRtcClient, saltyrtc.InitiatorClient {
       // we get a KeyStore that can only be created from a Crypto
       // so it is already initialized
       crypto,
-      WebSocket(WebSocketChannel.connect(
-        uri,
-        protocols: websocketProtocols,
-      )),
+      WebSocket(
+        WebSocketChannel.connect(
+          uri,
+          protocols: websocketProtocols,
+        ),
+      ),
       identity._permanentKeyPair,
       tasks,
       pingInterval: pingInterval,
@@ -223,10 +225,12 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
     saltyRtcClientLibLogger.i('connecting as responder to uri: $uri');
     final client = saltyrtc.ResponderClient.build(
       crypto,
-      WebSocket(WebSocketChannel.connect(
-        uri,
-        protocols: websocketProtocols,
-      )),
+      WebSocket(
+        WebSocketChannel.connect(
+          uri,
+          protocols: websocketProtocols,
+        ),
+      ),
       identity._permanentKeyPair,
       tasks,
       pingInterval: pingInterval,
@@ -253,8 +257,9 @@ class ResponderClient implements SaltyRtcClient, saltyrtc.ResponderClient {
 /// Construct the uri where the last part of the path is the public of the initiator.
 Uri _getUri(Uri baseUri, Uint8List initiatorPublicKey) {
   return baseUri.replace(
-      // we keep the original path because the server can be deployed behind a specific endpoint
-      path: baseUri.path + '/${HEX.encode(initiatorPublicKey)}',
-      query: null,
-      fragment: null);
+    // we keep the original path because the server can be deployed behind a specific endpoint
+    path: '${baseUri.path}/${HEX.encode(initiatorPublicKey)}',
+    query: null,
+    fragment: null,
+  );
 }

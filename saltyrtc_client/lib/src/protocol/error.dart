@@ -15,7 +15,10 @@ class ProtocolErrorException implements Exception {
   final CloseCode closeCode;
   final String _msg;
 
-  ProtocolErrorException(this._msg, {this.closeCode = CloseCode.protocolError});
+  const ProtocolErrorException(
+    this._msg, {
+    this.closeCode = CloseCode.protocolError,
+  });
 
   @override
   String toString() => _msg;
@@ -27,5 +30,5 @@ class ProtocolErrorException implements Exception {
 /// Data to instantiate a message is invalid.
 @immutable
 class ValidationException extends ProtocolErrorException {
-  ValidationException(String msg) : super(msg);
+  const ValidationException(String msg) : super(msg);
 }

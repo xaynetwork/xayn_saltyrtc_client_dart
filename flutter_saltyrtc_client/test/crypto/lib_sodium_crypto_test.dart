@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 import 'protocol.dart' show EncryptedMessage, KeyExchangeMessage;
 
 // This test can fail on platforms that don't have libsodium installed, install libsodium before running it.
-void main() async {
+Future<void> main() async {
   test('Test the N key exchange variant with sodium.', () {
     // Server generates keypair for itself
     final serverKeys = CryptoBox.randomKeys();
@@ -37,33 +37,40 @@ void main() async {
 
     // Server received the message and will now decrypt it
     final publicKeyClient = CryptoBox.decryptAfternm(
-        msgToServerKeyExchange.cipher,
-        msgToServerKeyExchange.nonce,
-        sharedSecretServer);
+      msgToServerKeyExchange.cipher,
+      msgToServerKeyExchange.nonce,
+      sharedSecretServer,
+    );
     expect(publicKeyClient, msgToServerKeyExchange.pk);
 
     // Now the server and client are holding public keys and can now send each other messages
     nonce = CryptoBox.randomNonce();
     final msgToClientPing = EncryptedMessage(
-        cipher:
-            CryptoBox.encryptStringAfternm('PING', nonce, sharedSecretServer),
-        nonce: nonce);
+      cipher: CryptoBox.encryptStringAfternm('PING', nonce, sharedSecretServer),
+      nonce: nonce,
+    );
 
     // The client receives the ping, decrypts it and sends back a pong
     final pingMessage = CryptoBox.decryptStringAfternm(
-        msgToClientPing.cipher, msgToClientPing.nonce, sharedSecretClient);
+      msgToClientPing.cipher,
+      msgToClientPing.nonce,
+      sharedSecretClient,
+    );
     expect(pingMessage, 'PING');
 
     // The client sends back a pong message
     nonce = CryptoBox.randomNonce();
     final msgToServerPong = EncryptedMessage(
-        cipher:
-            CryptoBox.encryptStringAfternm('PONG', nonce, sharedSecretClient),
-        nonce: nonce);
+      cipher: CryptoBox.encryptStringAfternm('PONG', nonce, sharedSecretClient),
+      nonce: nonce,
+    );
 
     // The server receives the pong
     final pongMessage = CryptoBox.decryptStringAfternm(
-        msgToServerPong.cipher, msgToServerPong.nonce, sharedSecretServer);
+      msgToServerPong.cipher,
+      msgToServerPong.nonce,
+      sharedSecretServer,
+    );
     expect(pongMessage, 'PONG');
   });
 }

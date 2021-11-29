@@ -128,9 +128,11 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
 
   @override
   void cancelTask({bool serverDisconnected = false}) {
-    _cancelTask(serverDisconnected
-        ? CancelReason.serverDisconnected
-        : CancelReason.closing);
+    _cancelTask(
+      serverDisconnected
+          ? CancelReason.serverDisconnected
+          : CancelReason.closing,
+    );
   }
 
   @override
@@ -203,12 +205,17 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   }
 
   @protected
-  Phase toClientHandshakePhase(CancelReason reason,
-      {bool newInitiator = false, ResponderId? responderOverride}) {
+  Phase toClientHandshakePhase(
+    CancelReason reason, {
+    bool newInitiator = false,
+    ResponderId? responderOverride,
+  }) {
     _cancelTask(reason);
     _link.disconnect();
     return onlyCreateClientHandshakePhase(
-        initiatorOverride: newInitiator, responderOverride: responderOverride);
+      initiatorOverride: newInitiator,
+      responderOverride: responderOverride,
+    );
   }
 
   bool _taskCancelWasCalled = false;
@@ -238,8 +245,10 @@ abstract class TaskPhase extends AfterServerHandshakePhase with WithPeer {
   }
 
   @protected
-  Phase onlyCreateClientHandshakePhase(
-      {bool initiatorOverride = false, ResponderId? responderOverride});
+  Phase onlyCreateClientHandshakePhase({
+    bool initiatorOverride = false,
+    ResponderId? responderOverride,
+  });
 }
 
 class InitiatorTaskPhase extends TaskPhase
@@ -261,8 +270,11 @@ class InitiatorTaskPhase extends TaskPhase
     final id = msg.id;
     validateResponderId(id.value);
     if (id != pairedClient.id) {
-      emitEvent(events.AdditionalResponderEvent(
-          events.PeerDisconnected(events.PeerKind.unauthenticated)));
+      emitEvent(
+        events.AdditionalResponderEvent(
+          events.PeerDisconnected(events.PeerKind.unauthenticated),
+        ),
+      );
       return this;
     } else {
       emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
@@ -273,12 +285,16 @@ class InitiatorTaskPhase extends TaskPhase
   @override
   Phase handleSendErrorByDestination(Id destination) {
     if (destination != pairedClient.id) {
-      emitEvent(events.AdditionalResponderEvent(
-          events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated)));
+      emitEvent(
+        events.AdditionalResponderEvent(
+          events.SendingMessageToPeerFailed(events.PeerKind.unauthenticated),
+        ),
+      );
       return this;
     } else {
       emitEvent(
-          events.SendingMessageToPeerFailed(events.PeerKind.authenticated));
+        events.SendingMessageToPeerFailed(events.PeerKind.authenticated),
+      );
       return toClientHandshakePhase(CancelReason.peerUnavailable);
     }
   }
@@ -290,8 +306,10 @@ class InitiatorTaskPhase extends TaskPhase
         // For the client we pretend the responder disconnected (and a new
         // not yet authenticated responder reconnected).
         emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-        return toClientHandshakePhase(CancelReason.peerOverwrite,
-            responderOverride: msg.id);
+        return toClientHandshakePhase(
+          CancelReason.peerOverwrite,
+          responderOverride: msg.id,
+        );
       } else {
         logger.d('Dropping new responder while in task phase');
         sendDropResponder(msg.id, CloseCode.droppedByInitiator);
@@ -303,8 +321,10 @@ class InitiatorTaskPhase extends TaskPhase
   }
 
   @override
-  Phase onlyCreateClientHandshakePhase(
-      {bool initiatorOverride = false, ResponderId? responderOverride}) {
+  Phase onlyCreateClientHandshakePhase({
+    bool initiatorOverride = false,
+    ResponderId? responderOverride,
+  }) {
     assert(initiatorOverride == false);
     final newPhase = InitiatorClientHandshakePhase(common, config);
     if (responderOverride != null) {
@@ -347,8 +367,10 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
       // For the client we pretend the initiator disconnected (and a new
       // not yet authenticated responder reconnected).
       emitEvent(events.PeerDisconnected(events.PeerKind.authenticated));
-      return toClientHandshakePhase(CancelReason.peerOverwrite,
-          newInitiator: true);
+      return toClientHandshakePhase(
+        CancelReason.peerOverwrite,
+        newInitiator: true,
+      );
     } else {
       logger.w('Unexpected server message type: ${msg.type}');
       return this;
@@ -356,10 +378,15 @@ class ResponderTaskPhase extends TaskPhase with ResponderIdentity {
   }
 
   @override
-  Phase onlyCreateClientHandshakePhase(
-      {bool initiatorOverride = false, ResponderId? responderOverride}) {
+  Phase onlyCreateClientHandshakePhase({
+    bool initiatorOverride = false,
+    ResponderId? responderOverride,
+  }) {
     assert(responderOverride == null);
-    return ResponderClientHandshakePhase(common, config,
-        initiatorConnected: initiatorOverride);
+    return ResponderClientHandshakePhase(
+      common,
+      config,
+      initiatorConnected: initiatorOverride,
+    );
   }
 }
