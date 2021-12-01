@@ -24,6 +24,7 @@ dependencies:
     git:
       url: git@github.com:xaynetwork/xayn_saltyrtc_client_dart.git
       path: saltyrtc_client
+      ref: develop
 
 dev_dependencies:
   equatable: ^2.0.3
