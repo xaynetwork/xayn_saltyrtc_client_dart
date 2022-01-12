@@ -104,10 +104,10 @@ SALTYRTC_SAFETY_OFF='yes-and-i-know-what-im-doing' ./venv/bin/saltyrtc-server -v
 
 ## License
 
-xayn_flutter_saltyrtc_client and its components, unless otherwise stated, are licensed under
- * APACHE-2.0 ([LICENSE](LICENSE)).
+See the [NOTICE](NOTICE) file.
 
-## Contribution
+### Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you,
-as defined in the Apache-2.0 license, shall be licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this project by you, shall be licensed as Apache-2.0, without any additional
+terms or conditions.
